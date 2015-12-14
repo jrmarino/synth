@@ -1,7 +1,7 @@
 --  This file is covered by the Internet Software Consortium (ISC) License
 --  Reference: ../License.txt
 
-package PortScan.ops is
+package PortScan.Ops is
 
    port_match_failed : constant port_id;
 
@@ -59,4 +59,4 @@ private
    function rank_arrow (id : port_id) return ranking_crate.Cursor;
    procedure delete_rank (id : port_id);
 
-end PortScan.ops;
+end PortScan.Ops;

@@ -3,7 +3,7 @@
 
 with Ada.Numerics.Discrete_Random;
 
-package body PortScan.ops is
+package body PortScan.Ops is
 
 
    -------------------------
@@ -474,4 +474,4 @@ package body PortScan.ops is
       return get_catport (all_ports (id));
    end port_name;
 
-end PortScan.ops;
+end PortScan.Ops;

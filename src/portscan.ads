@@ -33,14 +33,11 @@ package PortScan is
    --  This procedure causes the reverse dependencies to be calculated, and
    --  then the extended (recursive) reverse dependencies.  The former is
    --  used progressively to determine when a port is free to build and the
-   --  latter sets the build priority.  This is only needed when single port
-   --  scanning is used and complete, because "all ports" calls it directly.
+   --  latter sets the build priority.
    procedure set_build_priority;
 
-   --  Release references to portkey_crate cursors.
-   --  This must be run to free up the container before finalization,
-   --  otherwise container tampering errors can occur
---     procedure release_ports_tree;
+   --  Wipe out all scan data so new scan can be performed
+   procedure reset_ports_tree;
 
 private
 
@@ -55,6 +52,7 @@ private
    --  except for pkg itself.  Skip "test" because these dependencies are
    --  not required to build packages.
    type dependency_type is (fetch, extract, patch, build, library, runtime);
+   subtype LR_set is dependency_type range library .. runtime;
 
    bmake_execution  : exception;
    make_garbage     : exception;
@@ -82,13 +80,19 @@ private
 
    package ranking_crate is new AC.Ordered_Sets  (Element_Type => queue_record);
 
-   --  Functions for portkey_crate definitions
+   --  Functions for portkey_crate and package_crate definitions
    function port_hash (key : SU.Unbounded_String) return AC.Hash_Type;
    function port_ekey (left, right : SU.Unbounded_String) return Boolean;
 
    package portkey_crate is new AC.Hashed_Maps
      (Key_Type        => SU.Unbounded_String,
       Element_Type    => port_index,
+      Hash            => port_hash,
+      Equivalent_Keys => port_ekey);
+
+   package package_crate is new AC.Hashed_Maps
+     (Key_Type        => SU.Unbounded_String,
+      Element_Type    => Boolean,
       Hash            => port_hash,
       Equivalent_Keys => port_ekey);
 
@@ -115,11 +119,12 @@ private
          rev_scanned   : Boolean              := False;
          unlist_failed : Boolean              := False;
          work_locked   : Boolean              := False;
-         limited_FEPB  : Boolean              := True;
          reverse_score : port_index           := 0;
+         librun        : block_crate.Map;
          blocked_by    : block_crate.Map;
          blocks        : block_crate.Map;
          all_reverse   : block_crate.Map;
+         selected_opts : string_crate.Vector;
       end record;
    type port_record_access is access all port_record;
 

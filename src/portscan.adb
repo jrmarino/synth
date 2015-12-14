@@ -33,10 +33,6 @@ package body PortScan is
       parallel_deep_scan (portsdir => portsdir, success => good_scan);
       wipe_make_queue;
 
-      if good_scan then
-         set_build_priority;
-      end if;
-
       return good_scan;
    end scan_entire_ports_tree;
 
@@ -125,24 +121,42 @@ package body PortScan is
    end set_build_priority;
 
 
-   --------------------------
-   --  release_ports_tree  --
-   --------------------------
---     procedure release_ports_tree
---     is
---        PR : port_record_access;
---     begin
---        for k in 0 .. last_port loop
---           PR := all_ports (k)'Access;
---           PR.key_cursor := portkey_crate.No_Element;
---           PR.blocks.Clear;
---           PR.blocked_by.Clear;
---           PR.all_reverse.Clear;
---        end loop;
---        TIO.Put (" port_keys ...");
---        ports_keys.Clear;
---        TIO.Put_Line ("cleared");
---     end release_ports_tree;
+   ------------------------
+   --  reset_ports_tree  --
+   ------------------------
+   procedure reset_ports_tree
+   is
+      PR : port_record_access;
+   begin
+      for k in dim_all_ports'Range loop
+         PR  := all_ports (k)'Access;
+
+         PR.sequence_id   := 0;
+         PR.key_cursor    := portkey_crate.No_Element;
+         PR.jobs          := 1;
+         PR.ignore_reason := SU.Null_Unbounded_String;
+         PR.port_version  := SU.Null_Unbounded_String;
+         PR.package_name  := SU.Null_Unbounded_String;
+         PR.ignored       := False;
+         PR.scanned       := False;
+         PR.rev_scanned   := False;
+         PR.unlist_failed := False;
+         PR.work_locked   := False;
+         PR.reverse_score := 0;
+         PR.librun.Clear;
+         PR.blocks.Clear;
+         PR.blocked_by.Clear;
+         PR.all_reverse.Clear;
+         PR.selected_opts.Clear;
+      end loop;
+      ports_keys.Clear;
+      rank_queue.Clear;
+      lot_number  := 1;
+      lot_counter := 0;
+      last_port   := 0;
+      prescanned  := False;
+      wipe_make_queue;
+   end reset_ports_tree;
 
 
    --  PRIVATE FUNCTIONS  --
@@ -385,19 +399,21 @@ package body PortScan is
                  " PACKAGE_BUILDING=yes" &
                  " -VPKGVERSION -VPKGFILE:T -VMAKE_JOBS_NUMBER -VIGNORE" &
                  " -VFETCH_DEPENDS -VEXTRACT_DEPENDS -VPATCH_DEPENDS" &
-                 " -VBUILD_DEPENDS -VLIB_DEPENDS -VRUN_DEPENDS";
+                 " -VBUILD_DEPENDS -VLIB_DEPENDS -VRUN_DEPENDS" &
+                 " -VSELECTED_OPTIONS";
       pipe     : aliased STR.Pipes.Pipe_Stream;
       buffer   : STR.Buffered.Buffered_Stream;
       content  : SU.Unbounded_String;
       topline  : SU.Unbounded_String;
       status   : Integer;
 
-      type result_range is range 1 .. 10;
+      type result_range is range 1 .. 11;
       use type SU.Unbounded_String;
 
       --  prototypes
       procedure set_depends (line  : SU.Unbounded_String;
                              dtype : dependency_type);
+      procedure set_options (line  : SU.Unbounded_String);
 
       procedure set_depends (line  : SU.Unbounded_String;
                              dtype : dependency_type)
@@ -460,10 +476,49 @@ package body PortScan is
                        (Key      => depindex,
                         New_Item => depindex);
                   end if;
+                  if dtype in LR_set then
+                     if not all_ports (target).librun.Contains (depindex) then
+                        all_ports (target).librun.Insert
+                          (Key      => depindex,
+                           New_Item => depindex);
+                     end if;
+                  end if;
                end;
             end;
          end loop;
       end set_depends;
+
+      procedure set_options (line  : SU.Unbounded_String)
+      is
+         subs       : GSS.Slice_Set;
+         opts_found : GSS.Slice_Number;
+         trimline   : constant SU.Unbounded_String := SU.Trim (line, AS.Both);
+         zero_opts  : constant GSS.Slice_Number := GSS.Slice_Number (0);
+
+         use type GSS.Slice_Number;
+      begin
+         if trimline = SU.Null_Unbounded_String then
+            return;
+         end if;
+         GSS.Create (S          => subs,
+                     From       => SU.To_String (trimline),
+                     Separators => " ",
+                     Mode       => GSS.Multiple);
+         opts_found :=  GSS.Slice_Count (S => subs);
+         if opts_found = zero_opts then
+            return;
+         end if;
+         for j in 1 .. opts_found loop
+            declare
+               opt : SU.Unbounded_String  :=
+                 SU.To_Unbounded_String (GSS.Slice (subs, j));
+            begin
+               if not all_ports (target).selected_opts.Contains (opt) then
+                  all_ports (target).selected_opts.Append (opt);
+               end if;
+            end;
+         end loop;
+      end set_options;
 
    begin
       pipe.Open (Command => command);
@@ -496,6 +551,7 @@ package body PortScan is
             when 8 => set_depends (topline, build);
             when 9 => set_depends (topline, library);
             when 10 => set_depends (topline, runtime);
+            when 11 => set_options (topline);
          end case;
       end loop;
       all_ports (target).scanned := True;

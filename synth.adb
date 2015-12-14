@@ -1,8 +1,8 @@
 --  This file is covered by the Internet Software Consortium (ISC) License
 --  Reference: ../License.txt
 
---  with PortScan;
-with PortScan.ops;
+with PortScan.Ops;
+with PortScan.Packages;
 with Ada.Text_IO;
 with Ada.Numerics.Discrete_Random;
 
@@ -11,30 +11,37 @@ is
    pid : PortScan.port_id;
    good_scan : Boolean;
    num_slaves : PortScan.builders := 32;
+   repo : constant String := "/usr/local/boom/data/packages/dev-potential/All";
 
    package T   renames Ada.Text_IO;
-   package OPS renames PortScan.ops;
+   package OPS renames PortScan.Ops;
    use type PortScan.port_id;
 begin
 
    --  needs to read environment or make -C <anyport> -V PORTSDIR
-   good_scan := PortScan.scan_entire_ports_tree (portsdir => "/usr/xports");
+--     good_scan := PortScan.scan_entire_ports_tree (portsdir => "/usr/xports");
 
---     good_scan := PortScan.scan_single_port (portsdir => "/usr/xports",
---                                             catport => "editors/joe",
---                                             always_build => True,
---              repository => "/usr/local/boom/data/packages/dev-potential/All");
+   good_scan := PortScan.scan_single_port (portsdir => "/usr/xports",
+                                           catport => "editors/joe",
+                                           always_build => True,
+                                           repository => repo);
 --     if not good_scan then
 --        return;
 --     end if;
+
 
 --     good_scan := PortScan.scan_single_port (portsdir => "/usr/xports",
 --                                             catport => "mail/thunderbird");
---     if not good_scan then
---        return;
---     end if;
+   if good_scan then
+      PortScan.set_build_priority;
+   else
+      return;
+   end if;
 
---   PortScan.set_build_priority;
+
+   PortScan.Packages.clean_repository (repository => repo);
+
+   return;
 
    T.Put_Line ("");
    T.Put_Line ("Initial Queue length is" & OPS.queue_length'Img);
