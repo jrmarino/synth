@@ -21,17 +21,19 @@ begin
    --  needs to read environment or make -C <anyport> -V PORTSDIR
 --     good_scan := PortScan.scan_entire_ports_tree (portsdir => "/usr/xports");
 
-   good_scan := PortScan.scan_single_port (portsdir => "/usr/xports",
-                                           catport => "editors/joe",
-                                           always_build => True,
-                                           repository => repo);
+--     good_scan := PortScan.scan_single_port (portsdir => "/usr/xports",
+--                                             catport => "editors/joe",
+--                                             always_build => True,
+--                                             repository => repo);
 --     if not good_scan then
 --        return;
 --     end if;
 
 
---     good_scan := PortScan.scan_single_port (portsdir => "/usr/xports",
---                                             catport => "mail/thunderbird");
+   good_scan := PortScan.scan_single_port (portsdir => "/usr/xports",
+                                           catport => "mail/thunderbird",
+                                           always_build => True,
+                                           repository => repo);
    if good_scan then
       PortScan.set_build_priority;
    else

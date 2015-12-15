@@ -26,7 +26,8 @@ private
    --  the options in the already-built package.  Usually it's already known
    --  that a package exists before the function is called, but an existence
    --  check will be performed just in case (failure returns "False")
-   function passed_option_check (repository : String; id : port_id) return
+   function passed_option_check (repository : String; id : port_id;
+                                 skip_exist_check : Boolean := False) return
      Boolean;
 
    procedure scan_repository (repository : String);

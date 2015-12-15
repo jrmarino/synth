@@ -18,10 +18,16 @@ package body PortScan.Packages is
       procedure check_package (cursor : ranking_crate.Cursor);
       procedure check_package (cursor : ranking_crate.Cursor)
       is
-         QR   : constant queue_record := ranking_crate.Element (cursor);
+         QR       : constant queue_record := ranking_crate.Element (cursor);
+         fullpath : constant String := repository & "/" &
+           SU.To_String (all_ports (QR.ap_index).package_name);
          good : Boolean;
       begin
-         good := passed_option_check (repository, QR.ap_index);
+         if not AD.Exists (fullpath) then
+            return;
+         end if;
+
+         good := passed_option_check (repository, QR.ap_index, True);
          if not good then
             TIO.Put_Line (get_catport (all_ports (QR.ap_index)) &
                             " failed option check, removing ...");
@@ -99,7 +105,8 @@ package body PortScan.Packages is
    ---------------------------
    --  passed_option_check  --
    ---------------------------
-   function passed_option_check (repository : String; id : port_id) return
+   function passed_option_check (repository : String; id : port_id;
+                                 skip_exist_check : Boolean := False) return
      Boolean
    is
    begin
@@ -120,7 +127,8 @@ package body PortScan.Packages is
 
          use type SU.Unbounded_String;
       begin
-         if not AD.Exists (Name => fullpath) then
+         if not skip_exist_check and then not AD.Exists (Name => fullpath)
+         then
             return False;
          end if;
          pipe.Open (Command => command);
@@ -169,6 +177,7 @@ package body PortScan.Packages is
                end if;
             end;
          end loop;
+
          declare
             num_opts : Natural := Natural (all_ports (id).options.Length);
             arrow    : package_crate.Cursor;
