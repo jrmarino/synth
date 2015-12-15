@@ -31,6 +31,12 @@ package body PortScan.Packages is
          if not good then
             TIO.Put_Line (get_catport (all_ports (QR.ap_index)) &
                             " failed option check, removing ...");
+            return;
+         end if;
+         good := passed_dependency_check (repository, QR.ap_index, True);
+         if not good then
+            TIO.Put_Line (get_catport (all_ports (QR.ap_index)) &
+                            " failed dependency check, removing ...");
          end if;
       end check_package;
    begin
@@ -106,8 +112,8 @@ package body PortScan.Packages is
    --  passed_option_check  --
    ---------------------------
    function passed_option_check (repository : String; id : port_id;
-                                 skip_exist_check : Boolean := False) return
-     Boolean
+                                 skip_exist_check : Boolean := False)
+                                 return Boolean
    is
    begin
       if id = port_match_failed or else not all_ports (id).scanned then
@@ -139,7 +145,7 @@ package body PortScan.Packages is
          pipe.Close;
          status := pipe.Get_Exit_Status;
          if status /= 0 then
-            raise pkgng_execution with "pkg query " &
+            raise pkgng_execution with "pkg options query " &
               SU.To_String (all_ports (id).package_name) &
               " (return code =" & status'Img & ")";
          end if;
@@ -208,9 +214,100 @@ package body PortScan.Packages is
          --  If we get this far, the package options must match port options
          return True;
       end;
-
-
    end passed_option_check;
+
+
+   -------------------------------
+   --  passed_dependency_check  --
+   -------------------------------
+   function passed_dependency_check (repository : String; id : port_id;
+                                     skip_exist_check : Boolean := False)
+                                     return Boolean
+   is
+   begin
+      if id = port_match_failed or else not all_ports (id).scanned then
+         return False;
+      end if;
+      declare
+         fullpath : constant String := repository & "/" &
+           SU.To_String (all_ports (id).package_name);
+         command  : constant String := "pkg query -F " & fullpath &
+                                       " %do:%dn-%dv";
+         pipe     : aliased STR.Pipes.Pipe_Stream;
+         buffer   : STR.Buffered.Buffered_Stream;
+         content  : SU.Unbounded_String;
+         topline  : SU.Unbounded_String;
+         status   : Integer;
+         colon    : Natural;
+         required : Natural := Natural (all_ports (id).librun.Length);
+         counter  : Natural := 0;
+
+         use type SU.Unbounded_String;
+      begin
+         if not skip_exist_check and then not AD.Exists (Name => fullpath)
+         then
+            return False;
+         end if;
+         pipe.Open (Command => command);
+         buffer.Initialize (Output => null,
+                            Input  => pipe'Unchecked_Access,
+                            Size   => 4096);
+         buffer.Read (Into => content);
+         pipe.Close;
+         status := pipe.Get_Exit_Status;
+         if status /= 0 then
+            raise pkgng_execution with "pkg depends query " &
+              SU.To_String (all_ports (id).package_name) &
+              " (return code =" & status'Img & ")";
+         end if;
+         loop
+            nextline (lineblock => content, firstline => topline);
+            exit when topline = SU.Null_Unbounded_String;
+            colon := SU.Index (Source => topline, Pattern => ":");
+            if colon < 2 then
+               raise unknown_format with SU.To_String (topline);
+            end if;
+            declare
+               deppkg : String := SU.Slice (Source => topline,
+                                            Low    => colon + 1,
+                                            High   => SU.Length (topline))
+                                  & ".txz";
+               origin : SU.Unbounded_String := SU.To_Unbounded_String
+                 (SU.Slice (Source => topline,
+                            Low    => 1,
+                            High   => colon - 1));
+               target_id : port_index := ports_keys.Element (Key => origin);
+            begin
+               if target_id = port_match_failed then
+                  --  package has a dependency that has been removed from
+                  --  the ports tree
+                  return False;
+               end if;
+               counter := counter + 1;
+               if counter > required then
+                  --  package has more dependencies than we are looking for
+                  return False;
+               end if;
+               if deppkg /= SU.To_String (all_ports (target_id).package_name)
+               then
+                  --  The version that the package requires differs from the
+                  --  version that the ports tree will now produce
+                  return False;
+               end if;
+            end;
+         end loop;
+         if counter < required then
+            --  The ports tree requires more dependencies than the existing
+            --  package does
+            return False;
+         end if;
+
+         --  If we get this far, the package dependencies match what the
+         --  port tree requires exactly.  This package passed sanity check.
+         return True;
+      end;
+   end passed_dependency_check;
+
 
    ---------------
    --  nextline  --

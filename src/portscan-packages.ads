@@ -27,8 +27,14 @@ private
    --  that a package exists before the function is called, but an existence
    --  check will be performed just in case (failure returns "False")
    function passed_option_check (repository : String; id : port_id;
-                                 skip_exist_check : Boolean := False) return
-     Boolean;
+                                 skip_exist_check : Boolean := False)
+                                 return Boolean;
+
+   --  This function returns "True" if the scanned dependencies match exactly
+   --  what the current ports tree has.
+   function passed_dependency_check (repository : String; id : port_id;
+                                     skip_exist_check : Boolean := False)
+                                     return Boolean;
 
    procedure scan_repository (repository : String);
    procedure nextline (lineblock, firstline : out SU.Unbounded_String);
