@@ -128,8 +128,9 @@ package body PortScan.Packages is
          content  : SU.Unbounded_String;
          topline  : SU.Unbounded_String;
          status   : Integer;
-         pkg_opts : package_crate.Map;
          colon    : Natural;
+         required : Natural := Natural (all_ports (id).options.Length);
+         counter  : Natural := 0;
 
          use type SU.Unbounded_String;
       begin
@@ -160,47 +161,27 @@ package body PortScan.Packages is
                knob : String := SU.Slice (Source => topline,
                                           Low    => colon + 1,
                                           High   => SU.Length (topline));
-               name : SU.Unbounded_String := SU.To_Unbounded_String
+               namekey : SU.Unbounded_String := SU.To_Unbounded_String
                  (SU.Slice (Source => topline,
                             Low    => 1,
                             High   => colon - 1));
-               insres : Boolean;
-               dummy  : package_crate.Cursor;
+               knobval  : Boolean;
             begin
                if knob = "on" then
-                  pkg_opts.Insert (Key      => name,
-                                   New_Item => True,
-                                   Position => dummy,
-                                   Inserted => insres);
+                  knobval := True;
                elsif knob = "off" then
-                  pkg_opts.Insert (Key      => name,
-                                   New_Item => False,
-                                   Position => dummy,
-                                   Inserted => insres);
+                  knobval := False;
                else
                   raise unknown_format
                     with "knob=" & knob & "(" & SU.To_String (topline) & ")";
                end if;
-            end;
-         end loop;
-
-         declare
-            num_opts : Natural := Natural (all_ports (id).options.Length);
-            arrow    : package_crate.Cursor;
-            arrowkey : SU.Unbounded_String;
-            knobval  : Boolean;
-            use type package_crate.Cursor;
-         begin
-            if num_opts /= Natural (pkg_opts.Length) then
-               --  Different number of options, FAIL!
-               return False;
-            end if;
-            arrow := pkg_opts.First;
-            while arrow /= package_crate.No_Element loop
-               arrowkey := package_crate.Key (arrow);
-               knobval  := pkg_opts.Element (arrowkey);
-               if all_ports (id).options.Contains (arrowkey) then
-                  if knobval /= all_ports (id).options.Element (arrowkey) then
+               counter := counter + 1;
+               if counter > required then
+                  --  package has more options than we are looking for
+                  return False;
+               end if;
+               if all_ports (id).options.Contains (namekey) then
+                  if knobval /= all_ports (id).options.Element (namekey) then
                      --  port option value doesn't match package option value
                      return False;
                   end if;
@@ -208,9 +189,13 @@ package body PortScan.Packages is
                   --  Name of package option not found in port options
                   return False;
                end if;
-               arrow := package_crate.Next (arrow);
-            end loop;
-         end;
+            end;
+         end loop;
+         if counter < required then
+            --  The ports tree has more options than the existing package
+            return False;
+         end if;
+
          --  If we get this far, the package options must match port options
          return True;
       end;
