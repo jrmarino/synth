@@ -10,6 +10,28 @@ package body PortScan.Packages is
    package AD  renames Ada.Directories;
    package STR renames Util.Streams;
 
+   ----------------------------
+   --  limited_sanity_check  --
+   ----------------------------
+   procedure limited_sanity_check (repository : String)
+   is
+      procedure check_package (cursor : ranking_crate.Cursor);
+      procedure check_package (cursor : ranking_crate.Cursor)
+      is
+         QR   : constant queue_record := ranking_crate.Element (cursor);
+         good : Boolean;
+      begin
+         good := passed_option_check (repository, QR.ap_index);
+         if not good then
+            TIO.Put_Line (get_catport (all_ports (QR.ap_index)) &
+                            " failed option check, removing ...");
+         end if;
+      end check_package;
+   begin
+      rank_queue.Iterate (check_package'Access);
+   end limited_sanity_check;
+
+
    ------------------------
    --  clean_repository  --
    ------------------------
@@ -86,16 +108,15 @@ package body PortScan.Packages is
       end if;
       declare
          fullpath : constant String := repository & "/" &
-           SU.To_String (all_ports (id).package_name) & ".txz";
-         command  : constant String := "pkg query -F " & fullpath &
-           " '%Ok %Ov'";
+           SU.To_String (all_ports (id).package_name);
+         command  : constant String := "pkg query -F " & fullpath & " %Ok:%Ov";
          pipe     : aliased STR.Pipes.Pipe_Stream;
          buffer   : STR.Buffered.Buffered_Stream;
          content  : SU.Unbounded_String;
          topline  : SU.Unbounded_String;
          status   : Integer;
          pkg_opts : package_crate.Map;
-         space    : Natural;
+         colon    : Natural;
 
          use type SU.Unbounded_String;
       begin
@@ -117,18 +138,18 @@ package body PortScan.Packages is
          loop
             nextline (lineblock => content, firstline => topline);
             exit when topline = SU.Null_Unbounded_String;
-            space := SU.Index (Source => topline, Pattern => " ");
-            if space < 2 then
+            colon := SU.Index (Source => topline, Pattern => ":");
+            if colon < 2 then
                raise unknown_format with SU.To_String (topline);
             end if;
             declare
                knob : String := SU.Slice (Source => topline,
-                                          Low    => space + 1,
+                                          Low    => colon + 1,
                                           High   => SU.Length (topline));
                name : SU.Unbounded_String := SU.To_Unbounded_String
                  (SU.Slice (Source => topline,
                             Low    => 1,
-                            High   => space - 1));
+                            High   => colon - 1));
                insres : Boolean;
                dummy  : package_crate.Cursor;
             begin
@@ -148,7 +169,6 @@ package body PortScan.Packages is
                end if;
             end;
          end loop;
-
          declare
             num_opts : Natural := Natural (all_ports (id).options.Length);
             arrow    : package_crate.Cursor;
@@ -173,6 +193,7 @@ package body PortScan.Packages is
                   --  Name of package option not found in port options
                   return False;
                end if;
+               arrow := package_crate.Next (arrow);
             end loop;
          end;
          --  If we get this far, the package options must match port options

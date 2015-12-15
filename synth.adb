@@ -39,7 +39,7 @@ begin
    end if;
 
 
-   PortScan.Packages.clean_repository (repository => repo);
+   PortScan.Packages.limited_sanity_check (repository => repo);
 
    return;
 
@@ -47,7 +47,7 @@ begin
    T.Put_Line ("Initial Queue length is" & OPS.queue_length'Img);
    loop
       pid := OPS.next_ignored_port;
-      if pid = OPS.port_match_failed then
+      if pid = PortScan.port_match_failed then
          exit;
       end if;
       T.Put_Line (OPS.port_name (pid) & " has been ignored: " &
