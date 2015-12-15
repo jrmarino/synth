@@ -147,7 +147,7 @@ package body PortScan is
          PR.blocks.Clear;
          PR.blocked_by.Clear;
          PR.all_reverse.Clear;
-         PR.selected_opts.Clear;
+         PR.options.Clear;
       end loop;
       ports_keys.Clear;
       rank_queue.Clear;
@@ -400,20 +400,20 @@ package body PortScan is
                  " -VPKGVERSION -VPKGFILE:T -VMAKE_JOBS_NUMBER -VIGNORE" &
                  " -VFETCH_DEPENDS -VEXTRACT_DEPENDS -VPATCH_DEPENDS" &
                  " -VBUILD_DEPENDS -VLIB_DEPENDS -VRUN_DEPENDS" &
-                 " -VSELECTED_OPTIONS";
+                 " -VSELECTED_OPTIONS -VDESELECTED_OPTIONS";
       pipe     : aliased STR.Pipes.Pipe_Stream;
       buffer   : STR.Buffered.Buffered_Stream;
       content  : SU.Unbounded_String;
       topline  : SU.Unbounded_String;
       status   : Integer;
 
-      type result_range is range 1 .. 11;
+      type result_range is range 1 .. 12;
       use type SU.Unbounded_String;
 
       --  prototypes
       procedure set_depends (line  : SU.Unbounded_String;
                              dtype : dependency_type);
-      procedure set_options (line  : SU.Unbounded_String);
+      procedure set_options (line  : SU.Unbounded_String; on : Boolean);
 
       procedure set_depends (line  : SU.Unbounded_String;
                              dtype : dependency_type)
@@ -488,7 +488,7 @@ package body PortScan is
          end loop;
       end set_depends;
 
-      procedure set_options (line  : SU.Unbounded_String)
+      procedure set_options (line  : SU.Unbounded_String; on : Boolean)
       is
          subs       : GSS.Slice_Set;
          opts_found : GSS.Slice_Number;
@@ -513,8 +513,9 @@ package body PortScan is
                opt : SU.Unbounded_String  :=
                  SU.To_Unbounded_String (GSS.Slice (subs, j));
             begin
-               if not all_ports (target).selected_opts.Contains (opt) then
-                  all_ports (target).selected_opts.Append (opt);
+               if not all_ports (target).options.Contains (opt) then
+                  all_ports (target).options.Insert (Key => opt,
+                                                     New_Item => on);
                end if;
             end;
          end loop;
@@ -551,7 +552,8 @@ package body PortScan is
             when 8 => set_depends (topline, build);
             when 9 => set_depends (topline, library);
             when 10 => set_depends (topline, runtime);
-            when 11 => set_options (topline);
+            when 11 => set_options (topline, True);
+            when 12 => set_options (topline, False);
          end case;
       end loop;
       all_ports (target).scanned := True;

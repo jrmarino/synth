@@ -3,8 +3,6 @@
 
 package PortScan.Ops is
 
-   port_match_failed : constant port_id;
-
    function port_name (id : port_id) return String;
    function next_ignored_port return port_id;
    function ignore_reason (id : port_id) return String;
@@ -50,8 +48,6 @@ private
                               shutdown);
    type dim_instruction   is array (builders) of port_id;
    type dim_builder_state is array (builders) of machine_state;
-
-   port_match_failed : constant port_id := port_id'First;
 
    function nothing_left (num_builders : builders) return Boolean;
    function shutdown_recommended (active_builders : Positive) return Boolean;

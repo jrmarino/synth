@@ -2,11 +2,13 @@
 --  Reference: ../License.txt
 
 with Ada.Directories;
+with Util.Streams.Pipes;
+with Util.Streams.Buffered;
 
 package body PortScan.Packages is
 
    package AD  renames Ada.Directories;
-
+   package STR renames Util.Streams;
 
    ------------------------
    --  clean_repository  --
@@ -70,5 +72,133 @@ package body PortScan.Packages is
          end;
       end loop;
    end scan_repository;
+
+
+   ---------------------------
+   --  passed_option_check  --
+   ---------------------------
+   function passed_option_check (repository : String; id : port_id) return
+     Boolean
+   is
+   begin
+      if id = port_match_failed or else not all_ports (id).scanned then
+         return False;
+      end if;
+      declare
+         fullpath : constant String := repository & "/" &
+           SU.To_String (all_ports (id).package_name) & ".txz";
+         command  : constant String := "pkg query -F " & fullpath &
+           " '%Ok %Ov'";
+         pipe     : aliased STR.Pipes.Pipe_Stream;
+         buffer   : STR.Buffered.Buffered_Stream;
+         content  : SU.Unbounded_String;
+         topline  : SU.Unbounded_String;
+         status   : Integer;
+         pkg_opts : package_crate.Map;
+         space    : Natural;
+
+         use type SU.Unbounded_String;
+      begin
+         if not AD.Exists (Name => fullpath) then
+            return False;
+         end if;
+         pipe.Open (Command => command);
+         buffer.Initialize (Output => null,
+                            Input  => pipe'Unchecked_Access,
+                            Size   => 4096);
+         buffer.Read (Into => content);
+         pipe.Close;
+         status := pipe.Get_Exit_Status;
+         if status /= 0 then
+            raise pkgng_execution with "pkg query " &
+              SU.To_String (all_ports (id).package_name) &
+              " (return code =" & status'Img & ")";
+         end if;
+         loop
+            nextline (lineblock => content, firstline => topline);
+            exit when topline = SU.Null_Unbounded_String;
+            space := SU.Index (Source => topline, Pattern => " ");
+            if space < 2 then
+               raise unknown_format with SU.To_String (topline);
+            end if;
+            declare
+               knob : String := SU.Slice (Source => topline,
+                                          Low    => space + 1,
+                                          High   => SU.Length (topline));
+               name : SU.Unbounded_String := SU.To_Unbounded_String
+                 (SU.Slice (Source => topline,
+                            Low    => 1,
+                            High   => space - 1));
+               insres : Boolean;
+               dummy  : package_crate.Cursor;
+            begin
+               if knob = "on" then
+                  pkg_opts.Insert (Key      => name,
+                                   New_Item => True,
+                                   Position => dummy,
+                                   Inserted => insres);
+               elsif knob = "off" then
+                  pkg_opts.Insert (Key      => name,
+                                   New_Item => False,
+                                   Position => dummy,
+                                   Inserted => insres);
+               else
+                  raise unknown_format
+                    with "knob=" & knob & "(" & SU.To_String (topline) & ")";
+               end if;
+            end;
+         end loop;
+
+         declare
+            num_opts : Natural := Natural (all_ports (id).options.Length);
+            arrow    : package_crate.Cursor;
+            arrowkey : SU.Unbounded_String;
+            knobval  : Boolean;
+            use type package_crate.Cursor;
+         begin
+            if num_opts /= Natural (pkg_opts.Length) then
+               --  Different number of options, FAIL!
+               return False;
+            end if;
+            arrow := pkg_opts.First;
+            while arrow /= package_crate.No_Element loop
+               arrowkey := package_crate.Key (arrow);
+               knobval  := pkg_opts.Element (arrowkey);
+               if all_ports (id).options.Contains (arrowkey) then
+                  if knobval /= all_ports (id).options.Element (arrowkey) then
+                     --  port option value doesn't match package option value
+                     return False;
+                  end if;
+               else
+                  --  Name of package option not found in port options
+                  return False;
+               end if;
+            end loop;
+         end;
+         --  If we get this far, the package options must match port options
+         return True;
+      end;
+
+
+   end passed_option_check;
+
+   ---------------
+   --  nextline  --
+   ----------------
+   procedure nextline (lineblock, firstline : out SU.Unbounded_String)
+   is
+      CR_loc : Natural;
+      CR : constant String (1 .. 1) := (1 => Character'Val (10));
+   begin
+      --  As long as the string isn't empty, we'll find a carriage return
+      if SU.Length (lineblock) = 0 then
+         firstline := SU.Null_Unbounded_String;
+         return;
+      end if;
+      CR_loc := SU.Index (Source => lineblock, Pattern => CR);
+      firstline := SU.To_Unbounded_String (Source => SU.Slice
+                   (Source => lineblock, Low => 1, High => CR_loc - 1));
+      SU.Delete (Source => lineblock, From => 1, Through => CR_loc);
+   end nextline;
 
 end PortScan.Packages;

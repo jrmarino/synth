@@ -19,6 +19,7 @@ package PortScan is
    type port_id   is private;
    type cpu_range is range 1 .. 32;
    type builders  is range 1 .. cpu_range'Last * 2;
+   port_match_failed : constant port_id;
 
    --  Scan the entire ports tree in order with a single, non-recursive pass
    --  Return True on success
@@ -48,6 +49,8 @@ private
    type port_id   is range -1 .. max_ports - 1;
    subtype port_index is port_id range 0 .. port_id'Last;
 
+   port_match_failed : constant port_id := port_id'First;
+
    --  skip "package" because every port has same dependency on ports-mgmt/pkg
    --  except for pkg itself.  Skip "test" because these dependencies are
    --  not required to build packages.
@@ -55,10 +58,12 @@ private
    subtype LR_set is dependency_type range library .. runtime;
 
    bmake_execution  : exception;
+   pkgng_execution  : exception;
    make_garbage     : exception;
    nonexistent_port : exception;
    circular_logic   : exception;
    seek_failure     : exception;
+   unknown_format   : exception;
 
    package subqueue is new AC.Vectors
      (Element_Type => port_index,
@@ -124,7 +129,7 @@ private
          blocked_by    : block_crate.Map;
          blocks        : block_crate.Map;
          all_reverse   : block_crate.Map;
-         selected_opts : string_crate.Vector;
+         options       : package_crate.Map;
       end record;
    type port_record_access is access all port_record;
 
