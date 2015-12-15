@@ -4,11 +4,101 @@
 with Ada.Directories;
 with Util.Streams.Pipes;
 with Util.Streams.Buffered;
+with PortScan.Ops;
 
 package body PortScan.Packages is
 
    package AD  renames Ada.Directories;
    package STR renames Util.Streams;
+   package OPS renames PortScan.Ops;
+
+
+   ---------------------------
+   --  wipe_out_repository  --
+   ---------------------------
+   procedure wipe_out_repository (repository : String)
+   is
+      pkg_search : AD.Search_Type;
+      dirent     : AD.Directory_Entry_Type;
+   begin
+      stored_packages.Clear;
+      AD.Start_Search (Search    => pkg_search,
+                       Directory => repository,
+                       Filter    => (AD.Ordinary_File => True, others => False),
+                       Pattern   => "*.txz");
+      while AD.More_Entries (Search => pkg_search) loop
+         AD.Get_Next_Entry (Search => pkg_search,
+                            Directory_Entry => dirent);
+         declare
+            pkgname  : String := repository & "/" & AD.Simple_Name (dirent);
+         begin
+            AD.Delete_File (pkgname);
+         end;
+      end loop;
+   end wipe_out_repository;
+
+
+   -----------------------------
+   --  remove_queue_packages  --
+   -----------------------------
+   procedure remove_queue_packages (repository : String)
+   is
+      procedure remove_package (cursor : ranking_crate.Cursor);
+      procedure remove_package (cursor : ranking_crate.Cursor)
+      is
+         QR       : constant queue_record := ranking_crate.Element (cursor);
+         fullpath : constant String := repository & "/" &
+           SU.To_String (all_ports (QR.ap_index).package_name);
+      begin
+         if AD.Exists (fullpath) then
+            AD.Delete_File (fullpath);
+         end if;
+      end remove_package;
+   begin
+      rank_queue.Iterate (remove_package'Access);
+   end remove_queue_packages;
+
+
+   ------------------------------
+   --  limited_package_check   --
+   ------------------------------
+   procedure limited_package_check (repository : String; id : port_id;
+                                    pkg_exists : out Boolean)
+   is
+   begin
+      pkg_exists := False;
+      if id = port_match_failed then
+         return;
+      end if;
+      declare
+         fullpath : constant String := repository & "/" &
+           SU.To_String (all_ports (id).package_name);
+         good : Boolean;
+      begin
+         if not AD.Exists (fullpath) then
+            return;
+         end if;
+         good := passed_option_check (repository, id, True);
+         if not good then
+            TIO.Put_Line (get_catport (all_ports (id)) &
+                            " failed option check, removing ...");
+            goto remove_package;
+         end if;
+         good := passed_dependency_check (repository, id, True);
+         if not good then
+            TIO.Put_Line (get_catport (all_ports (id)) &
+                            " failed dependency check, removing ...");
+            goto remove_package;
+         end if;
+         pkg_exists := True;
+         return;
+
+         <<remove_package>>
+         pkg_exists := False;
+         --  TODO: remove package
+      end;
+   end limited_package_check;
+
 
    ----------------------------
    --  limited_sanity_check  --
@@ -16,31 +106,30 @@ package body PortScan.Packages is
    procedure limited_sanity_check (repository : String)
    is
       procedure check_package (cursor : ranking_crate.Cursor);
+      procedure prune_queue (cursor : subqueue.Cursor);
+      already_built : subqueue.Vector;
+
       procedure check_package (cursor : ranking_crate.Cursor)
       is
-         QR       : constant queue_record := ranking_crate.Element (cursor);
-         fullpath : constant String := repository & "/" &
-           SU.To_String (all_ports (QR.ap_index).package_name);
-         good : Boolean;
+         QR : constant queue_record := ranking_crate.Element (cursor);
+         package_in_place : Boolean;
       begin
-         if not AD.Exists (fullpath) then
-            return;
-         end if;
-
-         good := passed_option_check (repository, QR.ap_index, True);
-         if not good then
-            TIO.Put_Line (get_catport (all_ports (QR.ap_index)) &
-                            " failed option check, removing ...");
-            return;
-         end if;
-         good := passed_dependency_check (repository, QR.ap_index, True);
-         if not good then
-            TIO.Put_Line (get_catport (all_ports (QR.ap_index)) &
-                            " failed dependency check, removing ...");
+         limited_package_check (repository => repository, id => QR.ap_index,
+                                pkg_exists => package_in_place);
+         if package_in_place then
+            already_built.Append (New_Item => QR.ap_index);
          end if;
       end check_package;
+
+      procedure prune_queue (cursor : subqueue.Cursor)
+      is
+         id : constant port_index := subqueue.Element (cursor);
+      begin
+         OPS.cascade_successful_build (id);
+      end prune_queue;
    begin
       rank_queue.Iterate (check_package'Access);
+      already_built.Iterate (prune_queue'Access);
    end limited_sanity_check;
 
 
@@ -94,7 +183,7 @@ package body PortScan.Packages is
       AD.Start_Search (Search    => pkg_search,
                        Directory => repository,
                        Filter    => (AD.Ordinary_File => True, others => False),
-                       Pattern   => "");
+                       Pattern   => "*.txz");
       while AD.More_Entries (Search => pkg_search) loop
          AD.Get_Next_Entry (Search => pkg_search,
                             Directory_Entry => dirent);
@@ -277,6 +366,13 @@ package body PortScan.Packages is
                then
                   --  The version that the package requires differs from the
                   --  version that the ports tree will now produce
+                  return False;
+               end if;
+               if not AD.Exists (repository & "/" & SU.To_String (
+                                   all_ports (target_id).package_name))
+               then
+                  --  Even if all the versions are matching, we still need
+                  --  the package to be in repository.
                   return False;
                end if;
             end;

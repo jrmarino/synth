@@ -17,6 +17,18 @@ package PortScan.Packages is
    --  clean_repository().  These old packages will not interfere at this step.
    procedure limited_sanity_check (repository : String);
 
+   --  A public component of limited_sanity_check that can be used to check
+   --  individual packages (it's not queue based)
+   procedure limited_package_check (repository : String; id : port_id;
+                                    pkg_exists : out Boolean);
+
+   --  Iterate through the final build queue to remove any packages that
+   --  match the current package names
+   procedure remove_queue_packages (repository : String);
+
+   --  This procedure empties the given repository without discrimination.
+   --  (Well, it's limited to "*.txz" matches, but normally that's everything)
+   procedure wipe_out_repository (repository : String);
 
 private
 
@@ -38,5 +50,6 @@ private
 
    procedure scan_repository (repository : String);
    procedure nextline (lineblock, firstline : out SU.Unbounded_String);
+
 
 end PortScan.Packages;

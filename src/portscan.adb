@@ -40,8 +40,8 @@ package body PortScan is
    ------------------------
    --  scan_single_port  --
    ------------------------
-   function scan_single_port (repository, portsdir, catport : String;
-                              always_build : Boolean := False) return Boolean
+   function scan_single_port (repository, portsdir, catport : String)
+                              return Boolean
    is
       procedure dig (cursor : block_crate.Cursor);
       target    : port_index;
@@ -93,18 +93,6 @@ package body PortScan is
          return False;
       end if;
       populate_port_data (portsdir, target);
-
-      if not always_build then
-         declare
-            pkgname : String := repository & "/" &
-              SU.To_String (all_ports (target).package_name);
-         begin
-            if AD.Exists (pkgname) then
-               all_ports (target).scanned := False;
-               return False;
-            end if;
-         end;
-      end if;
       all_ports (target).blocked_by.Iterate (dig'Access);
       return not aborted;
 

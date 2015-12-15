@@ -10,7 +10,7 @@ procedure synth
 is
    pid : PortScan.port_id;
    good_scan : Boolean;
-   num_slaves : PortScan.builders := 32;
+   num_slaves : PortScan.builders := 4;   --  32;
    repo : constant String := "/usr/local/boom/data/packages/dev-potential/All";
 
    package T   renames Ada.Text_IO;
@@ -23,7 +23,6 @@ begin
 
 --     good_scan := PortScan.scan_single_port (portsdir => "/usr/xports",
 --                                             catport => "editors/joe",
---                                             always_build => True,
 --                                             repository => repo);
 --     if not good_scan then
 --        return;
@@ -32,7 +31,6 @@ begin
 
    good_scan := PortScan.scan_single_port (portsdir => "/usr/xports",
                                            catport => "mail/thunderbird",
-                                           always_build => True,
                                            repository => repo);
    if good_scan then
       PortScan.set_build_priority;
@@ -43,7 +41,7 @@ begin
 
    PortScan.Packages.limited_sanity_check (repository => repo);
 
-   return;
+   --  return;
 
    T.Put_Line ("");
    T.Put_Line ("Initial Queue length is" & OPS.queue_length'Img);
