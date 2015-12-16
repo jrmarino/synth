@@ -10,6 +10,8 @@ with Ada.Containers.Hashed_Maps;
 with Ada.Containers.Ordered_Sets;
 with Ada.Containers.Vectors;
 
+with Definitions;  use Definitions;
+
 package PortScan is
 
    package SU  renames Ada.Strings.Unbounded;
@@ -17,8 +19,6 @@ package PortScan is
    package TIO renames Ada.Text_IO;
 
    type port_id   is private;
-   type cpu_range is range 1 .. 32;
-   type builders  is range 1 .. cpu_range'Last * 2;
    port_match_failed : constant port_id;
 
    --  Scan the entire ports tree in order with a single, non-recursive pass
@@ -39,6 +39,12 @@ package PortScan is
 
    --  Wipe out all scan data so new scan can be performed
    procedure reset_ports_tree;
+
+   --  Returns the number of cores.  The set_cores procedure must be run first.
+   --  set_cores was private previously, but we need the information to set
+   --  intelligent defaults for the configuration file.
+   procedure set_cores;
+   function cores_available return cpu_range;
 
 private
 
@@ -140,7 +146,7 @@ private
    ports_keys   : portkey_crate.Map;
    make_queue   : dim_make_queue;
    rank_queue   : ranking_crate.Set;
-   number_cores : cpu_range;
+   number_cores : cpu_range  := cpu_range'First;
    lot_number   : jobs_type  := 1;
    lot_counter  : port_index := 0;
    last_port    : port_index := 0;
@@ -162,7 +168,6 @@ private
    procedure wipe_make_queue;
 
    --  some helper routines
-   procedure set_cores;
    procedure nextline (lineblock, firstline : out SU.Unbounded_String);
    function find_colon (Source : String) return Natural;
    function scrub_phase (Source : String) return SU.Unbounded_String;

@@ -583,6 +583,15 @@ package body PortScan is
    end set_cores;
 
 
+   -----------------------
+   --  cores_available  --
+   -----------------------
+   function cores_available return cpu_range is
+   begin
+      return number_cores;
+   end cores_available;
+
+
    --------------------------
    --  prescan_ports_tree  --
    --------------------------
@@ -608,7 +617,6 @@ package body PortScan is
          end if;
       end quick_scan;
    begin
-      set_cores;
       AD.Start_Search (Search    => Search,
                        Directory => portsdir,
                        Filter    => (AD.Directory => True, others => False),

@@ -3,20 +3,35 @@
 
 with PortScan.Ops;
 with PortScan.Packages;
+with Parameters;
 with Ada.Text_IO;
 with Ada.Numerics.Discrete_Random;
+with Ada.Strings.Unbounded;
+
+with Definitions;
 
 procedure synth
 is
    pid : PortScan.port_id;
    good_scan : Boolean;
-   num_slaves : PortScan.builders := 4;   --  32;
-   repo : constant String := "/usr/local/boom/data/packages/dev-potential/All";
+   --  repo : constant String := "/usr/local/boom/data/packages/dev-potential/All";
 
    package T   renames Ada.Text_IO;
    package OPS renames PortScan.Ops;
    use type PortScan.port_id;
+
+   function USS (US : Ada.Strings.Unbounded.Unbounded_String) return String;
+   function USS (US : Ada.Strings.Unbounded.Unbounded_String) return String is
+   begin
+      return Ada.Strings.Unbounded.To_String (US);
+   end USS;
 begin
+
+   PortScan.set_cores;
+   if not Parameters.load_configuration (num_cores => PortScan.cores_available)
+   then
+      return;
+   end if;
 
    --  needs to read environment or make -C <anyport> -V PORTSDIR
 --     good_scan := PortScan.scan_entire_ports_tree (portsdir => "/usr/xports");
@@ -29,9 +44,11 @@ begin
 --     end if;
 
 
-   good_scan := PortScan.scan_single_port (portsdir => "/usr/xports",
-                                           catport => "mail/thunderbird",
-                                           repository => repo);
+   good_scan := PortScan.scan_single_port
+     (portsdir => USS (Parameters.configuration.dir_portsdir),
+      catport => "mail/thunderbird",
+      repository => USS (Parameters.configuration.dir_repository));
+
    if good_scan then
       PortScan.set_build_priority;
    else
@@ -39,7 +56,8 @@ begin
    end if;
 
 
-   PortScan.Packages.limited_sanity_check (repository => repo);
+   PortScan.Packages.limited_sanity_check
+     (repository => USS (Parameters.configuration.dir_repository));
 
    --  return;
 
@@ -97,7 +115,8 @@ begin
 --           end;
 --        end loop;
 --     end;
-       OPS.parallel_bulk_run (num_builders => num_slaves);
+   OPS.parallel_bulk_run
+     (num_builders => Parameters.configuration.num_builders);
 
 --     PortScan.release_ports_tree;
 
