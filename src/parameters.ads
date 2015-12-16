@@ -13,6 +13,7 @@ package Parameters is
    live_system : constant String := "Live System";
    type configuration_record is
       record
+         operating_sys   : SU.Unbounded_String;
          dir_repository  : SU.Unbounded_String;
          dir_packages    : SU.Unbounded_String;
          dir_portsdir    : SU.Unbounded_String;
@@ -21,11 +22,11 @@ package Parameters is
          dir_localbase   : SU.Unbounded_String;
          dir_logs        : SU.Unbounded_String;
          dir_ccache      : SU.Unbounded_String;
+         dir_options     : SU.Unbounded_String;
          num_builders    : builders;
          jobs_limit      : builders;
          tmpfs_workdir   : Boolean;
          tmpfs_localbase : Boolean;
-         operating_sys   : SU.Unbounded_String;
       end record;
 
    configuration : configuration_record;
@@ -66,6 +67,7 @@ private
    conf_location  : constant String := "/usr/local/etc/synth.ini";
    std_ports_loc  : constant String := "/usr/ports";
    std_distfiles  : constant String := "/usr/ports/distfiles";
+   std_options    : constant String := "/var/db/ports";
    std_opsys      : constant String := "UnKnown";
    no_ccache      : constant String := "disabled";
 
@@ -78,9 +80,10 @@ private
    Field_07 : constant String := "Directory_ccache";
    Field_08 : constant String := "Number_of_builders";
    Field_09 : constant String := "Max_jobs_per_builder";
-   Field_10 : constant String := "TmpFS_workdir";
-   Field_11 : constant String := "TmpFS_localbase";
-   Field_12 : constant String := "Operating_System";
+   Field_10 : constant String := "Tmpfs_workdir";
+   Field_11 : constant String := "Tmpfs_localbase";
+   Field_12 : constant String := "Operating_system";
+   Field_13 : constant String := "Directory_options";
 
    procedure default_parallelism (num_cores : cpu_range;
                                   num_builders : out Integer;

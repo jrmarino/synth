@@ -116,6 +116,9 @@ package body Parameters is
            extract_string (profile, Field_12, query_opsys);
       end if;
 
+      configuration.dir_options :=
+        extract_string (profile, Field_13, std_options);
+
       if not fields_present then
          declare
             contents : String := generated_section;
@@ -236,7 +239,8 @@ package body Parameters is
         param_set (profile, Field_09) and then
         param_set (profile, Field_10) and then
         param_set (profile, Field_11) and then
-        param_set (profile, Field_12);
+        param_set (profile, Field_12) and then
+        param_set (profile, Field_13);
    end all_params_present;
 
 
@@ -269,9 +273,11 @@ package body Parameters is
       end TFS;
    begin
       return
+        Field_12 & USS (configuration.operating_sys) &
         Field_01 & USS (configuration.dir_packages) &
         Field_02 & USS (configuration.dir_repository) &
         Field_03 & USS (configuration.dir_portsdir) &
+        Field_13 & USS (configuration.dir_options) &
         Field_04 & USS (configuration.dir_distfiles) &
         Field_05 & USS (configuration.dir_buildbase) &
         Field_06 & USS (configuration.dir_logs) &
@@ -279,8 +285,7 @@ package body Parameters is
         Field_08 & BDS (configuration.num_builders) &
         Field_09 & BDS (configuration.jobs_limit) &
         Field_10 & TFS (configuration.tmpfs_workdir) &
-        Field_11 & TFS (configuration.tmpfs_localbase) &
-        Field_12 & USS (configuration.operating_sys);
+        Field_11 & TFS (configuration.tmpfs_localbase);
    end generated_section;
 
 
