@@ -25,6 +25,7 @@ package Parameters is
          jobs_limit      : builders;
          tmpfs_workdir   : Boolean;
          tmpfs_localbase : Boolean;
+         operating_sys   : SU.Unbounded_String;
       end record;
 
    configuration : configuration_record;
@@ -65,6 +66,7 @@ private
    conf_location  : constant String := "/usr/local/etc/synth.ini";
    std_ports_loc  : constant String := "/usr/ports";
    std_distfiles  : constant String := "/usr/ports/distfiles";
+   std_opsys      : constant String := "UnKnown";
    no_ccache      : constant String := "disabled";
 
    Field_01 : constant String := "Directory_packages";
@@ -78,6 +80,7 @@ private
    Field_09 : constant String := "Max_jobs_per_builder";
    Field_10 : constant String := "TmpFS_workdir";
    Field_11 : constant String := "TmpFS_localbase";
+   Field_12 : constant String := "Operating_System";
 
    procedure default_parallelism (num_cores : cpu_range;
                                   num_builders : out Integer;
@@ -96,6 +99,8 @@ private
    function all_params_present (profile : String) return Boolean;
    function generated_section return String;
    function param_set (profile, field : String) return Boolean;
+   function query_generic (value : String) return String;
    function query_distfiles return String;
+   function query_opsys return String;
 
 end Parameters;

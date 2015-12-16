@@ -108,6 +108,14 @@ package body Parameters is
       configuration.tmpfs_localbase :=
         extract_boolean (profile, Field_11, True);
 
+      if param_set (profile, Field_12) then
+         configuration.operating_sys :=
+           extract_string (profile, Field_12, std_opsys);
+      else
+         configuration.operating_sys :=
+           extract_string (profile, Field_12, query_opsys);
+      end if;
+
       if not fields_present then
          declare
             contents : String := generated_section;
@@ -227,7 +235,8 @@ package body Parameters is
         param_set (profile, Field_08) and then
         param_set (profile, Field_09) and then
         param_set (profile, Field_10) and then
-        param_set (profile, Field_11);
+        param_set (profile, Field_11) and then
+        param_set (profile, Field_12);
    end all_params_present;
 
 
@@ -270,18 +279,37 @@ package body Parameters is
         Field_08 & BDS (configuration.num_builders) &
         Field_09 & BDS (configuration.jobs_limit) &
         Field_10 & TFS (configuration.tmpfs_workdir) &
-        Field_11 & TFS (configuration.tmpfs_localbase);
+        Field_11 & TFS (configuration.tmpfs_localbase) &
+        Field_12 & USS (configuration.operating_sys);
    end generated_section;
 
 
    -----------------------
    --  query_distfiles  --
    -----------------------
-   function query_distfiles return String
+   function query_distfiles return String is
+   begin
+      return query_generic ("DISTDIR");
+   end query_distfiles;
+
+
+   -------------------
+   --  query_opsys  --
+   -------------------
+   function query_opsys return String is
+   begin
+      return query_generic ("OPSYS");
+   end query_opsys;
+
+
+   ---------------------
+   --  query_generic  --
+   ---------------------
+   function query_generic (value : String) return String
    is
       command  : constant String := "make -C " &
         SU.To_String (configuration.dir_portsdir) &
-        "/ports-mgmt/pkg -V DISTDIR";
+        "/ports-mgmt/pkg -V " & value;
       pipe     : aliased STR.Pipes.Pipe_Stream;
       buffer   : STR.Buffered.Buffered_Stream;
       content  : SU.Unbounded_String;
@@ -302,7 +330,7 @@ package body Parameters is
       CR_loc := SU.Index (Source => content, Pattern => CR);
 
       return SU.Slice (Source => content, Low => 1, High => CR_loc - 1);
-   end query_distfiles;
+   end query_generic;
 
 
 end Parameters;
