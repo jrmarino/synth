@@ -49,7 +49,7 @@ private
                                      return Boolean;
 
    procedure scan_repository (repository : String);
-   procedure nextline (lineblock, firstline : out SU.Unbounded_String);
+   procedure nextline (lineblock, firstline : out JT.Text);
 
 
 end PortScan.Packages;

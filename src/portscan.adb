@@ -1,7 +1,6 @@
 --  This file is covered by the Internet Software Consortium (ISC) License
 --  Reference: ../License.txt
 
-with Ada.Strings;
 with Ada.Strings.Hash;
 with Ada.Directories;
 with GNAT.Regpat;
@@ -14,7 +13,6 @@ with Ada.Exceptions;
 package body PortScan is
 
    package AD  renames Ada.Directories;
-   package AS  renames Ada.Strings;
    package EX  renames Ada.Exceptions;
    package RGX renames GNAT.Regpat;
    package STR renames Util.Streams;
@@ -46,7 +44,7 @@ package body PortScan is
       procedure dig (cursor : block_crate.Cursor);
       target    : port_index;
       aborted   : Boolean := False;
-      uscatport : SU.Unbounded_String := SU.To_Unbounded_String (catport);
+      uscatport : JT.Text := JT.SUS (catport);
 
       procedure dig (cursor : block_crate.Cursor)
       is
@@ -122,9 +120,9 @@ package body PortScan is
          PR.sequence_id   := 0;
          PR.key_cursor    := portkey_crate.No_Element;
          PR.jobs          := 1;
-         PR.ignore_reason := SU.Null_Unbounded_String;
-         PR.port_version  := SU.Null_Unbounded_String;
-         PR.package_name  := SU.Null_Unbounded_String;
+         PR.ignore_reason := JT.blank;
+         PR.port_version  := JT.blank;
+         PR.package_name  := JT.blank;
          PR.ignored       := False;
          PR.scanned       := False;
          PR.rev_scanned   := False;
@@ -391,35 +389,32 @@ package body PortScan is
                  " -VSELECTED_OPTIONS -VDESELECTED_OPTIONS";
       pipe     : aliased STR.Pipes.Pipe_Stream;
       buffer   : STR.Buffered.Buffered_Stream;
-      content  : SU.Unbounded_String;
-      topline  : SU.Unbounded_String;
+      content  : JT.Text;
+      topline  : JT.Text;
       status   : Integer;
 
       type result_range is range 1 .. 12;
-      use type SU.Unbounded_String;
 
       --  prototypes
-      procedure set_depends (line  : SU.Unbounded_String;
-                             dtype : dependency_type);
-      procedure set_options (line  : SU.Unbounded_String; on : Boolean);
+      procedure set_depends (line  : JT.Text; dtype : dependency_type);
+      procedure set_options (line  : JT.Text; on : Boolean);
 
-      procedure set_depends (line  : SU.Unbounded_String;
-                             dtype : dependency_type)
+      procedure set_depends (line  : JT.Text; dtype : dependency_type)
       is
          subs       : GSS.Slice_Set;
          deps_found : GSS.Slice_Number;
-         trimline   : constant SU.Unbounded_String := SU.Trim (line, AS.Both);
+         trimline   : constant JT.Text := JT.trim (line);
          zero_deps  : constant GSS.Slice_Number := GSS.Slice_Number (0);
          dirlen     : constant Natural := portsdir'Length;
 
          use type GSS.Slice_Number;
       begin
-         if trimline = SU.Null_Unbounded_String then
+         if JT.IsBlank (trimline) then
             return;
          end if;
 
          GSS.Create (S          => subs,
-                     From       => SU.To_String (trimline),
+                     From       => JT.USS (trimline),
                      Separators => " " & LAT.HT,
                      Mode       => GSS.Multiple);
          deps_found :=  GSS.Slice_Count (S => subs);
@@ -438,7 +433,7 @@ package body PortScan is
             begin
                if colon < 2 then
                   raise make_garbage
-                    with dtype'Img & ": " & SU.To_String (trimline) &
+                    with dtype'Img & ": " & JT.USS (trimline) &
                     " (" & catport & ")";
                end if;
                if fulldep'Length > colon1 + dirlen + 5 and then
@@ -476,20 +471,20 @@ package body PortScan is
          end loop;
       end set_depends;
 
-      procedure set_options (line  : SU.Unbounded_String; on : Boolean)
+      procedure set_options (line  : JT.Text; on : Boolean)
       is
          subs       : GSS.Slice_Set;
          opts_found : GSS.Slice_Number;
-         trimline   : constant SU.Unbounded_String := SU.Trim (line, AS.Both);
+         trimline   : constant JT.Text := JT.trim (line);
          zero_opts  : constant GSS.Slice_Number := GSS.Slice_Number (0);
 
          use type GSS.Slice_Number;
       begin
-         if trimline = SU.Null_Unbounded_String then
+         if JT.IsBlank (trimline) then
             return;
          end if;
          GSS.Create (S          => subs,
-                     From       => SU.To_String (trimline),
+                     From       => JT.USS (trimline),
                      Separators => " ",
                      Mode       => GSS.Multiple);
          opts_found :=  GSS.Slice_Count (S => subs);
@@ -498,8 +493,7 @@ package body PortScan is
          end if;
          for j in 1 .. opts_found loop
             declare
-               opt : SU.Unbounded_String  :=
-                 SU.To_Unbounded_String (GSS.Slice (subs, j));
+               opt : JT.Text  := JT.SUS (GSS.Slice (subs, j));
             begin
                if not all_ports (target).options.Contains (opt) then
                   all_ports (target).options.Insert (Key => opt,
@@ -529,11 +523,10 @@ package body PortScan is
             when 1 => all_ports (target).port_version := topline;
             when 2 => all_ports (target).package_name := topline;
             when 3 => all_ports (target).jobs :=
-                 jobs_type (Integer'Value (SU.To_String (topline)));
+                 jobs_type (Integer'Value (JT.USS (topline)));
             when 4 =>
                all_ports (target).ignore_reason := topline;
-               all_ports (target).ignored :=
-                 topline /= SU.Null_Unbounded_String;
+               all_ports (target).ignored := not JT.IsBlank (topline);
             when 5 => set_depends (topline, fetch);
             when 6 => set_depends (topline, extract);
             when 7 => set_depends (topline, patch);
@@ -560,7 +553,7 @@ package body PortScan is
       command  : constant String := "/sbin/sysctl hw.ncpu";
       pipe     : aliased STR.Pipes.Pipe_Stream;
       buffer   : STR.Buffered.Buffered_Stream;
-      content  : SU.Unbounded_String;
+      content  : JT.Text;
    begin
       --  expected output: "hw.ncpu: C" where C is integer
       pipe.Open (Command => command);
@@ -570,7 +563,7 @@ package body PortScan is
       buffer.Read (Into => content);
       pipe.Close;
       declare
-         str_content : String := SU.To_String (content);
+         str_content : String := JT.USS (content);
          ncpu        : String := str_content (10 .. str_content'Last - 1);
          number      : Positive := Integer'Value (ncpu);
       begin
@@ -606,8 +599,8 @@ package body PortScan is
       --  push an initial port_rec into the all_ports container
       procedure quick_scan (cursor : string_crate.Cursor)
       is
-         category : constant String := SU.To_String
-                    (string_crate.Element (Position => cursor));
+         category : constant String :=
+           JT.USS (string_crate.Element (Position => cursor));
       begin
          if AD.Exists (portsdir & "/" & category & "/Makefile") then
             grep_Makefile (portsdir => portsdir, category => category);
@@ -627,7 +620,7 @@ package body PortScan is
          declare
             category : constant String := AD.Simple_Name (Dir_Ent);
          begin
-            categories.Append (New_Item => SU.To_Unbounded_String (category));
+            categories.Append (New_Item => JT.SUS (category));
          end;
       end loop;
       AD.End_Search (Search => Search);
@@ -639,15 +632,15 @@ package body PortScan is
    ---------------
    --  nextline  --
    ----------------
-   procedure nextline (lineblock, firstline : out SU.Unbounded_String)
+   procedure nextline (lineblock, firstline : out JT.Text)
    is
       CR_loc : Natural;
       CR : constant String (1 .. 1) := (1 => Character'Val (10));
    begin
-      CR_loc := SU.Index (Source => lineblock, Pattern => CR);
-      firstline := SU.To_Unbounded_String (Source => SU.Slice
-                   (Source => lineblock, Low => 1, High => CR_loc - 1));
-      SU.Delete (Source => lineblock, From => 1, Through => CR_loc);
+      CR_loc := JT.SU.Index (Source => lineblock, Pattern => CR);
+      firstline := JT.SUS
+        (JT.SU.Slice (Source => lineblock, Low => 1, High => CR_loc - 1));
+      JT.SU.Delete (Source => lineblock, From => 1, Through => CR_loc);
    end nextline;
 
 
@@ -672,15 +665,15 @@ package body PortScan is
    -------------------
    --  scrub_phase  --
    -------------------
-   function scrub_phase (Source : String) return SU.Unbounded_String
+   function scrub_phase (Source : String) return JT.Text
    is
       reset : constant String (1 .. Source'Length) := Source;
       colon : constant Natural := find_colon (reset);
    begin
       if colon = 0 then
-         return SU.To_Unbounded_String (reset);
+         return JT.SUS (reset);
       end if;
-      return SU.To_Unbounded_String (reset (1 .. colon - 1));
+      return JT.SUS (reset (1 .. colon - 1));
    end scrub_phase;
 
 
@@ -709,8 +702,7 @@ package body PortScan is
             RGX.Match (Self => regex, Data => line, Matches => matches);
             if matches (0) /= RGX.No_Match then
                declare
-                  portkey : constant SU.Unbounded_String :=
-                    SU.To_Unbounded_String (category & '/' &
+                  portkey : constant JT.Text := JT.SUS (category & '/' &
                     line (matches (1).First .. matches (1).Last));
                begin
                   ports_keys.Insert (Key      => portkey,
@@ -755,8 +747,7 @@ package body PortScan is
                             Directory_Entry => inner_dirent);
          declare
             portname  : constant String := AD.Simple_Name (inner_dirent);
-            portkey   : constant SU.Unbounded_String :=
-                        SU.To_Unbounded_String (category & "/" & portname);
+            portkey   : constant JT.Text := JT.SUS (category & "/" & portname);
             kc        : portkey_crate.Cursor;
             success   : Boolean;
          begin
@@ -785,21 +776,11 @@ package body PortScan is
    -----------------
    --  port_hash  --
    -----------------
-   function port_hash (key : SU.Unbounded_String) return AC.Hash_Type is
+   function port_hash (key : JT.Text) return AC.Hash_Type is
    begin
-      return Ada.Strings.Hash (SU.To_String (key));
+      return Ada.Strings.Hash (JT.USS (key));
    end port_hash;
 
-
-   -----------------
-   --  port_ekey  --
-   -----------------
-   function port_ekey (left, right : SU.Unbounded_String) return Boolean
-   is
-      use type SU.Unbounded_String;
-   begin
-      return left = right;
-   end port_ekey;
 
 
    ------------------
@@ -840,9 +821,9 @@ package body PortScan is
    -------------------
    function get_catport (PR : port_record) return String
    is
-      catport  : SU.Unbounded_String := portkey_crate.Key (PR.key_cursor);
+      catport  : JT.Text := portkey_crate.Key (PR.key_cursor);
    begin
-      return SU.To_String (catport);
+      return JT.USS (catport);
    end get_catport;
 
 

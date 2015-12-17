@@ -74,7 +74,7 @@ package body Parameters is
         extract_string (profile, Field_01, LS_Packages);
 
       configuration.dir_repository := configuration.dir_packages;
-      SU.Append (configuration.dir_repository, "/All");
+      JT.SU.Append (configuration.dir_repository, "/All");
 
       configuration.dir_portsdir :=
         extract_string (profile, Field_03, std_ports_loc);
@@ -173,12 +173,10 @@ package body Parameters is
    ----------------------
    --  extract_string  --
    ----------------------
-   function extract_string  (profile, mark, default : String)
-                             return SU.Unbounded_String
+   function extract_string  (profile, mark, default : String) return JT.Text
    is
    begin
-      return SU.To_Unbounded_String
-        (internal_config.Value_Of (profile, mark, default));
+      return JT.SUS (internal_config.Value_Of (profile, mark, default));
    end extract_string;
 
 
@@ -249,13 +247,13 @@ package body Parameters is
    -------------------------
    function generated_section return String
    is
-      function USS (US : SU.Unbounded_String) return String;
+      function USS (US : JT.Text) return String;
       function BDS (BD : builders) return String;
       function TFS (TF : Boolean) return String;
 
-      function USS (US : SU.Unbounded_String) return String is
+      function USS (US : JT.Text) return String is
       begin
-         return "= " & SU.To_String (US) & LAT.LF;
+         return "= " & JT.USS (US) & LAT.LF;
       end USS;
       function BDS (BD : builders) return String
       is
@@ -313,11 +311,10 @@ package body Parameters is
    function query_generic (value : String) return String
    is
       command  : constant String := "make -C " &
-        SU.To_String (configuration.dir_portsdir) &
-        "/ports-mgmt/pkg -V " & value;
+        JT.USS (configuration.dir_portsdir) & "/ports-mgmt/pkg -V " & value;
       pipe     : aliased STR.Pipes.Pipe_Stream;
       buffer   : STR.Buffered.Buffered_Stream;
-      content  : SU.Unbounded_String;
+      content  : JT.Text;
       status   : Integer;
       CR_loc   : Integer;
       CR       : constant String (1 .. 1) := (1 => Character'Val (10));
@@ -332,9 +329,9 @@ package body Parameters is
       if status /= 0 then
          raise make_query with command;
       end if;
-      CR_loc := SU.Index (Source => content, Pattern => CR);
+      CR_loc := JT.SU.Index (Source => content, Pattern => CR);
 
-      return SU.Slice (Source => content, Low => 1, High => CR_loc - 1);
+      return JT.SU.Slice (Source => content, Low => 1, High => CR_loc - 1);
    end query_generic;
 
 

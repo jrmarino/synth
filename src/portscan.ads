@@ -5,16 +5,16 @@
 --  too new: Container_Checks, Tampering_Check
 
 with Ada.Text_IO;
-with Ada.Strings.Unbounded;
 with Ada.Containers.Hashed_Maps;
 with Ada.Containers.Ordered_Sets;
 with Ada.Containers.Vectors;
 
+with JohnnyText;
 with Definitions;  use Definitions;
 
 package PortScan is
 
-   package SU  renames Ada.Strings.Unbounded;
+   package JT  renames JohnnyText;
    package AC  renames Ada.Containers;
    package TIO renames Ada.Text_IO;
 
@@ -76,9 +76,9 @@ private
       Index_Type   => port_index);
 
    package string_crate is new AC.Vectors
-     (Element_Type => SU.Unbounded_String,
+     (Element_Type => JT.Text,
       Index_Type   => port_index,
-      "="          => SU."=");
+      "="          => JT.SU."=");
 
    type queue_record is
       record
@@ -92,20 +92,19 @@ private
    package ranking_crate is new AC.Ordered_Sets  (Element_Type => queue_record);
 
    --  Functions for portkey_crate and package_crate definitions
-   function port_hash (key : SU.Unbounded_String) return AC.Hash_Type;
-   function port_ekey (left, right : SU.Unbounded_String) return Boolean;
+   function port_hash (key : JT.Text) return AC.Hash_Type;
 
    package portkey_crate is new AC.Hashed_Maps
-     (Key_Type        => SU.Unbounded_String,
+     (Key_Type        => JT.Text,
       Element_Type    => port_index,
       Hash            => port_hash,
-      Equivalent_Keys => port_ekey);
+      Equivalent_Keys => JT.equivalent);
 
    package package_crate is new AC.Hashed_Maps
-     (Key_Type        => SU.Unbounded_String,
+     (Key_Type        => JT.Text,
       Element_Type    => Boolean,
       Hash            => port_hash,
-      Equivalent_Keys => port_ekey);
+      Equivalent_Keys => JT.equivalent);
 
    --  Functions for block_crate definitions
    function block_hash (key : port_index) return AC.Hash_Type;
@@ -122,9 +121,9 @@ private
          sequence_id   : port_index           := 0;
          key_cursor    : portkey_crate.Cursor := portkey_crate.No_Element;
          jobs          : jobs_type            := 1;
-         ignore_reason : SU.Unbounded_String  := SU.Null_Unbounded_String;
-         port_version  : SU.Unbounded_String  := SU.Null_Unbounded_String;
-         package_name  : SU.Unbounded_String  := SU.Null_Unbounded_String;
+         ignore_reason : JT.Text              := JT.blank;
+         port_version  : JT.Text              := JT.blank;
+         package_name  : JT.Text              := JT.blank;
          ignored       : Boolean              := False;
          scanned       : Boolean              := False;
          rev_scanned   : Boolean              := False;
@@ -168,9 +167,9 @@ private
    procedure wipe_make_queue;
 
    --  some helper routines
-   procedure nextline (lineblock, firstline : out SU.Unbounded_String);
+   procedure nextline (lineblock, firstline : out JT.Text);
    function find_colon (Source : String) return Natural;
-   function scrub_phase (Source : String) return SU.Unbounded_String;
+   function scrub_phase (Source : String) return JT.Text;
    function get_catport (PR : port_record) return String;
 
 end PortScan;

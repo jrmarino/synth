@@ -431,7 +431,7 @@ package body PortScan.Ops is
       then
          return "Invalid port ID";
       end if;
-      return SU.To_String (all_ports (id).ignore_reason);
+      return JT.USS (all_ports (id).ignore_reason);
    end ignore_reason;
 
 

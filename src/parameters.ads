@@ -1,28 +1,28 @@
 --  This file is covered by the Internet Software Consortium (ISC) License
 --  Reference: ../License.txt
 
-with Ada.Strings.Unbounded;
+with JohnnyText;
 with Config;
 
 with Definitions;  use Definitions;
 
 package Parameters is
 
-   package SU  renames Ada.Strings.Unbounded;
+   package JT renames JohnnyText;
 
    live_system : constant String := "Live System";
    type configuration_record is
       record
-         operating_sys   : SU.Unbounded_String;
-         dir_repository  : SU.Unbounded_String;
-         dir_packages    : SU.Unbounded_String;
-         dir_portsdir    : SU.Unbounded_String;
-         dir_distfiles   : SU.Unbounded_String;
-         dir_buildbase   : SU.Unbounded_String;
-         dir_localbase   : SU.Unbounded_String;
-         dir_logs        : SU.Unbounded_String;
-         dir_ccache      : SU.Unbounded_String;
-         dir_options     : SU.Unbounded_String;
+         operating_sys   : JT.Text;
+         dir_repository  : JT.Text;
+         dir_packages    : JT.Text;
+         dir_portsdir    : JT.Text;
+         dir_distfiles   : JT.Text;
+         dir_buildbase   : JT.Text;
+         dir_localbase   : JT.Text;
+         dir_logs        : JT.Text;
+         dir_ccache      : JT.Text;
+         dir_options     : JT.Text;
          num_builders    : builders;
          jobs_limit      : builders;
          tmpfs_workdir   : Boolean;
@@ -42,7 +42,7 @@ package Parameters is
 private
 
    internal_config : Config.Configuration;
-   distfiles_loc   : SU.Unbounded_String;
+   distfiles_loc   : JT.Text;
 
    make_query      : exception;
 
@@ -91,8 +91,7 @@ private
 
    --  These pull requested configuration information.  If they aren't set,
    --  they'll set it to the default (which it also returns);
-   function extract_string  (profile, mark, default : String)
-                             return SU.Unbounded_String;
+   function extract_string  (profile, mark, default : String) return JT.Text;
    function extract_boolean (profile, mark : String; default : Boolean)
                              return Boolean;
    function extract_integer (profile, mark : String; default : Integer)
