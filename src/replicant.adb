@@ -274,6 +274,18 @@ package body Replicant is
    end populate_var_folder;
 
 
+   --------------------------
+   --  populate_localbase  --
+   --------------------------
+   procedure populate_localbase  (path : String)
+   is
+      command : constant String := "/usr/sbin/mtree -p " & path &
+        " -f /etc/mtree/BSD.local.dist -deqU";
+   begin
+      execute (command, True);
+   end populate_localbase;
+
+
    ---------------
    --  execute  --
    ---------------
@@ -373,6 +385,7 @@ package body Replicant is
       end if;
 
       populate_var_folder (location (slave_base, var));
+      populate_localbase  (location (slave_base, usr_local));
 
    exception
       when hiccup : others => EX.Reraise_Occurrence (hiccup);

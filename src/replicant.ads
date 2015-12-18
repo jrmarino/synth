@@ -99,6 +99,7 @@ private
 
    --  create slave's /var directory tree.  Path should be an empty directory.
    procedure populate_var_folder (path : String);
+   procedure populate_localbase  (path : String);
 
    procedure launch_slave  (id : builders);
    procedure destroy_slave (id : builders);
