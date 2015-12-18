@@ -306,16 +306,21 @@ package body Replicant is
             FD     : OSL.File_Descriptor;
          begin
             TIO.Create (File => dummy);
-            FD := OSL.Open_Read_Write (Name  => TIO.Name (dummy),
-                                       Fmode => OSL.Text);
-            OSL.Spawn (Program_Name => Args (Args'First).all,
-                       Args         => Args (Args'First + 1 .. Args'Last),
-                       Return_Code  => Exit_Status,
-                       Output_File_Descriptor => FD);
-            OSL.Close (FD, closed);
-            if closed then
-               AD.Delete_File (TIO.Name (dummy));
-            end if;
+            declare
+               tempfile : constant String := TIO.Name (dummy);
+            begin
+               TIO.Close (dummy);
+               FD := OSL.Open_Read_Write (Name  => tempfile,
+                                          Fmode => OSL.Text);
+               OSL.Spawn (Program_Name => Args (Args'First).all,
+                          Args         => Args (Args'First + 1 .. Args'Last),
+                          Return_Code  => Exit_Status,
+                          Output_File_Descriptor => FD);
+               OSL.Close (FD, closed);
+               if closed then
+                  AD.Delete_File (tempfile);
+               end if;
+            end;
          end;
       end case;
       OSL.Free (Args);
@@ -324,6 +329,36 @@ package body Replicant is
            command & " => failed with code" & Exit_Status'Img;
       end if;
    end execute;
+
+
+   ------------------------
+   --  create_make_conf  --
+   ------------------------
+   procedure create_make_conf (path_to_etc : String)
+   is
+      makeconf  : TIO.File_Type;
+   begin
+      TIO.Create (File => makeconf,
+                  Mode => TIO.Out_File,
+                  Name => path_to_etc & "/make.conf");
+
+      TIO.Put_Line (makeconf, "USE_PACKAGE_DEPENDS=yes");
+      TIO.Put_Line (makeconf, "BATCH=yes");
+      TIO.Put_Line (makeconf, "NO_BACKUP=yes");
+      TIO.Put_Line (makeconf, "PKG_CREATE_VERBOSE=yes");
+      TIO.Put_Line (makeconf, "PORTSDIR=/xports");
+      TIO.Put_Line (makeconf, "DISTDIR=/distfiles");
+      TIO.Put_Line (makeconf, "WRKDIRPREFIX=/construction");
+      TIO.Put_Line (makeconf, "PORT_DBDIR=/options");
+      TIO.Put_Line (makeconf, "PACKAGES=/packages");
+
+      if AD.Exists (JT.USS (PM.configuration.dir_ccache)) then
+         TIO.Put_Line (makeconf, "WITH_CCACHE_BUILD=yes");
+         TIO.Put_Line (makeconf, "CCACHE_DIR=/ccache");
+      end if;
+
+      TIO.Close (makeconf);
+   end create_make_conf;
 
 
    --------------------
@@ -347,7 +382,6 @@ package body Replicant is
                        mount_point => location (slave_base, mnt));
       end loop;
 
-      --  TODO: set up /etc
       --  TODO: populate /dev
 
       folder_access (location (slave_base, home), lock);
@@ -386,6 +420,7 @@ package body Replicant is
 
       populate_var_folder (location (slave_base, var));
       populate_localbase  (location (slave_base, usr_local));
+      create_make_conf    (location (slave_base, etc));
 
    exception
       when hiccup : others => EX.Reraise_Occurrence (hiccup);

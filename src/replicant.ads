@@ -101,6 +101,9 @@ private
    procedure populate_var_folder (path : String);
    procedure populate_localbase  (path : String);
 
+   --  create /etc/make.conf in slave
+   procedure create_make_conf (path_to_etc : String);
+
    procedure launch_slave  (id : builders);
    procedure destroy_slave (id : builders);
 
