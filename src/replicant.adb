@@ -92,10 +92,10 @@ package body Replicant is
    end get_slave_mount;
 
 
-   ------------------------
-   --  construct_system  --
-   ------------------------
-   procedure construct_system
+   ------------------
+   --  initialize  --
+   ------------------
+   procedure initialize
    is
        opsys : nullfs_flavor   := dragonfly;
    begin
@@ -103,10 +103,7 @@ package body Replicant is
          opsys := freebsd;
       end if;
       flavor := opsys;
-
-      launch_slave (1);
-      delay 35.0;
-   end construct_system;
+   end initialize;
 
 
    --------------------
@@ -168,15 +165,6 @@ package body Replicant is
          raise scenario_unexpected with
            "failed to create " & target & " directory";
    end forge_directory;
-
-
-   ------------------------
-   --  take_down_system  --
-   ------------------------
-   procedure take_down_system is
-   begin
-      destroy_slave (1);
-   end take_down_system;
 
 
    -------------------

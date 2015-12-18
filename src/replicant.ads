@@ -7,12 +7,15 @@ package Replicant is
 
    scenario_unexpected : exception;
 
-   --  This builds the reference "master" to which all the builders mount
-   --  This is the first major step in a bulk build
-   procedure construct_system;
+   --  For every single port to be built, the build need to first be created
+   --  and then destroyed when the build is complete.
+   procedure launch_slave  (id : builders);
+   procedure destroy_slave (id : builders);
 
-   --  This deconstructors the reference master and it's the last step.
-   procedure take_down_system;
+   --  This procedure needs to be run once.
+   --  It basically sets the operating system "flavor" which affects the
+   --  mount command spawning
+   procedure initialize;
 
 private
 
@@ -106,8 +109,5 @@ private
 
    --  mount the devices
    procedure mount_devices (path_to_dev : String);
-
-   procedure launch_slave  (id : builders);
-   procedure destroy_slave (id : builders);
 
 end Replicant;
