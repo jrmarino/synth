@@ -203,6 +203,17 @@ package body Replicant is
    end mount_tmpfs;
 
 
+   ---------------------
+   --  mount_devices  --
+   ---------------------
+   procedure mount_devices (path_to_dev : String)
+   is
+      command : constant String := "/sbin/mount -t devfs devfs " & path_to_dev;
+   begin
+      execute (command);
+   end mount_devices;
+
+
    ------------------
    --  get_suffix  --
    ------------------
@@ -382,8 +393,6 @@ package body Replicant is
                        mount_point => location (slave_base, mnt));
       end loop;
 
-      --  TODO: populate /dev
-
       folder_access (location (slave_base, home), lock);
       folder_access (location (slave_base, root), lock);
 
@@ -417,6 +426,8 @@ package body Replicant is
       if AD.Exists (mount_target (ccache)) then
          mount_nullfs (mount_target (ccache), location (slave_base, ccache));
       end if;
+
+      mount_devices (location (slave_base, dev));
 
       populate_var_folder (location (slave_base, var));
       populate_localbase  (location (slave_base, usr_local));
@@ -454,6 +465,7 @@ package body Replicant is
          unmount (location (slave_base, ccache));
       end if;
 
+      unmount (location (slave_base, dev));
       unmount (location (slave_base, xports));
       unmount (location (slave_base, options));
       unmount (location (slave_base, packages));
