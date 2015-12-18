@@ -118,8 +118,6 @@ package body Replicant is
       cmd_freebsd   : constant String := "/sbin/mount_nullfs";
       cmd_dragonfly : constant String := "/sbin/mount_null";
       command       : JT.Text;
-      Args          : OSL.Argument_List_Access;
-      Exit_Status   : Integer;
    begin
       if not AD.Exists (mount_point) then
          raise scenario_unexpected with
@@ -143,7 +141,7 @@ package body Replicant is
       end case;
       JT.SU.Append (command, " " & target);
       JT.SU.Append (command, " " & mount_point);
-      execute (JT.USS (command);
+      execute (JT.USS (command));
    end mount_nullfs;
 
 
@@ -153,8 +151,6 @@ package body Replicant is
    procedure unmount (device_or_node : String)
    is
       command     : constant String := "/sbin/umount " & device_or_node;
-      Args        : OSL.Argument_List_Access;
-      Exit_Status : Integer;
    begin
       execute (command);
    end unmount;
@@ -191,8 +187,6 @@ package body Replicant is
       cmd_freebsd   : constant String := "/sbin/mount";
       cmd_dragonfly : constant String := "/sbin/mount_tmpfs";
       command       : JT.Text;
-      Args          : OSL.Argument_List_Access;
-      Exit_Status   : Integer;
    begin
       case flavor is
          when freebsd   => command := JT.SUS (cmd_freebsd);
@@ -205,7 +199,7 @@ package body Replicant is
          JT.SU.Append (command, " -o size=" & JT.trim (max_size_M'Img) & "M");
       end if;
       JT.SU.Append (command, " tmpfs " & mount_point);
-      execute (JT.USS (command);
+      execute (JT.USS (command));
    end mount_tmpfs;
 
 
@@ -236,8 +230,6 @@ package body Replicant is
       flag_lock     : constant String := " schg ";
       flag_unlock   : constant String := " noschg ";
       command       : JT.Text;
-      Args          : OSL.Argument_List_Access;
-      Exit_Status   : Integer;
    begin
       if not AD.Exists (path) then
          raise scenario_unexpected with
@@ -254,7 +246,7 @@ package body Replicant is
          when lock   => JT.SU.Append (command, flag_lock & path);
          when unlock => JT.SU.Append (command, flag_unlock & path);
       end case;
-      execute (JT.USS (command);
+      execute (JT.USS (command));
    end folder_access;
 
 
@@ -270,17 +262,50 @@ package body Replicant is
    end create_symlink;
 
 
+   ---------------------------
+   --  populate_var_folder  --
+   ---------------------------
+   procedure populate_var_folder (path : String)
+   is
+      command : constant String := "/usr/sbin/mtree -p " & path &
+        " -f /etc/mtree/BSD.var.dist -deqU";
+   begin
+      execute (command, True);
+   end populate_var_folder;
+
+
    ---------------
    --  execute  --
    ---------------
-   procedure execute (command : String)
+   procedure execute (command : String; suppress : Boolean := False)
    is
       Args        : OSL.Argument_List_Access;
       Exit_Status : Integer;
    begin
       Args := OSL.Argument_String_To_List (command);
-      Exit_Status := OSL.Spawn (Program_Name => Args (Args'First).all,
-                                Args => Args (Args'First + 1 .. Args'Last));
+      case suppress is
+      when False => Exit_Status :=
+           OSL.Spawn (Program_Name => Args (Args'First).all,
+                      Args         => Args (Args'First + 1 .. Args'Last));
+      when True =>
+         declare
+            closed : Boolean;
+            dummy  : TIO.File_Type;
+            FD     : OSL.File_Descriptor;
+         begin
+            TIO.Create (File => dummy);
+            FD := OSL.Open_Read_Write (Name  => TIO.Name (dummy),
+                                       Fmode => OSL.Text);
+            OSL.Spawn (Program_Name => Args (Args'First).all,
+                       Args         => Args (Args'First + 1 .. Args'Last),
+                       Return_Code  => Exit_Status,
+                       Output_File_Descriptor => FD);
+            OSL.Close (FD, closed);
+            if closed then
+               AD.Delete_File (TIO.Name (dummy));
+            end if;
+         end;
+      end case;
       OSL.Free (Args);
       if Exit_Status /= 0 then
          raise scenario_unexpected with
@@ -311,7 +336,6 @@ package body Replicant is
       end loop;
 
       --  TODO: set up /etc
-      --  TODO: set up /var
       --  TODO: populate /dev
 
       folder_access (location (slave_base, home), lock);
@@ -347,6 +371,8 @@ package body Replicant is
       if AD.Exists (mount_target (ccache)) then
          mount_nullfs (mount_target (ccache), location (slave_base, ccache));
       end if;
+
+      populate_var_folder (location (slave_base, var));
 
    exception
       when hiccup : others => EX.Reraise_Occurrence (hiccup);
@@ -391,6 +417,7 @@ package body Replicant is
 
       folder_access (location (slave_base, home), unlock);
       folder_access (location (slave_base, root), unlock);
+      folder_access (location (slave_base, var) & "/empty", unlock);
 
       unmount (slave_base);
       AD.Delete_Tree (slave_base);
