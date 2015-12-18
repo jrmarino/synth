@@ -50,10 +50,19 @@ package body Replicant is
    ------------------------
    --  get_master_mount  --
    ------------------------
-   function get_master_mount (base : String) return String is
+   function get_master_mount return String is
    begin
-      return JT.USS (PM.configuration.dir_buildbase) & "/" & base;
+      return JT.USS (PM.configuration.dir_buildbase) & "/" & reference_base;
    end get_master_mount;
+
+
+   -----------------------
+   --  get_slave_mount  --
+   -----------------------
+   function get_slave_mount  (id : builders) return String is
+   begin
+      return JT.USS (PM.configuration.dir_buildbase) & "/" & slave_name (id);
+   end get_slave_mount;
 
 
    ------------------------------------
@@ -61,7 +70,7 @@ package body Replicant is
    ------------------------------------
    procedure construct_live_system_master
    is
-      master_mount : constant String := get_master_mount (LiveBase);
+      master_mount : constant String := get_master_mount;
       cf_xports    : constant String := JT.USS (PM.configuration.dir_portsdir);
       cf_options   : constant String := JT.USS (PM.configuration.dir_options);
       cf_packages  : constant String := JT.USS (PM.configuration.dir_packages);
@@ -177,7 +186,7 @@ package body Replicant is
       procedure hardened_umount (node : String);
       procedure remove_master_mount;
 
-      master_mount : constant String := get_master_mount (LiveBase);
+      master_mount : constant String := get_master_mount;
 --        ccache_target : constant String := JT.USS (PM.configuration.dir_ccache);
       goodsofar     : Boolean := True;
 
@@ -229,12 +238,7 @@ package body Replicant is
               "Mounting on unknown operating system";
       end case;
       if max_size_M > 0 then
-         case flavor is
-         when freebsd   => JT.SU.Append (command, " -o size=" &
-                                         JT.trim (max_size_M'Img) & "M");
-         when dragonfly => JT.SU.Append (command, " -s" & max_size_M'Img & "M");
-         when unknown   => null;
-         end case;
+         JT.SU.Append (command, " -o size=" & JT.trim (max_size_M'Img) & "M");
       end if;
       JT.SU.Append (command, " tmpfs " & mount_point);
 
@@ -255,12 +259,12 @@ package body Replicant is
    function slave_name (id : builders) return String
    is
       id_image     : constant String := Integer (id)'Img;
-      suffix       : String := "_00";
+      suffix       : String := "SL00";
    begin
       if id < 10 then
-         suffix (3) := id_image (2);
+         suffix (4) := id_image (2);
       else
-         suffix (2 .. 3) := id_image (2 .. 3);
+         suffix (3 .. 4) := id_image (2 .. 3);
       end if;
       return suffix;
    end slave_name;
@@ -269,10 +273,10 @@ package body Replicant is
    --------------------
    --  launch_slave  --
    --------------------
-   procedure launch_slave  (id : builders; base : String := LiveBase)
+   procedure launch_slave  (id : builders)
    is
-      master_mount : constant String := get_master_mount (base);
-      slave_base   : constant String := master_mount & slave_name (id);
+      master_mount : constant String := get_master_mount;
+      slave_base   : constant String := get_slave_mount (id);
       slave_work   : constant String := slave_base & "_work";
       slave_local  : constant String := slave_base & "_localbase";
    begin
@@ -306,10 +310,10 @@ package body Replicant is
    ---------------------
    --  destroy_slave  --
    ---------------------
-   procedure destroy_slave (id : builders; base : String := LiveBase)
+   procedure destroy_slave (id : builders)
    is
-      master_mount : constant String := get_master_mount (base);
-      slave_base   : constant String := master_mount & "/" & slave_name (id);
+      master_mount : constant String := get_master_mount;
+      slave_base   : constant String := get_slave_mount (id);
       slave_work   : constant String := slave_base & "_work";
       slave_local  : constant String := slave_base & "_localbase";
    begin

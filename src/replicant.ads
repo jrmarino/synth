@@ -15,7 +15,7 @@ package Replicant is
                    distfiles, dev, etc, tmp, var, wrkdirs, ccache);
    subtype subfolder is folder range bin .. distfiles;
 
-   LiveBase       : constant String := "LiveBase";
+   reference_base : constant String := "Base";
    root_bin       : constant String := "/bin";
    root_sbin      : constant String := "/sbin";
    root_usr       : constant String := "/usr";
@@ -60,12 +60,13 @@ package Replicant is
    function location (master_mount : String; point : folder) return String;
 
    --  Query configuration to determine the master mount
-   function get_master_mount (base : String) return String;
+   function get_master_mount return String;
+   function get_slave_mount (id : builders) return String;
 
    --  returns "_XX" where XX is a zero-padded integer (01 .. 32)
    function slave_name (id : builders) return String;
 
-   procedure launch_slave  (id : builders; base : String := LiveBase);
-   procedure destroy_slave (id : builders; base : String := LiveBase);
+   procedure launch_slave  (id : builders);
+   procedure destroy_slave (id : builders);
 
 end Replicant;
