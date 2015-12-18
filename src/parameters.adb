@@ -102,11 +102,21 @@ package body Parameters is
       configuration.jobs_limit := builders
         (extract_integer (profile, Field_09, def_jlimit));
 
-      configuration.tmpfs_workdir :=
-        extract_boolean (profile, Field_10, True);
+      if param_set (profile, Field_10) then
+         configuration.tmpfs_workdir :=
+           extract_boolean (profile, Field_10, False);
+      else
+         configuration.tmpfs_workdir :=
+           extract_boolean (profile, Field_10, enough_memory);
+      end if;
 
-      configuration.tmpfs_localbase :=
-        extract_boolean (profile, Field_11, True);
+      if param_set (profile, Field_11) then
+         configuration.tmpfs_localbase :=
+           extract_boolean (profile, Field_11, False);
+      else
+         configuration.tmpfs_localbase :=
+           extract_boolean (profile, Field_11, enough_memory);
+      end if;
 
       if param_set (profile, Field_12) then
          configuration.operating_sys :=
@@ -334,5 +344,54 @@ package body Parameters is
       return JT.SU.Slice (Source => content, Low => 1, High => CR_loc - 1);
    end query_generic;
 
+
+   -----------------------------
+   --  query_physical_memory  --
+   -----------------------------
+   procedure query_physical_memory is
+      command : constant String := "/sbin/sysctl hw.physmem";
+      pipe    : aliased STR.Pipes.Pipe_Stream;
+      buffer  : STR.Buffered.Buffered_Stream;
+      content : JT.Text;
+      status  : Integer;
+      CR_loc  : Integer;
+      SP_loc  : Integer;
+      CR      : constant String (1 .. 1) := (1 => Character'Val (10));
+      SP      : constant String (1 .. 1) := (1 => LAT.Space);
+   begin
+      if memory_megs > 0 then
+         return;
+      end if;
+      pipe.Open (Command => command);
+      buffer.Initialize (Output => null,
+                         Input  => pipe'Unchecked_Access,
+                         Size   => 4096);
+      buffer.Read (Into => content);
+      pipe.Close;
+      status := pipe.Get_Exit_Status;
+      if status /= 0 then
+         raise make_query with command;
+      end if;
+      SP_loc := JT.SU.Index (Source => content, Pattern => SP);
+      CR_loc := JT.SU.Index (Source => content, Pattern => CR);
+
+      declare
+         type memtype is mod 2**64;
+         numbers : String := JT.USS (content)(SP_loc + 1 .. CR_loc - 1);
+         bytes   : constant memtype := memtype'Value (numbers);
+         megs    : constant memtype := bytes / 1024 / 1024;
+      begin
+         memory_megs := Natural (megs);
+      end;
+
+   end query_physical_memory;
+
+   function enough_memory return Boolean is
+      megs_per_slave : Natural;
+   begin
+      query_physical_memory;
+      megs_per_slave := memory_megs / Positive (configuration.num_builders);
+      return megs_per_slave >= 1280;
+   end enough_memory;
 
 end Parameters;

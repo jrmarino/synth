@@ -43,6 +43,7 @@ private
 
    internal_config : Config.Configuration;
    distfiles_loc   : JT.Text;
+   memory_megs     : Natural := 0;
 
    make_query      : exception;
 
@@ -104,5 +105,7 @@ private
    function query_generic (value : String) return String;
    function query_distfiles return String;
    function query_opsys return String;
+   function enough_memory return Boolean;
+   procedure query_physical_memory;
 
 end Parameters;
