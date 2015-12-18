@@ -21,8 +21,10 @@ package JohnnyText is
 
    --  True if strings are identical
    function equivalent (A, B : Text) return Boolean;
+   function equivalent (A : Text; B : String) return Boolean;
 
    --  Trim both sides
    function trim (US : Text) return Text;
+   function trim (S : String) return String;
 
 end JohnnyText;
