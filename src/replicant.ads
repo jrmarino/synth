@@ -11,37 +11,56 @@ package Replicant is
 
    type mount_mode is (readonly, readwrite);
    type nullfs_flavor is (unknown, freebsd, dragonfly);
-   type folder is (bin, sbin, lib, usr, xports, options, libexec, packages,
-                   distfiles, dev, etc, tmp, var, wrkdirs, ccache);
-   subtype subfolder is folder range bin .. distfiles;
+   type folder is (bin, sbin, lib, libexec,
+                   usr_bin,
+                   usr_include,
+                   usr_lib,
+                   usr_libdata,
+                   usr_libexec,
+                   usr_sbin,
+                   usr_share,
+                   xports, options, packages, distfiles,
+                   dev, etc, home, proc, root, tmp, var, wrkdirs,
+                   usr_local, usr_src, ccache);
+   subtype subfolder is folder range bin .. usr_share;
 
-   reference_base : constant String := "Base";
-   root_bin       : constant String := "/bin";
-   root_sbin      : constant String := "/sbin";
-   root_usr       : constant String := "/usr";
-   root_lib       : constant String := "/lib";
-   root_dev       : constant String := "/dev";
-   root_etc       : constant String := "/etc";
-   root_tmp       : constant String := "/tmp";
-   root_var       : constant String := "/var";
-   root_xports    : constant String := "/xports";
-   root_options   : constant String := "/options";
-   root_libexec   : constant String := "/libexec";
-   root_wrkdirs   : constant String := "/wrkdirs";
-   root_packages  : constant String := "/packages";
-   root_distfiles : constant String := "/distfiles";
-   root_x2_ccache : constant String := "/root/ccache";
-   root_localbase : constant String := "/usr/local";
+   --  home and root need to be set readonly
+   reference_base   : constant String := "Base";
+   root_bin         : constant String := "/bin";
+   root_sbin        : constant String := "/sbin";
+   root_usr_bin     : constant String := "/usr/bin";
+   root_usr_include : constant String := "/usr/include";
+   root_usr_lib     : constant String := "/usr/lib";
+   root_usr_libdata : constant String := "/usr/libdata";
+   root_usr_libexec : constant String := "/usr/libexec";
+   root_usr_sbin    : constant String := "/usr/sbin";
+   root_usr_share   : constant String := "/usr/share";
+   root_usr_src     : constant String := "/usr/src";
+   root_dev         : constant String := "/dev";
+   root_etc         : constant String := "/etc";
+   root_lib         : constant String := "/lib";
+   root_tmp         : constant String := "/tmp";
+   root_var         : constant String := "/var";
+   root_home        : constant String := "/home";
+   root_root        : constant String := "/root";
+   root_proc        : constant String := "/proc";
+   root_xports      : constant String := "/xports";
+   root_options     : constant String := "/options";
+   root_libexec     : constant String := "/libexec";
+   root_wrkdirs     : constant String := "/construction";
+   root_packages    : constant String := "/packages";
+   root_distfiles   : constant String := "/distfiles";
+   root_ccache      : constant String := "/ccache";
+   root_localbase   : constant String := "/usr/local";
 
-   livesys_prefix : constant String := "LS";
    flavor         : nullfs_flavor   := unknown;
 
    --  This builds the reference "master" to which all the builders mount
    --  This is the first major step in a bulk build
-   procedure construct_live_system_master;
+   procedure construct_system;
 
    --  This deconstructors the reference master and it's the last step.
-   procedure take_down_live_system_master;
+   procedure take_down_system;
 
    --  Throws exception if mount attempt was unsuccessful
    procedure mount_nullfs (target, mount_point : String;
@@ -57,7 +76,8 @@ package Replicant is
    procedure forge_directory (target : String);
 
    --  Return the full path of the mount point
-   function location (master_mount : String; point : folder) return String;
+   function location (mount_base : String; point : folder) return String;
+   function mount_target (point : folder) return String;
 
    --  Query configuration to determine the master mount
    function get_master_mount return String;

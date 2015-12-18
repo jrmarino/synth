@@ -34,11 +34,8 @@ begin
       return;
    end if;
 
-   Replicant.construct_live_system_master;
-   Replicant.launch_slave (1);
-   delay 35.0;
-   Replicant.destroy_slave (1);
-   Replicant.take_down_live_system_master;
+   Replicant.construct_system;
+   Replicant.take_down_system;
    return;
 
    --  needs to read environment or make -C <anyport> -V PORTSDIR

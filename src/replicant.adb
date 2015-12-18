@@ -25,26 +25,53 @@ package body Replicant is
    -------------------
    --  mount_point  --
    -------------------
-   function location (master_mount : String; point : folder) return String is
+   function location (mount_base : String; point : folder) return String is
    begin
       case point is
-         when bin       => return master_mount & root_bin;
-         when sbin      => return master_mount & root_sbin;
-         when usr       => return master_mount & root_usr;
-         when lib       => return master_mount & root_lib;
-         when dev       => return master_mount & root_dev;
-         when etc       => return master_mount & root_etc;
-         when tmp       => return master_mount & root_tmp;
-         when var       => return master_mount & root_var;
-         when xports    => return master_mount & root_xports;
-         when options   => return master_mount & root_options;
-         when libexec   => return master_mount & root_libexec;
-         when packages  => return master_mount & root_packages;
-         when distfiles => return master_mount & root_distfiles;
-         when wrkdirs   => return master_mount & root_wrkdirs;
-         when ccache    => return master_mount & root_x2_ccache;
+         when bin         => return mount_base & root_bin;
+         when sbin        => return mount_base & root_sbin;
+         when usr_bin     => return mount_base & root_usr_bin;
+         when usr_include => return mount_base & root_usr_include;
+         when usr_lib     => return mount_base & root_usr_lib;
+         when usr_libdata => return mount_base & root_usr_libdata;
+         when usr_libexec => return mount_base & root_usr_libexec;
+         when usr_local   => return mount_base & root_localbase;
+         when usr_sbin    => return mount_base & root_usr_sbin;
+         when usr_share   => return mount_base & root_usr_share;
+         when usr_src     => return mount_base & root_usr_src;
+         when lib         => return mount_base & root_lib;
+         when dev         => return mount_base & root_dev;
+         when etc         => return mount_base & root_etc;
+         when tmp         => return mount_base & root_tmp;
+         when var         => return mount_base & root_var;
+         when home        => return mount_base & root_home;
+         when proc        => return mount_base & root_proc;
+         when root        => return mount_base & root_root;
+         when xports      => return mount_base & root_xports;
+         when options     => return mount_base & root_options;
+         when libexec     => return mount_base & root_libexec;
+         when packages    => return mount_base & root_packages;
+         when distfiles   => return mount_base & root_distfiles;
+         when wrkdirs     => return mount_base & root_wrkdirs;
+         when ccache      => return mount_base & root_ccache;
       end case;
    end location;
+
+
+   --------------------
+   --  mount_target  --
+   --------------------
+   function mount_target (point : folder) return String is
+   begin
+      case point is
+         when xports    => return JT.USS (PM.configuration.dir_portsdir);
+         when options   => return JT.USS (PM.configuration.dir_options);
+         when packages  => return JT.USS (PM.configuration.dir_packages);
+         when distfiles => return JT.USS (PM.configuration.dir_distfiles);
+         when ccache    => return JT.USS (PM.configuration.dir_ccache);
+         when others    => return "ERROR";
+      end case;
+   end mount_target;
 
 
    ------------------------
@@ -65,40 +92,21 @@ package body Replicant is
    end get_slave_mount;
 
 
-   ------------------------------------
-   --  construct_live_system_master  --
-   ------------------------------------
-   procedure construct_live_system_master
+   ------------------------
+   --  construct_system  --
+   ------------------------
+   procedure construct_system
    is
-      master_mount : constant String := get_master_mount;
-      cf_xports    : constant String := JT.USS (PM.configuration.dir_portsdir);
-      cf_options   : constant String := JT.USS (PM.configuration.dir_options);
-      cf_packages  : constant String := JT.USS (PM.configuration.dir_packages);
-      cf_distfiles : constant String := JT.USS (PM.configuration.dir_distfiles);
-      opsys        : nullfs_flavor   := dragonfly;
+       opsys : nullfs_flavor   := dragonfly;
    begin
       if JT.equivalent (PM.configuration.operating_sys, "FreeBSD") then
          opsys := freebsd;
       end if;
       flavor := opsys;
 
-      for mnt in folder'Range loop
-         forge_directory (location (master_mount, mnt));
-      end loop;
-
-      mount_nullfs (root_bin,     location (master_mount, bin));
-      mount_nullfs (root_sbin,    location (master_mount, sbin));
-      mount_nullfs (root_lib,     location (master_mount, lib));
-      mount_nullfs (root_libexec, location (master_mount, libexec));
-      mount_nullfs (root_usr,     location (master_mount, usr));
-      mount_nullfs (cf_xports,    location (master_mount, xports));
-      mount_nullfs (cf_options,   location (master_mount, options));
-      mount_nullfs (cf_packages,  location (master_mount, packages));
-      mount_nullfs (cf_distfiles, location (master_mount, distfiles));
-
-   exception
-      when hiccup : others => EX.Reraise_Occurrence (hiccup);
-   end construct_live_system_master;
+      launch_slave (1);
+      delay 35.0;
+   end construct_system;
 
 
    --------------------
@@ -113,6 +121,10 @@ package body Replicant is
       Args          : OSL.Argument_List_Access;
       Exit_Status   : Integer;
    begin
+      if not AD.Exists (mount_point) then
+         raise scenario_unexpected with
+           "mount point " & mount_point & " does not exist";
+      end if;
       if not AD.Exists (target) then
          raise scenario_unexpected with
            "mount target " & target & " does not exist";
@@ -178,45 +190,13 @@ package body Replicant is
    end forge_directory;
 
 
-   ------------------------------------
-   --  take_down_live_system_master  --
-   ------------------------------------
-   procedure take_down_live_system_master
-   is
-      procedure hardened_umount (node : String);
-      procedure remove_master_mount;
-
-      master_mount : constant String := get_master_mount;
---        ccache_target : constant String := JT.USS (PM.configuration.dir_ccache);
-      goodsofar     : Boolean := True;
-
-      procedure hardened_umount (node : String) is
-      begin
-         unmount (device_or_node => node);
-      exception
-         when others =>
-            goodsofar := False;
-            TIO.Put_Line (node & " Failed to unmount");
-      end hardened_umount;
-      procedure remove_master_mount is
-      begin
-         if goodsofar then
-            AD.Delete_Tree (master_mount);
-         end if;
-      exception
-         when others =>
-            TIO.Put_Line ("Failed to remove " & master_mount);
-      end remove_master_mount;
+   ------------------------
+   --  take_down_system  --
+   ------------------------
+   procedure take_down_system is
    begin
-      for mnt in subfolder'Range loop
-         hardened_umount (location (master_mount, mnt));
-      end loop;
---        if AD.Exists (ccache_target) then
---           hardened_umount (ccache_target);
---        end if;
-
-      remove_master_mount;
-   end take_down_live_system_master;
+      destroy_slave (1);
+   end take_down_system;
 
 
    -------------------
@@ -275,17 +255,35 @@ package body Replicant is
    --------------------
    procedure launch_slave  (id : builders)
    is
-      master_mount : constant String := get_master_mount;
       slave_base   : constant String := get_slave_mount (id);
       slave_work   : constant String := slave_base & "_work";
       slave_local  : constant String := slave_base & "_localbase";
    begin
       forge_directory (slave_base);
-      mount_nullfs (master_mount, slave_base);
+      mount_tmpfs (slave_base);
 
-      mount_tmpfs (location (slave_base, tmp), 200);
-      mount_tmpfs (location (slave_base, etc),  12);
-      mount_tmpfs (location (slave_base, var), 200);
+      for mnt in folder'Range loop
+         forge_directory (location (slave_base, mnt));
+      end loop;
+
+      for mnt in subfolder'Range loop
+         mount_nullfs (target      => location ("", mnt),
+                       mount_point => location (slave_base, mnt));
+
+      end loop;
+
+      --  TODO: Lock home
+      --  TODO: Lock root
+      --  TODO: Add symbolic link between /sys and /usr/src/sys
+      --  TODO: set up /etc
+      --  TODO: set up /var
+      --  TODO: populate /dev
+
+
+      mount_nullfs (mount_target (xports),    location (slave_base, xports));
+      mount_nullfs (mount_target (options),   location (slave_base, options));
+      mount_nullfs (mount_target (packages),  location (slave_base, packages));
+      mount_nullfs (mount_target (distfiles), location (slave_base, distfiles));
 
       if PM.configuration.tmpfs_workdir then
          mount_tmpfs (location (slave_base, wrkdirs), 12 * 1024);
@@ -301,9 +299,16 @@ package body Replicant is
          mount_nullfs (slave_local, slave_base & root_localbase, readwrite);
       end if;
 
-      --  write etc files now
-      --  write var stuff?
+      if AD.Exists (root_usr_src) then
+         mount_nullfs (root_usr_src, location (slave_base, usr_src));
+      end if;
 
+      if AD.Exists (mount_target (ccache)) then
+         mount_nullfs (mount_target (ccache), location (slave_base, ccache));
+      end if;
+
+   exception
+      when hiccup : others => EX.Reraise_Occurrence (hiccup);
    end launch_slave;
 
 
@@ -312,7 +317,6 @@ package body Replicant is
    ---------------------
    procedure destroy_slave (id : builders)
    is
-      master_mount : constant String := get_master_mount;
       slave_base   : constant String := get_slave_mount (id);
       slave_work   : constant String := slave_base & "_work";
       slave_local  : constant String := slave_base & "_localbase";
@@ -327,11 +331,28 @@ package body Replicant is
          AD.Delete_Tree (location (slave_base, wrkdirs));
       end if;
 
-      unmount (location (slave_base, tmp));
-      unmount (location (slave_base, etc));
-      unmount (location (slave_base, var));
-      unmount (slave_base);
+      if AD.Exists (root_usr_src) then
+         unmount (location (slave_base, usr_src));
+      end if;
 
+      if AD.Exists (mount_target (ccache)) then
+         unmount (location (slave_base, ccache));
+      end if;
+
+      unmount (location (slave_base, xports));
+      unmount (location (slave_base, options));
+      unmount (location (slave_base, packages));
+      unmount (location (slave_base, distfiles));
+
+      for mnt in subfolder'Range loop
+         unmount (location (slave_base, mnt));
+      end loop;
+
+      unmount (slave_base);
+      AD.Delete_Tree (slave_base);
+
+   exception
+      when hiccup : others => EX.Reraise_Occurrence (hiccup);
    end destroy_slave;
 
 end Replicant;
