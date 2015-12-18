@@ -250,6 +250,66 @@ package body Replicant is
    end slave_name;
 
 
+   ---------------------
+   --  folder_access  --
+   ---------------------
+   procedure folder_access (path : String; operation : folder_operation)
+   is
+      cmd_freebsd   : constant String := "/bin/chflags";
+      cmd_dragonfly : constant String := "/usr/bin/chflags";
+      flag_lock     : constant String := " schg ";
+      flag_unlock   : constant String := " noschg ";
+      command       : JT.Text;
+      Args          : OSL.Argument_List_Access;
+      Exit_Status   : Integer;
+   begin
+      if not AD.Exists (path) then
+         raise scenario_unexpected with
+           "chflags: " & path & " path does not exist";
+      end if;
+      case flavor is
+         when freebsd   => command := JT.SUS (cmd_freebsd);
+         when dragonfly => command := JT.SUS (cmd_dragonfly);
+         when unknown   =>
+            raise scenario_unexpected with
+              "Executing cflags on unknown operating system";
+      end case;
+      case operation is
+         when lock   => JT.SU.Append (command, flag_lock & path);
+         when unlock => JT.SU.Append (command, flag_unlock & path);
+      end case;
+      Args := OSL.Argument_String_To_List (JT.USS (command));
+      Exit_Status := OSL.Spawn (Program_Name => Args (Args'First).all,
+                                Args => Args (Args'First + 1 .. Args'Last));
+      OSL.Free (Args);
+      if Exit_Status /= 0 then
+         raise scenario_unexpected with
+           JT.USS (command) & " => failed with code" & Exit_Status'Img;
+      end if;
+   end folder_access;
+
+
+   ----------------------
+   --  create_symlink  --
+   ----------------------
+   procedure create_symlink (destination, symbolic_link : String)
+   is
+      command : constant String :=
+                         "/bin/ln -s " & destination & " " & symbolic_link;
+      Args        : OSL.Argument_List_Access;
+      Exit_Status : Integer;
+   begin
+      Args := OSL.Argument_String_To_List (command);
+      Exit_Status := OSL.Spawn (Program_Name => Args (Args'First).all,
+                                Args => Args (Args'First + 1 .. Args'Last));
+      OSL.Free (Args);
+      if Exit_Status /= 0 then
+         raise scenario_unexpected with
+           command & " => failed with code" & Exit_Status'Img;
+      end if;
+   end create_symlink;
+
+
    --------------------
    --  launch_slave  --
    --------------------
@@ -272,13 +332,12 @@ package body Replicant is
 
       end loop;
 
-      --  TODO: Lock home
-      --  TODO: Lock root
-      --  TODO: Add symbolic link between /sys and /usr/src/sys
       --  TODO: set up /etc
       --  TODO: set up /var
       --  TODO: populate /dev
 
+      folder_access (location (slave_base, home), lock);
+      folder_access (location (slave_base, root), lock);
 
       mount_nullfs (mount_target (xports),    location (slave_base, xports));
       mount_nullfs (mount_target (options),   location (slave_base, options));
@@ -301,6 +360,10 @@ package body Replicant is
 
       if AD.Exists (root_usr_src) then
          mount_nullfs (root_usr_src, location (slave_base, usr_src));
+         if AD.Exists (root_usr_src & "/sys") then
+            create_symlink (destination   => "usr/src/sys",
+                            symbolic_link => slave_base & "/sys");
+         end if;
       end if;
 
       if AD.Exists (mount_target (ccache)) then
@@ -323,12 +386,12 @@ package body Replicant is
    begin
       unmount (slave_base & root_localbase);
       if not PM.configuration.tmpfs_localbase then
-         AD.Delete_Tree (slave_base & root_localbase);
+         AD.Delete_Tree (slave_local);
       end if;
 
       unmount (location (slave_base, wrkdirs));
-      if PM.configuration.tmpfs_workdir then
-         AD.Delete_Tree (location (slave_base, wrkdirs));
+      if not PM.configuration.tmpfs_workdir then
+         AD.Delete_Tree (slave_work);
       end if;
 
       if AD.Exists (root_usr_src) then
@@ -347,6 +410,9 @@ package body Replicant is
       for mnt in subfolder'Range loop
          unmount (location (slave_base, mnt));
       end loop;
+
+      folder_access (location (slave_base, home), unlock);
+      folder_access (location (slave_base, root), unlock);
 
       unmount (slave_base);
       AD.Delete_Tree (slave_base);

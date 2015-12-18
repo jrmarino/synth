@@ -7,10 +7,18 @@ package Replicant is
 
    scenario_unexpected : exception;
 
---  private
+   --  This builds the reference "master" to which all the builders mount
+   --  This is the first major step in a bulk build
+   procedure construct_system;
+
+   --  This deconstructors the reference master and it's the last step.
+   procedure take_down_system;
+
+private
 
    type mount_mode is (readonly, readwrite);
    type nullfs_flavor is (unknown, freebsd, dragonfly);
+   type folder_operation is (lock, unlock);
    type folder is (bin, sbin, lib, libexec,
                    usr_bin,
                    usr_include,
@@ -55,12 +63,6 @@ package Replicant is
 
    flavor         : nullfs_flavor   := unknown;
 
-   --  This builds the reference "master" to which all the builders mount
-   --  This is the first major step in a bulk build
-   procedure construct_system;
-
-   --  This deconstructors the reference master and it's the last step.
-   procedure take_down_system;
 
    --  Throws exception if mount attempt was unsuccessful
    procedure mount_nullfs (target, mount_point : String;
@@ -83,8 +85,14 @@ package Replicant is
    function get_master_mount return String;
    function get_slave_mount (id : builders) return String;
 
-   --  returns "_XX" where XX is a zero-padded integer (01 .. 32)
+   --  returns "SLXX" where XX is a zero-padded integer (01 .. 32)
    function slave_name (id : builders) return String;
+
+   --  locks and unlocks folders, even from root
+   procedure folder_access (path : String; operation : folder_operation);
+
+   --  self explanatory
+   procedure create_symlink (destination, symbolic_link : String);
 
    procedure launch_slave  (id : builders);
    procedure destroy_slave (id : builders);
