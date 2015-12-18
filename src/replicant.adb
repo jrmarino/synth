@@ -143,16 +143,7 @@ package body Replicant is
       end case;
       JT.SU.Append (command, " " & target);
       JT.SU.Append (command, " " & mount_point);
-
-      Args := OSL.Argument_String_To_List (JT.USS (command));
-      Exit_Status := OSL.Spawn (Program_Name => Args (Args'First).all,
-                                Args => Args (Args'First + 1 .. Args'Last));
-      OSL.Free (Args);
-
-      if Exit_Status /= 0 then
-         raise scenario_unexpected with
-           JT.USS (command) & " => failed with code" & Exit_Status'Img;
-      end if;
+      execute (JT.USS (command);
    end mount_nullfs;
 
 
@@ -165,14 +156,7 @@ package body Replicant is
       Args        : OSL.Argument_List_Access;
       Exit_Status : Integer;
    begin
-      Args := OSL.Argument_String_To_List (command);
-      Exit_Status := OSL.Spawn (Program_Name => Args (Args'First).all,
-                                Args => Args (Args'First + 1 .. Args'Last));
-      OSL.Free (Args);
-      if Exit_Status /= 0 then
-         raise scenario_unexpected with
-           command & " => failed with code" & Exit_Status'Img;
-      end if;
+      execute (command);
    end unmount;
 
 
@@ -221,15 +205,7 @@ package body Replicant is
          JT.SU.Append (command, " -o size=" & JT.trim (max_size_M'Img) & "M");
       end if;
       JT.SU.Append (command, " tmpfs " & mount_point);
-
-      Args := OSL.Argument_String_To_List (JT.USS (command));
-      Exit_Status := OSL.Spawn (Program_Name => Args (Args'First).all,
-                                Args => Args (Args'First + 1 .. Args'Last));
-      OSL.Free (Args);
-      if Exit_Status /= 0 then
-         raise scenario_unexpected with
-           JT.USS (command) & " => failed with code" & Exit_Status'Img;
-      end if;
+      execute (JT.USS (command);
    end mount_tmpfs;
 
 
@@ -278,14 +254,7 @@ package body Replicant is
          when lock   => JT.SU.Append (command, flag_lock & path);
          when unlock => JT.SU.Append (command, flag_unlock & path);
       end case;
-      Args := OSL.Argument_String_To_List (JT.USS (command));
-      Exit_Status := OSL.Spawn (Program_Name => Args (Args'First).all,
-                                Args => Args (Args'First + 1 .. Args'Last));
-      OSL.Free (Args);
-      if Exit_Status /= 0 then
-         raise scenario_unexpected with
-           JT.USS (command) & " => failed with code" & Exit_Status'Img;
-      end if;
+      execute (JT.USS (command);
    end folder_access;
 
 
@@ -296,6 +265,16 @@ package body Replicant is
    is
       command : constant String :=
                          "/bin/ln -s " & destination & " " & symbolic_link;
+   begin
+      execute (command);
+   end create_symlink;
+
+
+   ---------------
+   --  execute  --
+   ---------------
+   procedure execute (command : String)
+   is
       Args        : OSL.Argument_List_Access;
       Exit_Status : Integer;
    begin
@@ -307,7 +286,7 @@ package body Replicant is
          raise scenario_unexpected with
            command & " => failed with code" & Exit_Status'Img;
       end if;
-   end create_symlink;
+   end execute;
 
 
    --------------------
@@ -329,7 +308,6 @@ package body Replicant is
       for mnt in subfolder'Range loop
          mount_nullfs (target      => location ("", mnt),
                        mount_point => location (slave_base, mnt));
-
       end loop;
 
       --  TODO: set up /etc

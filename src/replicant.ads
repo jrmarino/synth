@@ -94,6 +94,9 @@ private
    --  self explanatory
    procedure create_symlink (destination, symbolic_link : String);
 
+   --  generic command, throws exception if exit code is not 0
+   procedure execute (command : String);
+
    procedure launch_slave  (id : builders);
    procedure destroy_slave (id : builders);
 
