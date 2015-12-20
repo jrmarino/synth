@@ -63,10 +63,11 @@ package body PortScan.Packages is
    --  limited_package_check   --
    ------------------------------
    procedure limited_package_check (repository : String; id : port_id;
-                                    pkg_exists : out Boolean)
+                                    pkg_exists, pkg_removed : out Boolean)
    is
    begin
-      pkg_exists := False;
+      pkg_exists  := False;
+      pkg_removed := False;
       if id = port_match_failed then
          return;
       end if;
@@ -94,8 +95,8 @@ package body PortScan.Packages is
          return;
 
          <<remove_package>>
-         pkg_exists := False;
-         --  TODO: remove package
+         pkg_removed := True;
+         AD.Delete_File (fullpath);
       end;
    end limited_package_check;
 
@@ -108,14 +109,21 @@ package body PortScan.Packages is
       procedure check_package (cursor : ranking_crate.Cursor);
       procedure prune_queue (cursor : subqueue.Cursor);
       already_built : subqueue.Vector;
+      clean_pass    : Boolean := False;
 
       procedure check_package (cursor : ranking_crate.Cursor)
       is
          QR : constant queue_record := ranking_crate.Element (cursor);
          package_in_place : Boolean;
+         package_removed  : Boolean;
       begin
-         limited_package_check (repository => repository, id => QR.ap_index,
-                                pkg_exists => package_in_place);
+         limited_package_check (repository  => repository,
+                                id          => QR.ap_index,
+                                pkg_exists  => package_in_place,
+                                pkg_removed => package_removed);
+         if package_removed then
+            clean_pass := False;
+         end if;
          if package_in_place then
             already_built.Append (New_Item => QR.ap_index);
          end if;
@@ -128,7 +136,11 @@ package body PortScan.Packages is
          OPS.cascade_successful_build (id);
       end prune_queue;
    begin
-      rank_queue.Iterate (check_package'Access);
+      while not clean_pass loop
+         clean_pass := True;
+         already_built.Clear;
+         rank_queue.Iterate (check_package'Access);
+      end loop;
       already_built.Iterate (prune_queue'Access);
    end limited_sanity_check;
 

@@ -20,7 +20,7 @@ package PortScan.Packages is
    --  A public component of limited_sanity_check that can be used to check
    --  individual packages (it's not queue based)
    procedure limited_package_check (repository : String; id : port_id;
-                                    pkg_exists : out Boolean);
+                                    pkg_exists, pkg_removed : out Boolean);
 
    --  Iterate through the final build queue to remove any packages that
    --  match the current package names
