@@ -2,8 +2,13 @@
 --  Reference: ../License.txt
 
 with Ada.Numerics.Discrete_Random;
+with PortScan.Buildcycle;
+with Replicant;
 
 package body PortScan.Ops is
+
+   package REP renames Replicant;
+   package CYC renames PortScan.Buildcycle;
 
 
    -------------------------
@@ -31,6 +36,10 @@ package body PortScan.Ops is
                exit when builder_states (builder) = shutdown;
                if builder_states (builder) = tasked then
                   builder_states (builder) := busy;
+
+                  REP.launch_slave (id => builder);
+                  CYC.initialize_log (id => builder,
+                                      sequence_id => instructions (builder));
                   --  build port (instruction) here (dummy always pass for now)
                   declare
                      delay_base : Rand_Draw := Rand20.Random (seed);
@@ -39,7 +48,10 @@ package body PortScan.Ops is
                   begin
                      delay delay_time;
                   end;
+                  CYC.finalize_log (id => builder);
+                  REP.destroy_slave (id => builder);
                   builder_states (builder) := done_success;
+
                else
                   --  idle or done-(failure|success), just wait a bit
                   delay 0.1;

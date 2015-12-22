@@ -3,6 +3,7 @@
 
 with PortScan.Ops;
 with PortScan.Packages;
+with PortScan.Buildcycle;
 with Parameters;
 with Ada.Text_IO;
 with Ada.Numerics.Discrete_Random;
@@ -35,28 +36,29 @@ begin
    end if;
 
    Replicant.initialize;
-   Replicant.launch_slave (3);
-   Replicant.launch_slave (12);
-   delay 35.0;
-   Replicant.destroy_slave (3);
-   Replicant.destroy_slave (12);
-   return;
+--     Replicant.launch_slave (3);
+--     Replicant.launch_slave (12);
+--     delay 35.0;
+--     Replicant.destroy_slave (3);
+--     Replicant.destroy_slave (12);
+--   return;
 
    --  needs to read environment or make -C <anyport> -V PORTSDIR
 --     good_scan := PortScan.scan_entire_ports_tree (portsdir => "/usr/xports");
 
---     good_scan := PortScan.scan_single_port (portsdir => "/usr/xports",
---                                             catport => "editors/joe",
---                                             repository => repo);
+   good_scan := PortScan.scan_single_port
+     (portsdir => USS (Parameters.configuration.dir_portsdir),
+      catport => "editors/joe",
+      repository => USS (Parameters.configuration.dir_repository));
 --     if not good_scan then
 --        return;
 --     end if;
 
 
-   good_scan := PortScan.scan_single_port
-     (portsdir => USS (Parameters.configuration.dir_portsdir),
-      catport => "mail/thunderbird",
-      repository => USS (Parameters.configuration.dir_repository));
+--     good_scan := PortScan.scan_single_port
+--       (portsdir => USS (Parameters.configuration.dir_portsdir),
+--        catport => "mail/thunderbird",
+--        repository => USS (Parameters.configuration.dir_repository));
 
    if good_scan then
       PortScan.set_build_priority;
@@ -124,6 +126,7 @@ begin
 --           end;
 --        end loop;
 --     end;
+   PortScan.Buildcycle.initialize;
    OPS.parallel_bulk_run
      (num_builders => Parameters.configuration.num_builders);
 

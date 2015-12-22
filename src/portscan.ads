@@ -8,6 +8,7 @@ with Ada.Text_IO;
 with Ada.Containers.Hashed_Maps;
 with Ada.Containers.Ordered_Sets;
 with Ada.Containers.Vectors;
+with Ada.Characters.Latin_1;
 
 with JohnnyText;
 with Definitions;  use Definitions;
@@ -17,6 +18,7 @@ package PortScan is
    package JT  renames JohnnyText;
    package AC  renames Ada.Containers;
    package TIO renames Ada.Text_IO;
+   package LAT renames Ada.Characters.Latin_1;
 
    type port_id   is private;
    port_match_failed : constant port_id;
@@ -49,9 +51,7 @@ package PortScan is
 private
 
    max_ports        : constant := 28000;
-   jobs_per_cpu     : constant := 1;
 
-   type jobs_type is range 1 .. cpu_range'Last * jobs_per_cpu;
    type port_id   is range -1 .. max_ports - 1;
    subtype port_index is port_id range 0 .. port_id'Last;
 
@@ -120,7 +120,7 @@ private
       record
          sequence_id   : port_index           := 0;
          key_cursor    : portkey_crate.Cursor := portkey_crate.No_Element;
-         jobs          : jobs_type            := 1;
+         jobs          : builders             := 1;
          ignore_reason : JT.Text              := JT.blank;
          port_version  : JT.Text              := JT.blank;
          package_name  : JT.Text              := JT.blank;
@@ -138,7 +138,7 @@ private
       end record;
    type port_record_access is access all port_record;
 
-   type dim_make_queue is array (jobs_type) of subqueue.Vector;
+   type dim_make_queue is array (scanners) of subqueue.Vector;
    type dim_all_ports  is array (port_index) of aliased port_record;
 
    all_ports    : dim_all_ports;
@@ -146,7 +146,7 @@ private
    make_queue   : dim_make_queue;
    rank_queue   : ranking_crate.Set;
    number_cores : cpu_range  := cpu_range'First;
-   lot_number   : jobs_type  := 1;
+   lot_number   : scanners   := 1;
    lot_counter  : port_index := 0;
    last_port    : port_index := 0;
    prescanned   : Boolean    := False;

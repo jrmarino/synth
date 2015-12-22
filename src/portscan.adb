@@ -7,7 +7,6 @@ with GNAT.Regpat;
 with Util.Streams.Pipes;
 with Util.Streams.Buffered;
 with GNAT.String_Split;
-with Ada.Characters.Latin_1;
 with Ada.Exceptions;
 
 package body PortScan is
@@ -17,7 +16,6 @@ package body PortScan is
    package RGX renames GNAT.Regpat;
    package STR renames Util.Streams;
    package GSS renames GNAT.String_Split;
-   package LAT renames Ada.Characters.Latin_1;
 
 
    ------------------------------
@@ -178,11 +176,11 @@ package body PortScan is
    --------------------------
    procedure parallel_deep_scan (portsdir : String; success : out Boolean)
    is
-      finished : array (jobs_type) of Boolean := (others => False);
+      finished : array (scanners) of Boolean := (others => False);
       combined_wait : Boolean := True;
       aborted : Boolean := False;
 
-      task type scan (lot : jobs_type);
+      task type scan (lot : scanners);
       task body scan
       is
          procedure populate (cursor : subqueue.Cursor);
@@ -259,7 +257,7 @@ package body PortScan is
          delay 5.0;
          TIO.Put (".");
          combined_wait := False;
-         for j in jobs_type'Range loop
+         for j in scanners'Range loop
             if not aborted and then not finished (j) then
                combined_wait := True;
                exit;
@@ -275,7 +273,7 @@ package body PortScan is
    -----------------------
    procedure wipe_make_queue is
    begin
-      for j in jobs_type'Range loop
+      for j in scanners'Range loop
          make_queue (j).Clear;
       end loop;
    end wipe_make_queue;
@@ -523,7 +521,7 @@ package body PortScan is
             when 1 => all_ports (target).port_version := topline;
             when 2 => all_ports (target).package_name := topline;
             when 3 => all_ports (target).jobs :=
-                 jobs_type (Integer'Value (JT.USS (topline)));
+                 builders (Integer'Value (JT.USS (topline)));
             when 4 =>
                all_ports (target).ignore_reason := topline;
                all_ports (target).ignored := not JT.IsBlank (topline);
@@ -686,7 +684,7 @@ package body PortScan is
       matches  : RGX.Match_Array (0 .. 1);
       pattern  : constant String := "SUBDIR[[:space:]]*[:+:]=[[:space:]]*(.*)";
       regex    : constant RGX.Pattern_Matcher := RGX.Compile (pattern);
-      max_lots : constant jobs_type := jobs_type (number_cores * jobs_per_cpu);
+      max_lots : constant scanners := scanners'Last;
    begin
       TIO.Open (File => archive,
                 Mode => TIO.In_File,
@@ -736,7 +734,7 @@ package body PortScan is
    is
       inner_search : AD.Search_Type;
       inner_dirent : AD.Directory_Entry_Type;
-      max_lots : constant jobs_type := jobs_type (number_cores * jobs_per_cpu);
+      max_lots     : constant scanners := scanners'Last;
    begin
       AD.Start_Search (Search    => inner_search,
                        Directory => portsdir & "/" & category,
@@ -780,7 +778,6 @@ package body PortScan is
    begin
       return Ada.Strings.Hash (JT.USS (key));
    end port_hash;
-
 
 
    ------------------
