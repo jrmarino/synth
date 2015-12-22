@@ -64,5 +64,6 @@ private
    procedure nextline (lineblock, firstline : out JT.Text);
    function  dump_file (filename : String) return String;
    function  dump_make_conf (id : builders) return String;
+   function  log_section (title : String; header : Boolean) return String;
 
 end PortScan.Buildcycle;

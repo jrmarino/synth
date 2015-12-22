@@ -36,7 +36,11 @@ package body PortScan.Buildcycle is
            catport (1 .. slash - 1) & "___" &
            catport (slash + 1 .. catport'Last) & ".log";
       end log_name;
+
       FA : access TIO.File_Type;
+      H_ENV : constant String := "Environment";
+      H_OPT : constant String := "Options";
+      H_CFG : constant String := "/etc/make.conf";
    begin
       trackers (id).seq_id := sequence_id;
       if sequence_id = port_match_failed then
@@ -64,16 +68,16 @@ package body PortScan.Buildcycle is
                       get_catport (all_ports (sequence_id)));
       TIO.Put      (FA.all, "Platform: " & JT.USS (uname_mrv));
       TIO.Put_Line (FA.all, "Started : " & timestamp (trackers (id).head_time));
-      TIO.Put_Line (FA.all, LAT.LF & "[ Environment HEAD ]");
+      TIO.Put_Line (FA.all, LAT.LF & log_section (H_ENV, True));
       TIO.Put      (FA.all, get_environment (id));
-      TIO.Put_Line (FA.all, "[ Environment TAIL ]" & LAT.LF);
-      TIO.Put_Line (FA.all, "[ Options Configuration HEAD ]");
+      TIO.Put_Line (FA.all, log_section (H_ENV, False) & LAT.LF);
+      TIO.Put_Line (FA.all, log_section (H_OPT, True));
       TIO.Put      (FA.all, get_options_configuration (id));
-      TIO.Put_Line (FA.all, "[ Options Configuration TAIL ]" & LAT.LF);
+      TIO.Put_Line (FA.all, log_section (H_OPT, False) & LAT.LF);
       dump_port_variables (id);
-      TIO.Put_Line (FA.all, "[ /etc/make.conf HEAD ]");
+      TIO.Put_Line (FA.all, log_section (H_CFG, True));
       TIO.Put      (FA.all, dump_make_conf (id));
-      TIO.Put_Line (FA.all, "[ /etc/make.conf TAIL ]" & LAT.LF);
+      TIO.Put_Line (FA.all, log_section (H_CFG, False) & LAT.LF);
 
    end initialize_log;
 
@@ -286,9 +290,9 @@ package body PortScan.Buildcycle is
             meatstr (meatlen) := onechar (1);
          end if;
       end loop;
-      return "[ " & title & " HEAD ]" & LAT.LF &
+      return log_section (title, True) & LAT.LF &
         meatstr (1 .. meatlen) & LAT.LF &
-        "[ " & title & " TAIL ]" & LAT.LF;
+        log_section (title, False) & LAT.LF;
    end split_collection;
 
 
@@ -393,6 +397,21 @@ package body PortScan.Buildcycle is
             raise cycle_log_error
               with "failed to create " & logdir;
    end initialize;
+
+
+   -------------------
+   --  log_section  --
+   -------------------
+   function log_section (title : String; header : Boolean) return String
+   is
+      first_part : constant String := "[ " & title;
+   begin
+      if header then
+         return first_part & " HEAD ]";
+      else
+         return first_part & " TAIL ]";
+      end if;
+   end log_section;
 
 
 end PortScan.Buildcycle;
