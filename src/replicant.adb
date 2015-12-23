@@ -43,6 +43,7 @@ package body Replicant is
          when lib         => return mount_base & root_lib;
          when dev         => return mount_base & root_dev;
          when etc         => return mount_base & root_etc;
+         when etc_mtree   => return mount_base & root_etc_mtree;
          when tmp         => return mount_base & root_tmp;
          when var         => return mount_base & root_var;
          when home        => return mount_base & root_home;
@@ -444,6 +445,25 @@ package body Replicant is
 
 
    ------------------------
+   --  copy_mtree_files  --
+   ------------------------
+   procedure copy_mtree_files (path_to_mtree : String)
+   is
+      mtree : constant String := "/etc/mtree";
+      root  : constant String := "/BSD.root.dist";
+      usr   : constant String := "/BSD.usr.dist";
+      var   : constant String := "/BSD.var.dist";
+   begin
+      AD.Copy_File (Source_Name => mtree & root,
+                    Target_Name => path_to_mtree & root);
+      AD.Copy_File (Source_Name => mtree & usr,
+                    Target_Name => path_to_mtree & usr);
+      AD.Copy_File (Source_Name => mtree & var,
+                    Target_Name => path_to_mtree & var);
+   end copy_mtree_files;
+
+
+   ------------------------
    --  create_make_conf  --
    ------------------------
    procedure create_make_conf (path_to_etc : String)
@@ -500,6 +520,19 @@ package body Replicant is
       AD.Copy_File (Source_Name => original,
                     Target_Name => path_to_etc & "/resolv.conf");
    end copy_resolv_conf;
+
+
+   ------------------------
+   --  execute_ldconfig  --
+   ------------------------
+   procedure execute_ldconfig (id : builders)
+   is
+      smount  : constant String := get_slave_mount (id);
+      command : constant String := "/usr/sbin/chroot " & smount &
+                                   " /sbin/ldconfig -m /lib /usr/lib";
+   begin
+      execute (command);
+   end execute_ldconfig;
 
 
    --------------------
@@ -563,10 +596,13 @@ package body Replicant is
 
       populate_var_folder (location (slave_base, var));
       populate_localbase  (location (slave_base, usr_local));
+      copy_mtree_files    (location (slave_base, etc_mtree));
       copy_resolv_conf    (location (slave_base, etc));
       create_make_conf    (location (slave_base, etc));
       create_passwd       (location (slave_base, etc));
       create_group        (location (slave_base, etc));
+
+      execute_ldconfig (id);
 
    exception
       when hiccup : others => EX.Reraise_Occurrence (hiccup);

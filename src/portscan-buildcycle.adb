@@ -33,7 +33,7 @@ package body PortScan.Buildcycle is
       initialize_log (id, sequence_id);
       for phase in phases'Range loop
          case phase is
-            when check_sanity  => R := exec_phase_check_sanity (id);
+            when check_sanity  => R := exec_phase_generic (id, "check-sanity");
             when pkg_depends   => R := exec_phase_depends (id, "pkg-depends");
             when fetch_depends => R := exec_phase_depends (id, "fetch-depends");
             when fetch         => R := exec_phase_generic (id, "fetch");
@@ -50,6 +50,22 @@ package body PortScan.Buildcycle is
             when run_depends   => R := exec_phase_depends (id, "run-depends");
             when stage         => R := exec_phase_generic (id, "stage");
             when pkg_package   => R := exec_phase_generic (id, "package");
+            when install_mtree =>
+               if testing then
+                  R := exec_phase_generic (id, "install-mtree");
+               end if;
+            when install =>
+               if testing then
+                  R := exec_phase_generic (id, "install");
+               end if;
+            when deinstall =>
+               if testing then
+                  R := exec_phase_generic (id, "deinstall");
+               end if;
+            when check_plist =>
+               if testing then
+                  R := exec_phase_generic (id, "check-plist");
+               end if;
          end case;
          exit when R = False;
       end loop;
@@ -481,27 +497,17 @@ package body PortScan.Buildcycle is
    end log_phase_begin;
 
 
-   -------------------------------
-   --  exec_phase_check_sanity  --
-   -------------------------------
-   function exec_phase_check_sanity (id : builders) return Boolean
-   is
-      phase    : constant String := "check-sanity";
-      phaseenv : String := "DEVELOPER=1";
-   begin
-      if not testing then
-         phaseenv := (others => LAT.Space);
-      end if;
-      return exec_phase (id => id, phase => phase, phaseenv => phaseenv);
-   end exec_phase_check_sanity;
-
-
    --------------------------
    --  exec_phase_generic  --
    --------------------------
    function exec_phase_generic (id : builders; phase : String) return Boolean is
    begin
-      return exec_phase (id => id, phase => phase);
+      if testing then
+         return exec_phase (id => id, phase => phase,
+                            phaseenv => "DEVELOPER=1");
+      else
+         return exec_phase (id => id, phase => phase);
+      end if;
    end exec_phase_generic;
 
 

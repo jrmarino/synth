@@ -34,7 +34,7 @@ private
                    usr_sbin,
                    usr_share,
                    xports, options, packages, distfiles,
-                   dev, etc, home, proc, root, tmp, var, wrkdirs,
+                   dev, etc, etc_mtree, home, proc, root, tmp, var, wrkdirs,
                    usr_local, usr_src, ccache);
    subtype subfolder is folder range bin .. usr_share;
 
@@ -52,6 +52,7 @@ private
    root_usr_src     : constant String := "/usr/src";
    root_dev         : constant String := "/dev";
    root_etc         : constant String := "/etc";
+   root_etc_mtree   : constant String := "/etc/mtree";
    root_lib         : constant String := "/lib";
    root_tmp         : constant String := "/tmp";
    root_var         : constant String := "/var";
@@ -120,7 +121,13 @@ private
    --  copy host's /etc/resolv.conf to slave
    procedure copy_resolv_conf (path_to_etc : String);
 
+   --  copy host's /etc/mtree files to slave
+   procedure copy_mtree_files (path_to_mtree : String);
+
    --  mount the devices
    procedure mount_devices (path_to_dev : String);
+
+   --  execute ldconfig as last action of slave creation
+   procedure execute_ldconfig (id : builders);
 
 end Replicant;

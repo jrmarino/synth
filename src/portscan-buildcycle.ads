@@ -27,7 +27,8 @@ private
    type phases is (check_sanity, pkg_depends, fetch_depends, fetch, checksum,
                    extract_depends, extract, patch_depends, patch,
                    build_depends, lib_depends, configure, build, run_depends,
-                   stage, pkg_package);
+                   stage, check_plist, pkg_package, install_mtree, install,
+                   deinstall);
    type dim_trackers is array (builders) of trackrec;
 
    trackers  : dim_trackers;
@@ -37,7 +38,6 @@ private
    procedure initialize_log (id : builders; sequence_id : port_id);
    procedure finalize_log   (id : builders);
 
-   function  exec_phase_check_sanity    (id : builders) return Boolean;
    function  exec_phase_generic (id : builders; phase : String) return Boolean;
    function  exec_phase_depends (id : builders; phase : String) return Boolean;
 
