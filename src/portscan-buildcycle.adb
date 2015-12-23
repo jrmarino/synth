@@ -38,6 +38,11 @@ package body PortScan.Buildcycle is
             when fetch_depends => R := exec_phase_depends (id, "fetch-depends");
             when fetch         => R := exec_phase_generic (id, "fetch");
             when checksum      => R := exec_phase_generic (id, "checksum");
+            when extract_depends => R := exec_phase_depends (id,
+                                                             "extract-depends");
+            when extract       => R := exec_phase_generic (id, "checksum");
+            when patch_depends => R := exec_phase_depends (id, "patch-depends");
+            when patch         => R := exec_phase_generic (id, "patch");
          end case;
          exit when R = False;
       end loop;
