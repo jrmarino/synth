@@ -29,6 +29,7 @@ package body PortScan.Ops is
          type Rand_Draw is range 1 .. 20;
          package Rand20 is new Ada.Numerics.Discrete_Random (Rand_Draw);
          seed : Rand20.Generator;
+         build_result : Boolean;
       begin
          if builder <= num_builders then
             TIO.Put_Line ("Starting Builder" & builder'Img);
@@ -38,22 +39,14 @@ package body PortScan.Ops is
                   builder_states (builder) := busy;
 
                   REP.launch_slave (id => builder);
-                  if CYC.build_package (id => builder,
-                                        sequence_id => instructions (builder))
-                  then
-                     null;
-                  end if;
-                  --  build port (instruction) here (dummy always pass for now)
-                  declare
-                     delay_base : Rand_Draw := Rand20.Random (seed);
-                     delay_time : Standard.Duration :=
-                       0.01 * Standard.Duration (delay_base);
-                  begin
-                     delay delay_time;
-                  end;
+                  build_result := CYC.build_package
+                    (id => builder,sequence_id => instructions (builder));
                   REP.destroy_slave (id => builder);
-                  builder_states (builder) := done_success;
-
+                  if build_result then
+                     builder_states (builder) := done_success;
+                  else
+                     builder_states (builder) := done_failure;
+                  end if;
                else
                   --  idle or done-(failure|success), just wait a bit
                   delay 0.1;

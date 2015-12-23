@@ -13,10 +13,6 @@ package PortScan.Buildcycle is
 
    procedure initialize (test_mode : Boolean);
 
---     procedure exec_phase_build_depends   (id : builders);
---     procedure exec_phase_lib_depends     (id : builders);
---     procedure exec_phase_configure       (id : builders);
---     procedure exec_phase_build           (id : builders);
 --     procedure exec_phase_run_depends     (id : builders);
 --     procedure exec_phase_stage           (id : builders);
 --     procedure exec_phase_package         (id : builders);
@@ -35,7 +31,8 @@ private
       end record;
 
    type phases is (check_sanity, pkg_depends, fetch_depends, fetch, checksum,
-                  extract_depends, extract, patch_depends, patch);
+                   extract_depends, extract, patch_depends, patch,
+                   build_depends, lib_depends, configure, build);
    type dim_trackers is array (builders) of trackrec;
 
    trackers  : dim_trackers;

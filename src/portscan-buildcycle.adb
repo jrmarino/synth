@@ -43,6 +43,10 @@ package body PortScan.Buildcycle is
             when extract       => R := exec_phase_generic (id, "checksum");
             when patch_depends => R := exec_phase_depends (id, "patch-depends");
             when patch         => R := exec_phase_generic (id, "patch");
+            when build_depends => R := exec_phase_depends (id, "build-depends");
+            when lib_depends   => R := exec_phase_depends (id, "lib-depends");
+            when configure     => R := exec_phase_generic (id, "configure");
+            when build         => R := exec_phase_generic (id, "build");
          end case;
          exit when R = False;
       end loop;
@@ -181,7 +185,7 @@ package body PortScan.Buildcycle is
    begin
       return WKDAY (ACF.Day_Of_Week (hack)) & "," & AC.Day (hack)'Img & " " &
         MON (AC.Month (hack)) & AC.Year (hack)'Img & " at" &
-        ACF.Image (hack)(11 .. 19);
+        ACF.Image (hack)(11 .. 19) & " UTC";
    end timestamp;
 
 
