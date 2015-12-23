@@ -129,6 +129,7 @@ begin
    PortScan.Buildcycle.initialize (True);
    OPS.parallel_bulk_run
      (num_builders => Parameters.configuration.num_builders);
+   Replicant.finalize;
 
 --     PortScan.release_ports_tree;
 

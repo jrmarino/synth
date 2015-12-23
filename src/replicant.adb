@@ -98,13 +98,41 @@ package body Replicant is
    ------------------
    procedure initialize
    is
-       opsys : nullfs_flavor   := dragonfly;
+      opsys   : nullfs_flavor   := dragonfly;
+      mm      : constant String := get_master_mount;
+      maspas  : constant String := "/master.passwd";
+      etcmp   : constant String := "/etc" & maspas;
+      command : constant String := "/usr/sbin/pwd_mkdb -p -d " & mm & " " &
+                                   mm & maspas;
    begin
       if JT.equivalent (PM.configuration.operating_sys, "FreeBSD") then
          opsys := freebsd;
       end if;
       flavor := opsys;
+
+      if AD.Exists (mm) then
+         AD.Delete_Tree (mm);
+      end if;
+
+      AD.Create_Path (mm);
+      AD.Copy_File (etcmp, mm & maspas);
+      execute (command);
+      create_base_group (mm);
+
    end initialize;
+
+
+   ----------------
+   --  finalize  --
+   ----------------
+   procedure finalize
+   is
+      mm : constant String := get_master_mount;
+   begin
+      if AD.Exists (mm) then
+         AD.Delete_Tree (mm);
+      end if;
+   end finalize;
 
 
    --------------------
@@ -331,6 +359,90 @@ package body Replicant is
    end execute;
 
 
+   -------------------------
+   --  create_base_group  --
+   -------------------------
+   procedure create_base_group (path_to_mm : String)
+   is
+      subtype sysgroup is String (1 .. 8);
+      type groupset is array (1 .. 34) of sysgroup;
+      users       : constant groupset :=
+        ("wheel   ", "daemon  ", "kmem    ", "sys     ",
+         "tty     ", "operator", "mail    ", "bin     ",
+         "news    ", "man     ", "games   ", "staff   ",
+         "sshd    ", "smmsp   ", "mailnull", "guest   ",
+         "bind    ", "proxy   ", "authpf  ", "_pflogd ",
+         "unbound ", "ftp     ", "video   ", "hast    ",
+         "uucp    ", "xten    ", "dialer  ", "network ",
+         "_sdpd   ", "_dhcp   ", "www     ", "vknet   ",
+         "nogroup ", "nobody  ");
+      group       : TIO.File_Type;
+      live_file   : TIO.File_Type;
+      keepit      : Boolean;
+      target      : constant String  := path_to_mm & "/group";
+      live_origin : constant String  := "/etc/group";
+   begin
+      TIO.Open   (File => live_file, Mode => TIO.In_File, Name => live_origin);
+      TIO.Create (File => group, Mode => TIO.Out_File, Name => target);
+      while not TIO.End_Of_File (live_file) loop
+         keepit := False;
+         declare
+            line : String := TIO.Get_Line (live_file);
+         begin
+            if line'Length > sysgroup'Length then
+               for grpindex in groupset'Range loop
+                  declare
+                     grpcolon : String := JT.trim (users (grpindex)) & ":";
+                  begin
+                     if grpcolon = line (1 .. grpcolon'Last) then
+                        keepit := True;
+                        exit;
+                     end if;
+                  end;
+               end loop;
+               if keepit then
+                  TIO.Put_Line (group, line);
+               end if;
+            end if;
+         end;
+      end loop;
+      TIO.Close (live_file);
+      TIO.Close (group);
+   end create_base_group;
+
+
+   --------------------
+   --  create_group  --
+   --------------------
+   procedure create_group (path_to_etc : String)
+   is
+      mm    : constant String := get_master_mount;
+      group : constant String := "/group";
+   begin
+      AD.Copy_File (Source_Name => mm & group,
+                    Target_Name => path_to_etc & group);
+   end create_group;
+
+
+   ---------------------
+   --  create_passwd  --
+   ---------------------
+   procedure create_passwd (path_to_etc : String)
+   is
+      mm     : constant String := get_master_mount;
+      passwd : constant String := "/passwd";
+      spwd   : constant String := "/spwd.db";
+      pwd    : constant String := "/pwd.db";
+   begin
+      AD.Copy_File (Source_Name => mm & passwd,
+                    Target_Name => path_to_etc & passwd);
+      AD.Copy_File (Source_Name => mm & spwd,
+                    Target_Name => path_to_etc & spwd);
+      AD.Copy_File (Source_Name => mm & pwd,
+                    Target_Name => path_to_etc & pwd);
+   end create_passwd;
+
+
    ------------------------
    --  create_make_conf  --
    ------------------------
@@ -416,7 +528,8 @@ package body Replicant is
 
       mount_nullfs (mount_target (xports),    location (slave_base, xports));
       mount_nullfs (mount_target (options),   location (slave_base, options));
-      mount_nullfs (mount_target (packages),  location (slave_base, packages));
+      mount_nullfs (mount_target (packages),  location (slave_base, packages),
+                    mode => readwrite);
       mount_nullfs (mount_target (distfiles), location (slave_base, distfiles),
                     mode => readwrite);
 
@@ -450,8 +563,10 @@ package body Replicant is
 
       populate_var_folder (location (slave_base, var));
       populate_localbase  (location (slave_base, usr_local));
-      create_make_conf    (location (slave_base, etc));
       copy_resolv_conf    (location (slave_base, etc));
+      create_make_conf    (location (slave_base, etc));
+      create_passwd       (location (slave_base, etc));
+      create_group        (location (slave_base, etc));
 
    exception
       when hiccup : others => EX.Reraise_Occurrence (hiccup);

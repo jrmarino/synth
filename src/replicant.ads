@@ -14,8 +14,11 @@ package Replicant is
 
    --  This procedure needs to be run once.
    --  It basically sets the operating system "flavor" which affects the
-   --  mount command spawning
+   --  mount command spawning.  It also creates the password database
    procedure initialize;
+
+   --  This removes the password database
+   procedure finalize;
 
 private
 
@@ -106,6 +109,13 @@ private
 
    --  create /etc/make.conf in slave
    procedure create_make_conf (path_to_etc : String);
+
+   --  create /etc/passwd (and databases) to define system users
+   procedure create_passwd (path_to_etc : String);
+
+   --  create /etc/group to define root user
+   procedure create_group      (path_to_etc : String);
+   procedure create_base_group (path_to_mm  : String);
 
    --  copy host's /etc/resolv.conf to slave
    procedure copy_resolv_conf (path_to_etc : String);

@@ -47,6 +47,9 @@ package body PortScan.Buildcycle is
             when lib_depends   => R := exec_phase_depends (id, "lib-depends");
             when configure     => R := exec_phase_generic (id, "configure");
             when build         => R := exec_phase_generic (id, "build");
+            when run_depends   => R := exec_phase_depends (id, "run-depends");
+            when stage         => R := exec_phase_generic (id, "stage");
+            when pkg_package   => R := exec_phase_generic (id, "package");
          end case;
          exit when R = False;
       end loop;

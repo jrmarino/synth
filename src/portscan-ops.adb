@@ -40,7 +40,7 @@ package body PortScan.Ops is
 
                   REP.launch_slave (id => builder);
                   build_result := CYC.build_package
-                    (id => builder,sequence_id => instructions (builder));
+                    (id => builder, sequence_id => instructions (builder));
                   REP.destroy_slave (id => builder);
                   if build_result then
                      builder_states (builder) := done_success;
