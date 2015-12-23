@@ -13,7 +13,6 @@ package PortScan.Buildcycle is
 
    procedure initialize (test_mode : Boolean);
 
---     procedure exec_phase_fetch_depends   (id : builders);
 --     procedure exec_phase_fetch           (id : builders);
 --     procedure exec_phase_checksum        (id : builders);
 --     procedure exec_phase_extract_depends (id : builders);
@@ -41,7 +40,7 @@ private
          log_handle : aliased TIO.File_Type;
       end record;
 
-   type phases is (check_sanity, pkg_depends, fetch_depends);
+   type phases is (check_sanity, pkg_depends, fetch_depends, fetch, checksum);
    type dim_trackers is array (builders) of trackrec;
 
    trackers  : dim_trackers;
@@ -53,6 +52,7 @@ private
 
    function  exec_phase_check_sanity    (id : builders) return Boolean;
    function  exec_phase_generic (id : builders; phase : String) return Boolean;
+   function  exec_phase_depends (id : builders; phase : String) return Boolean;
 
    function  timestamp      (hack : AC.Time) return String;
    function  generic_system_command (command : String) return JT.Text;
@@ -71,7 +71,8 @@ private
    procedure log_phase_end (id : builders);
    procedure log_phase_begin (phase : String; id : builders);
    function  generic_execute (id : builders; command : String) return Boolean;
-   function  exec_phase (id : builders; phase : String; phaseenv : String := "")
+   function  exec_phase (id : builders; phase : String; phaseenv : String := "";
+                         depends_phase : Boolean := False)
                          return Boolean;
 
 end PortScan.Buildcycle;

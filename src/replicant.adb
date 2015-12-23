@@ -3,13 +3,14 @@
 
 with Ada.Directories;
 with Ada.Exceptions;
+with Ada.Text_IO;
 with GNAT.OS_Lib;
 
 with Parameters;
 with JohnnyText;
 
 --  remove
-with Ada.Text_IO;
+with Ada.Characters.Latin_1;
 
 package body Replicant is
 
@@ -357,7 +358,36 @@ package body Replicant is
       end if;
 
       TIO.Close (makeconf);
+
+
+      ---  TEMPORARY !!!
+      declare
+         pkgconf  : TIO.File_Type;
+      begin
+         TIO.Create (File => pkgconf,
+                     Mode => TIO.Out_File,
+                     Name => path_to_etc & "/../usr/local/etc/pkg.conf");
+         TIO.Put_Line (pkgconf, "ABI = " & Ada.Characters.Latin_1.Quotation &
+                         "dragonfly:4.4:x86:64" &
+                         Ada.Characters.Latin_1.Quotation);
+         TIO.Close (pkgconf);
+      end;
    end create_make_conf;
+
+
+   ------------------------
+   --  copy_resolv_conf  --
+   ------------------------
+   procedure copy_resolv_conf (path_to_etc : String)
+   is
+      original : constant String := "/etc/resolv.conf";
+   begin
+      if not AD.Exists (original) then
+         return;
+      end if;
+      AD.Copy_File (Source_Name => original,
+                    Target_Name => path_to_etc & "/resolv.conf");
+   end copy_resolv_conf;
 
 
    --------------------
@@ -387,7 +417,8 @@ package body Replicant is
       mount_nullfs (mount_target (xports),    location (slave_base, xports));
       mount_nullfs (mount_target (options),   location (slave_base, options));
       mount_nullfs (mount_target (packages),  location (slave_base, packages));
-      mount_nullfs (mount_target (distfiles), location (slave_base, distfiles));
+      mount_nullfs (mount_target (distfiles), location (slave_base, distfiles),
+                    mode => readwrite);
 
       if PM.configuration.tmpfs_workdir then
          mount_tmpfs (location (slave_base, wrkdirs), 12 * 1024);
@@ -420,6 +451,7 @@ package body Replicant is
       populate_var_folder (location (slave_base, var));
       populate_localbase  (location (slave_base, usr_local));
       create_make_conf    (location (slave_base, etc));
+      copy_resolv_conf    (location (slave_base, etc));
 
    exception
       when hiccup : others => EX.Reraise_Occurrence (hiccup);

@@ -126,7 +126,7 @@ begin
 --           end;
 --        end loop;
 --     end;
-   PortScan.Buildcycle.initialize (False);
+   PortScan.Buildcycle.initialize (True);
    OPS.parallel_bulk_run
      (num_builders => Parameters.configuration.num_builders);
 

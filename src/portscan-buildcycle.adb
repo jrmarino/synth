@@ -34,8 +34,10 @@ package body PortScan.Buildcycle is
       for phase in phases'Range loop
          case phase is
             when check_sanity  => R := exec_phase_check_sanity (id);
-            when pkg_depends   => R := exec_phase_generic (id, "pkg-depends");
-            when fetch_depends => R := exec_phase_generic (id, "fetch-depends");
+            when pkg_depends   => R := exec_phase_depends (id, "pkg-depends");
+            when fetch_depends => R := exec_phase_depends (id, "fetch-depends");
+            when fetch         => R := exec_phase_generic (id, "fetch");
+            when checksum      => R := exec_phase_generic (id, "checksum");
          end case;
          exit when R = False;
       end loop;
@@ -482,13 +484,25 @@ package body PortScan.Buildcycle is
    end exec_phase_check_sanity;
 
 
-   ------------------------------
-   --  exec_phase_pkg_depends  --
-   ------------------------------
+   --------------------------
+   --  exec_phase_generic  --
+   --------------------------
    function exec_phase_generic (id : builders; phase : String) return Boolean is
    begin
       return exec_phase (id => id, phase => phase);
    end exec_phase_generic;
+
+
+   --------------------------
+   --  exec_phase_depends  --
+   --------------------------
+   function exec_phase_depends (id : builders; phase : String) return Boolean
+   is
+      phaseenv : String := "USE_PACKAGE_DEPENDS_ONLY=1";
+   begin
+      return exec_phase (id => id, phase => phase, phaseenv => phaseenv,
+                         depends_phase => True);
+   end exec_phase_depends;
 
 
    ---------------
@@ -518,7 +532,8 @@ package body PortScan.Buildcycle is
    ------------------
    --  exec_phase  --
    ------------------
-   function exec_phase (id : builders; phase : String; phaseenv : String := "")
+   function exec_phase (id : builders; phase : String; phaseenv : String := "";
+                        depends_phase : Boolean := False)
                         return Boolean
    is
       root       : constant String := get_root (id);
@@ -528,7 +543,8 @@ package body PortScan.Buildcycle is
       catport    : constant String := get_catport (all_ports (pid));
       result     : Boolean;
    begin
-      if testing then
+      if testing or else depends_phase
+      then
          port_flags := (others => LAT.Space);
       else
          dev_flags := (others => LAT.Space);

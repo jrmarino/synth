@@ -107,6 +107,9 @@ private
    --  create /etc/make.conf in slave
    procedure create_make_conf (path_to_etc : String);
 
+   --  copy host's /etc/resolv.conf to slave
+   procedure copy_resolv_conf (path_to_etc : String);
+
    --  mount the devices
    procedure mount_devices (path_to_dev : String);
 
