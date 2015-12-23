@@ -22,6 +22,7 @@ private
          head_time  : AC.Time;
          tail_time  : AC.Time;
          log_handle : aliased TIO.File_Type;
+         dynlink    : string_crate.Vector;
       end record;
 
    type phases is (check_sanity, pkg_depends, fetch_depends, fetch, checksum,
@@ -35,11 +36,14 @@ private
    uname_mrv : JT.Text;
    testing   : Boolean;
 
+   chroot    : constant String := "/usr/sbin/chroot ";
+
    procedure initialize_log (id : builders; sequence_id : port_id);
    procedure finalize_log   (id : builders);
 
    function  exec_phase_generic (id : builders; phase : String) return Boolean;
    function  exec_phase_depends (id : builders; phase : String) return Boolean;
+   function  exec_phase_deinstall (id : builders) return Boolean;
 
    function  timestamp      (hack : AC.Time) return String;
    function  generic_system_command (command : String) return JT.Text;
@@ -59,7 +63,11 @@ private
    procedure log_phase_begin (phase : String; id : builders);
    function  generic_execute (id : builders; command : String) return Boolean;
    function  exec_phase (id : builders; phase : String; phaseenv : String := "";
-                         depends_phase : Boolean := False)
+                         depends_phase : Boolean := False;
+                         skip_header   : Boolean := False)
                          return Boolean;
+   function  dynamically_linked (base, filename : String) return Boolean;
+   procedure stack_linked_libraries (id : builders; base, filename : String);
+   procedure log_linked_libraries (id : builders);
 
 end PortScan.Buildcycle;

@@ -60,7 +60,7 @@ package body PortScan.Buildcycle is
                end if;
             when deinstall =>
                if testing then
-                  R := exec_phase_generic (id, "deinstall");
+                  R := exec_phase_deinstall (id);
                end if;
             when check_plist =>
                if testing then
@@ -89,6 +89,7 @@ package body PortScan.Buildcycle is
          raise cycle_log_error
            with "initialization attempted with port_id = 0";
       end if;
+      trackers (id).dynlink.Clear;
       trackers (id).head_time := AC.Clock;
       declare
          log_path : constant String := log_name (sequence_id);
@@ -267,7 +268,7 @@ package body PortScan.Buildcycle is
    function get_environment (id : builders) return String
    is
       root    : constant String := get_root (id);
-      command : constant String := "/usr/sbin/chroot " & root & " /usr/bin/env";
+      command : constant String := chroot & root & " /usr/bin/env";
    begin
       return JT.USS (generic_system_command (command));
    end get_environment;
@@ -279,7 +280,7 @@ package body PortScan.Buildcycle is
    function get_options_configuration (id : builders) return String
    is
       root    : constant String := get_root (id);
-      command : constant String := "/usr/sbin/chroot " & root &
+      command : constant String := chroot & root &
         " /usr/bin/make -C /xports/" &
         get_catport (all_ports (trackers (id).seq_id)) &
         " showconfig";
@@ -344,7 +345,7 @@ package body PortScan.Buildcycle is
    procedure dump_port_variables (id : builders)
    is
       root    : constant String := get_root (id);
-      command : constant String := "/usr/sbin/chroot " & root &
+      command : constant String := chroot & root &
         " /usr/bin/make -C /xports/" &
         get_catport (all_ports (trackers (id).seq_id)) &
         " -VCONFIGURE_ENV -VCONFIGURE_ARGS -VMAKE_ENV -VMAKE_ARGS" &
@@ -384,6 +385,10 @@ package body PortScan.Buildcycle is
       CR : constant String (1 .. 1) := (1 => Character'Val (10));
    begin
       CR_loc := JT.SU.Index (Source => lineblock, Pattern => CR);
+      if CR_loc = 0 then
+         firstline := lineblock;
+         return;
+      end if;
       firstline := JT.SUS
         (JT.SU.Slice (Source => lineblock, Low => 1, High => CR_loc - 1));
       JT.SU.Delete (Source => lineblock, From => 1, Through => CR_loc);
@@ -523,6 +528,21 @@ package body PortScan.Buildcycle is
    end exec_phase_depends;
 
 
+   ----------------------------
+   --  exec_phase_deinstall  --
+   ----------------------------
+   function exec_phase_deinstall (id : builders) return Boolean
+   is
+      phase : constant String := "deinstall";
+   begin
+      --  This is only run during "testing" so assume that.
+      log_phase_begin (phase, id);
+      log_linked_libraries (id);
+      return exec_phase (id => id, phase => phase, phaseenv => "DEVELOPER=1",
+                         skip_header => True);
+   end exec_phase_deinstall;
+
+
    ---------------
    --  execute  --
    ---------------
@@ -551,7 +571,8 @@ package body PortScan.Buildcycle is
    --  exec_phase  --
    ------------------
    function exec_phase (id : builders; phase : String; phaseenv : String := "";
-                        depends_phase : Boolean := False)
+                        depends_phase : Boolean := False;
+                        skip_header   : Boolean := False)
                         return Boolean
    is
       root       : constant String := get_root (id);
@@ -573,11 +594,13 @@ package body PortScan.Buildcycle is
       --  Descriptors.  I can't find a safe way to get the File Descriptor
       --  out of the File type.
 
-      log_phase_begin (phase, id);
+      if not skip_header then
+         log_phase_begin (phase, id);
+      end if;
       TIO.Close (trackers (id).log_handle);
 
       declare
-           command : constant String := "/usr/sbin/chroot " & root &
+           command : constant String := chroot & root &
            " /usr/bin/env " & phaseenv & dev_flags & port_flags &
            "/usr/bin/make -C /xports/" & catport & " " & phase;
       begin
@@ -595,5 +618,91 @@ package body PortScan.Buildcycle is
       return result;
    end exec_phase;
 
+
+   --------------------------
+   --  dynamically_linked  --
+   --------------------------
+   function dynamically_linked (base, filename : String) return Boolean
+   is
+      command : String := chroot & base & " /usr/bin/file -b " & filename;
+      comres  : JT.Text;
+      dlindex : Natural;
+   begin
+      comres := generic_system_command (command);
+      dlindex := JT.SU.Index (comres, "dynamically linked");
+      return dlindex > 0;
+   end dynamically_linked;
+
+
+   ----------------------------
+   --  log_linked_libraries  --
+   ----------------------------
+   procedure stack_linked_libraries (id : builders; base, filename : String)
+   is
+      command : String := chroot & base & " /usr/bin/objdump -p " & filename;
+      comres  : JT.Text;
+      topline : JT.Text;
+      crlen1  : Natural;
+      crlen2  : Natural;
+      dlindex : Natural;
+   begin
+      comres := generic_system_command (command);
+      crlen1 := JT.SU.Length (comres);
+      loop
+         nextline (lineblock => comres, firstline => topline);
+         crlen2 := JT.SU.Length (comres);
+         exit when crlen1 = crlen2;
+         crlen1 := crlen2;
+         if not JT.IsBlank (topline) then
+            dlindex := JT.SU.Index (topline, "NEEDED");
+            if dlindex > 0 then
+               if not trackers (id).dynlink.Contains (topline) then
+                  trackers (id).dynlink.Append (topline);
+               end if;
+            end if;
+         end if;
+      end loop;
+   end stack_linked_libraries;
+
+
+   ----------------------------
+   --  log_linked_libraries  --
+   ----------------------------
+   procedure log_linked_libraries (id : builders)
+   is
+      procedure log_dump (cursor : string_crate.Cursor);
+
+      comres  : JT.Text;
+      topline : JT.Text;
+      crlen1  : Natural;
+      crlen2  : Natural;
+      pkgfile : constant String := JT.USS
+                         (all_ports (trackers (id).seq_id).package_name);
+      pkgname : constant String := pkgfile (1 .. pkgfile'Last - 4);
+      root    : constant String := get_root (id);
+      command : constant String := chroot & root &
+        " /usr/local/sbin/pkg query %Fp " & pkgname;
+
+      procedure log_dump (cursor : string_crate.Cursor) is
+      begin
+         TIO.Put_Line (trackers (id).log_handle,
+                       JT.USS (string_crate.Element (Position => cursor)));
+      end log_dump;
+   begin
+      TIO.Put_Line (trackers (id).log_handle,
+                    "=> Checking shared library dependencies");
+      comres := generic_system_command (command);
+      crlen1 := JT.SU.Length (comres);
+      loop
+         nextline (lineblock => comres, firstline => topline);
+         crlen2 := JT.SU.Length (comres);
+         exit when crlen1 = crlen2;
+         crlen1 := crlen2;
+         if dynamically_linked (root, JT.USS (topline)) then
+            stack_linked_libraries (id, root, JT.USS (topline));
+         end if;
+      end loop;
+      trackers (id).dynlink.Iterate (log_dump'Access);
+   end log_linked_libraries;
 
 end PortScan.Buildcycle;
