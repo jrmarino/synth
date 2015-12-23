@@ -38,8 +38,11 @@ package body PortScan.Ops is
                   builder_states (builder) := busy;
 
                   REP.launch_slave (id => builder);
-                  CYC.initialize_log (id => builder,
-                                      sequence_id => instructions (builder));
+                  if CYC.build_package (id => builder,
+                                        sequence_id => instructions (builder))
+                  then
+                     null;
+                  end if;
                   --  build port (instruction) here (dummy always pass for now)
                   declare
                      delay_base : Rand_Draw := Rand20.Random (seed);
@@ -48,7 +51,6 @@ package body PortScan.Ops is
                   begin
                      delay delay_time;
                   end;
-                  CYC.finalize_log (id => builder);
                   REP.destroy_slave (id => builder);
                   builder_states (builder) := done_success;
 

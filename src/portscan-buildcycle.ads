@@ -11,13 +11,8 @@ package PortScan.Buildcycle is
    cycle_log_error : exception;
    cycle_cmd_error : exception;
 
-   procedure initialize;
+   procedure initialize (test_mode : Boolean);
 
-   --  procedure builder_execute (id : builders; command : String);
---     function  builder_execute (id : builders; command : String) return String;
---
---     procedure exec_phase_check_sanity    (id : builders);
---     procedure exec_phase_pkg_depends     (id : builders);
 --     procedure exec_phase_fetch_depends   (id : builders);
 --     procedure exec_phase_fetch           (id : builders);
 --     procedure exec_phase_checksum        (id : builders);
@@ -33,8 +28,8 @@ package PortScan.Buildcycle is
 --     procedure exec_phase_stage           (id : builders);
 --     procedure exec_phase_package         (id : builders);
 
-   procedure initialize_log (id : builders; sequence_id : port_id);
-   procedure finalize_log   (id : builders);
+
+   function build_package (id : builders; sequence_id : port_id) return Boolean;
 
 private
 
@@ -46,11 +41,18 @@ private
          log_handle : aliased TIO.File_Type;
       end record;
 
+   type phases is (check_sanity, pkg_depends, fetch_depends);
    type dim_trackers is array (builders) of trackrec;
 
    trackers  : dim_trackers;
    uname_mrv : JT.Text;
+   testing   : Boolean;
 
+   procedure initialize_log (id : builders; sequence_id : port_id);
+   procedure finalize_log   (id : builders);
+
+   function  exec_phase_check_sanity    (id : builders) return Boolean;
+   function  exec_phase_generic (id : builders; phase : String) return Boolean;
 
    function  timestamp      (hack : AC.Time) return String;
    function  generic_system_command (command : String) return JT.Text;
@@ -62,8 +64,14 @@ private
    function  split_collection (line : JT.Text; title : String) return String;
    procedure dump_port_variables (id : builders);
    procedure nextline (lineblock, firstline : out JT.Text);
+   function  log_name (sid : port_id) return String;
    function  dump_file (filename : String) return String;
    function  dump_make_conf (id : builders) return String;
    function  log_section (title : String; header : Boolean) return String;
+   procedure log_phase_end (id : builders);
+   procedure log_phase_begin (phase : String; id : builders);
+   function  generic_execute (id : builders; command : String) return Boolean;
+   function  exec_phase (id : builders; phase : String; phaseenv : String := "")
+                         return Boolean;
 
 end PortScan.Buildcycle;

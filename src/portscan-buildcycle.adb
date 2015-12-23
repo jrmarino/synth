@@ -6,6 +6,7 @@ with Ada.Calendar.Formatting;
 with Ada.Strings.Fixed;
 with Ada.Directories;
 with Ada.Direct_IO;
+with GNAT.OS_Lib;
 with Util.Streams.Pipes;
 with Util.Streams.Buffered;
 
@@ -17,27 +18,38 @@ package body PortScan.Buildcycle is
    package ACF renames Ada.Calendar.Formatting;
    package ASF renames Ada.Strings.Fixed;
    package AD  renames Ada.Directories;
+   package OSL renames GNAT.OS_Lib;
    package STR renames Util.Streams;
    package PM  renames Parameters;
+
+
+   ---------------------
+   --  build_package  --
+   ---------------------
+   function build_package (id : builders; sequence_id : port_id) return Boolean
+   is
+      R : Boolean;
+   begin
+      initialize_log (id, sequence_id);
+      for phase in phases'Range loop
+         case phase is
+            when check_sanity  => R := exec_phase_check_sanity (id);
+            when pkg_depends   => R := exec_phase_generic (id, "pkg-depends");
+            when fetch_depends => R := exec_phase_generic (id, "fetch-depends");
+         end case;
+         exit when R = False;
+      end loop;
+      finalize_log (id);
+      return R;
+   end build_package;
+
 
    ----------------------
    --  initialize_log  --
    ----------------------
    procedure initialize_log (id : builders; sequence_id : port_id)
    is
-      function log_name (sid : port_id) return String;
-      function log_name (sid : port_id) return String
-      is
-         catport : constant String := get_catport (all_ports (sid));
-         slash   : Integer;
-      begin
-         slash := ASF.Index (catport, "/");
-         return JT.USS (PM.configuration.dir_logs) & "/" &
-           catport (1 .. slash - 1) & "___" &
-           catport (slash + 1 .. catport'Last) & ".log";
-      end log_name;
-
-      FA : access TIO.File_Type;
+      FA    : access TIO.File_Type;
       H_ENV : constant String := "Environment";
       H_OPT : constant String := "Options";
       H_CFG : constant String := "/etc/make.conf";
@@ -74,7 +86,9 @@ package body PortScan.Buildcycle is
       TIO.Put_Line (FA.all, log_section (H_OPT, True));
       TIO.Put      (FA.all, get_options_configuration (id));
       TIO.Put_Line (FA.all, log_section (H_OPT, False) & LAT.LF);
+
       dump_port_variables (id);
+
       TIO.Put_Line (FA.all, log_section (H_CFG, True));
       TIO.Put      (FA.all, dump_make_conf (id));
       TIO.Put_Line (FA.all, log_section (H_CFG, False) & LAT.LF);
@@ -87,10 +101,11 @@ package body PortScan.Buildcycle is
    --------------------
    procedure finalize_log (id : builders)
    is
+     FA    : access TIO.File_Type;
    begin
       trackers (id).tail_time := AC.Clock;
-      TIO.Put_Line (trackers (id).log_handle,
-                    "Finished: " & timestamp (trackers (id).tail_time));
+      FA := trackers (id).log_handle'Access;
+      TIO.Put_Line (FA.all, "Finished: " & timestamp (trackers (id).tail_time));
       declare
          diff_days : ACA.Day_Count;
          diff_secs : Duration;
@@ -102,19 +117,17 @@ package body PortScan.Buildcycle is
                          Days    => diff_days,
                          Seconds => diff_secs,
                          Leap_Seconds => leap_secs);
-         TIO.Put (trackers (id).log_handle, "Duration:");
+         TIO.Put (FA.all, "Duration:");
          if diff_days > 0 then
             if diff_days = 1 then
-               TIO.Put_Line (trackers (id).log_handle, " 1 day and" &
+               TIO.Put_Line (FA.all, " 1 day and" &
                              ACF.Image (Elapsed_Time => diff_secs));
             else
-               TIO.Put_Line (trackers (id).log_handle,
-                             diff_days'Img & " days and" &
+               TIO.Put_Line (FA.all, diff_days'Img & " days and" &
                                ACF.Image (Elapsed_Time => diff_secs));
             end if;
          else
-            TIO.Put_Line (trackers (id).log_handle, " " &
-                          ACF.Image (Elapsed_Time => diff_secs));
+            TIO.Put_Line (FA.all, " " & ACF.Image (Elapsed_Time => diff_secs));
          end if;
       end;
       TIO.Close (trackers (id).log_handle);
@@ -198,7 +211,6 @@ package body PortScan.Buildcycle is
       command : constant String := "/usr/bin/uname -mrv";
    begin
       uname_mrv := generic_system_command (command);
-      TIO.Put_Line ("mvr = " & JT.USS (uname_mrv));
    end set_uname_mrv;
 
 
@@ -348,6 +360,21 @@ package body PortScan.Buildcycle is
    end nextline;
 
 
+   ----------------
+   --  log_name  --
+   ----------------
+   function log_name (sid : port_id) return String
+   is
+      catport : constant String := get_catport (all_ports (sid));
+      slash   : Integer;
+   begin
+      slash := ASF.Index (catport, "/");
+      return JT.USS (PM.configuration.dir_logs) & "/" &
+        catport (1 .. slash - 1) & "___" &
+        catport (slash + 1 .. catport'Last) & ".log";
+   end log_name;
+
+
    -----------------
    --  dump_file  --
    -----------------
@@ -384,11 +411,12 @@ package body PortScan.Buildcycle is
    ------------------
    --  initialize  --
    ------------------
-   procedure initialize
+   procedure initialize (test_mode : Boolean)
    is
       logdir : constant String := JT.USS (PM.configuration.dir_logs);
    begin
       set_uname_mrv;
+      testing := test_mode;
       if not AD.Exists (logdir) then
          AD.Create_Path (New_Directory => logdir);
       end if;
@@ -412,6 +440,126 @@ package body PortScan.Buildcycle is
          return first_part & " TAIL ]";
       end if;
    end log_section;
+
+
+   ---------------------
+   --  log_phase_end  --
+   ---------------------
+   procedure log_phase_end (id : builders)
+   is
+      dash : constant String := "=========================";
+   begin
+      TIO.Put_Line (trackers (id).log_handle, dash & dash & dash & LAT.LF);
+   end log_phase_end;
+
+
+   -----------------------
+   --  log_phase_begin  --
+   -----------------------
+   procedure log_phase_begin (phase : String; id : builders)
+   is
+      plast  : constant Natural := 10 + phase'Length;
+      dash   : constant String := "========================";
+      middle :          String := "< phase :                 >";
+   begin
+      middle (11 .. plast) := phase;
+      TIO.Put_Line (trackers (id).log_handle, dash & middle & dash);
+   end log_phase_begin;
+
+
+   -------------------------------
+   --  exec_phase_check_sanity  --
+   -------------------------------
+   function exec_phase_check_sanity (id : builders) return Boolean
+   is
+      phase    : constant String := "check-sanity";
+      phaseenv : String := "DEVELOPER=1";
+   begin
+      if not testing then
+         phaseenv := (others => LAT.Space);
+      end if;
+      return exec_phase (id => id, phase => phase, phaseenv => phaseenv);
+   end exec_phase_check_sanity;
+
+
+   ------------------------------
+   --  exec_phase_pkg_depends  --
+   ------------------------------
+   function exec_phase_generic (id : builders; phase : String) return Boolean is
+   begin
+      return exec_phase (id => id, phase => phase);
+   end exec_phase_generic;
+
+
+   ---------------
+   --  execute  --
+   ---------------
+   function generic_execute (id : builders; command : String) return Boolean
+   is
+      Args        : OSL.Argument_List_Access;
+      Exit_Status : Integer;
+      FD          : OSL.File_Descriptor;
+   begin
+      FD := OSL.Open_Append (Name  => log_name (trackers (id).seq_id),
+                             Fmode => OSL.Text);
+
+      Args := OSL.Argument_String_To_List (command);
+      OSL.Spawn (Program_Name => Args (Args'First).all,
+                 Args         => Args (Args'First + 1 .. Args'Last),
+                 Return_Code  => Exit_Status,
+                 Output_File_Descriptor => FD);
+      OSL.Free (Args);
+
+      OSL.Close (FD);
+      return Exit_Status = 0;
+   end generic_execute;
+
+
+   ------------------
+   --  exec_phase  --
+   ------------------
+   function exec_phase (id : builders; phase : String; phaseenv : String := "")
+                        return Boolean
+   is
+      root       : constant String := get_root (id);
+      port_flags : String := " NO_DEPENDS=yes ";
+      dev_flags  : String := " DEVELOPER_MODE=yes ";
+      pid        : port_id := trackers (id).seq_id;
+      catport    : constant String := get_catport (all_ports (pid));
+      result     : Boolean;
+   begin
+      if testing then
+         port_flags := (others => LAT.Space);
+      else
+         dev_flags := (others => LAT.Space);
+      end if;
+
+      --  Nasty, we have to switch open and close the log file for each
+      --  phase because we have to switch between File_Type and File
+      --  Descriptors.  I can't find a safe way to get the File Descriptor
+      --  out of the File type.
+
+      log_phase_begin (phase, id);
+      TIO.Close (trackers (id).log_handle);
+
+      declare
+           command : constant String := "/usr/sbin/chroot " & root &
+           " /usr/bin/env " & phaseenv & dev_flags & port_flags &
+           "/usr/bin/make -C /xports/" & catport & " " & phase;
+      begin
+         result := generic_execute (id, command);
+      end;
+
+      --  Reopen the log.  I guess we can leave off the exception check
+      --  since it's been passing before
+
+      TIO.Open (File => trackers (id).log_handle,
+                Mode => TIO.Append_File,
+                Name => log_name (trackers (id).seq_id));
+      log_phase_end (id);
+
+      return result;
+   end exec_phase;
 
 
 end PortScan.Buildcycle;
