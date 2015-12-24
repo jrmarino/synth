@@ -543,6 +543,8 @@ package body Replicant is
       slave_base   : constant String := get_slave_mount (id);
       slave_work   : constant String := slave_base & "_work";
       slave_local  : constant String := slave_base & "_localbase";
+      dir_system   : constant String := JT.USS (PM.configuration.dir_system);
+      live_system  : constant Boolean := (dir_system = "/");
    begin
       forge_directory (slave_base);
       mount_tmpfs (slave_base);
@@ -552,8 +554,13 @@ package body Replicant is
       end loop;
 
       for mnt in subfolder'Range loop
-         mount_nullfs (target      => location ("", mnt),
-                       mount_point => location (slave_base, mnt));
+         if live_system then
+            mount_nullfs (target      => location ("", mnt),
+                          mount_point => location (slave_base, mnt));
+         else
+            mount_nullfs (target      => location (dir_system, mnt),
+                          mount_point => location (slave_base, mnt));
+         end if;
       end loop;
 
       folder_access (location (slave_base, home), lock);

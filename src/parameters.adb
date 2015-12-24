@@ -129,6 +129,9 @@ package body Parameters is
       configuration.dir_options :=
         extract_string (profile, Field_13, std_options);
 
+      configuration.dir_system :=
+        extract_string (profile, Field_14, std_sysbase);
+
       if not fields_present then
          declare
             contents : String := generated_section;
@@ -248,7 +251,8 @@ package body Parameters is
         param_set (profile, Field_10) and then
         param_set (profile, Field_11) and then
         param_set (profile, Field_12) and then
-        param_set (profile, Field_13);
+        param_set (profile, Field_13) and then
+        param_set (profile, Field_14);
    end all_params_present;
 
 
@@ -290,6 +294,7 @@ package body Parameters is
         Field_05 & USS (configuration.dir_buildbase) &
         Field_06 & USS (configuration.dir_logs) &
         Field_07 & USS (configuration.dir_ccache) &
+        Field_14 & USS (configuration.dir_system) &
         Field_08 & BDS (configuration.num_builders) &
         Field_09 & BDS (configuration.jobs_limit) &
         Field_10 & TFS (configuration.tmpfs_workdir) &

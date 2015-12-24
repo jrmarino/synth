@@ -14,6 +14,7 @@ package Parameters is
    type configuration_record is
       record
          operating_sys   : JT.Text;
+         dir_system      : JT.Text;
          dir_repository  : JT.Text;
          dir_packages    : JT.Text;
          dir_portsdir    : JT.Text;
@@ -69,6 +70,7 @@ private
    std_ports_loc  : constant String := "/usr/ports";
    std_distfiles  : constant String := "/usr/ports/distfiles";
    std_options    : constant String := "/var/db/ports";
+   std_sysbase    : constant String := "/";
    std_opsys      : constant String := "UnKnown";
    no_ccache      : constant String := "disabled";
 
@@ -85,6 +87,7 @@ private
    Field_11 : constant String := "Tmpfs_localbase";
    Field_12 : constant String := "Operating_system";
    Field_13 : constant String := "Directory_options";
+   Field_14 : constant String := "Directory_system";
 
    procedure default_parallelism (num_cores : cpu_range;
                                   num_builders : out Integer;
