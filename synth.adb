@@ -16,6 +16,7 @@ procedure synth
 is
    pid : PortScan.port_id;
    good_scan : Boolean;
+   pkg_good  : Boolean;
    --  repo : constant String := "/usr/local/boom/data/packages/dev-potential/All";
 
    package T   renames Ada.Text_IO;
@@ -48,11 +49,43 @@ begin
 
    good_scan := PortScan.scan_single_port
      (portsdir => USS (Parameters.configuration.dir_portsdir),
+      catport => "ports-mgmt/pkg",
+      repository => USS (Parameters.configuration.dir_repository));
+
+   if good_scan then
+      PortScan.set_build_priority;
+   else
+      T.Put_Line ("pkg(8) scan failure, exiting");
+      Replicant.finalize;
+      return;
+   end if;
+
+   PortScan.Packages.limited_sanity_check
+     (repository => USS (Parameters.configuration.dir_repository));
+
+   if not PortScan.Packages.queue_is_empty then
+      PortScan.Buildcycle.initialize (False);
+      pid := PortScan.Ops.top_buildable_port;
+      T.Put_Line ("bingo... ");
+
+      Replicant.launch_slave (id => 1);
+      pkg_good := PortScan.Buildcycle.build_package
+        (id => 1, sequence_id => pid);
+      Replicant.destroy_slave (id => 1);
+      if not pkg_good then
+         T.Put_Line ("Failed to build pkg(8), exiting");
+         Replicant.finalize;
+         return;
+      end if;
+   end if;
+
+   PortScan.reset_ports_tree;
+
+   good_scan := PortScan.scan_single_port
+     (portsdir => USS (Parameters.configuration.dir_portsdir),
       catport => "editors/joe",
       repository => USS (Parameters.configuration.dir_repository));
---     if not good_scan then
---        return;
---     end if;
+
 
 
 --     good_scan := PortScan.scan_single_port
@@ -63,6 +96,7 @@ begin
    if good_scan then
       PortScan.set_build_priority;
    else
+      Replicant.finalize;
       return;
    end if;
 
@@ -96,13 +130,16 @@ begin
 --        OPS.unlist_port (pid);
    end loop;
    T.Put_Line ("Final Queue length is" & OPS.queue_length'Img);
-   if OPS.integrity_intact then
-      T.Put_Line ("Integrity intact");
+   if PortScan.Packages.queue_is_empty then
+      T.Put_Line ("Everything is Ok, there's nothing to do.");
    else
-      T.Put_Line ("Integrity lost !!!!");
-   end if;
+      if OPS.integrity_intact then
+         T.Put_Line ("Integrity intact");
+      else
+         T.Put_Line ("Integrity lost !!!!");
+      end if;
 
-   T.Put_Line ("Starting build simulation");
+      T.Put_Line ("Starting build simulation");
 --     declare
 --        type Rand_Draw is range 1 .. 100;
 --        package Rand_Int is new Ada.Numerics.Discrete_Random (Rand_Draw);
@@ -126,10 +163,13 @@ begin
 --           end;
 --        end loop;
 --     end;
-   PortScan.Buildcycle.initialize (True);
-   OPS.parallel_bulk_run
-     (num_builders => Parameters.configuration.num_builders);
+
+      PortScan.Buildcycle.initialize (True);
+      OPS.parallel_bulk_run
+        (num_builders => Parameters.configuration.num_builders);
+   end if;
    Replicant.finalize;
+
 
 --     PortScan.release_ports_tree;
 

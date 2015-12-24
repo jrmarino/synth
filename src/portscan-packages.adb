@@ -413,4 +413,14 @@ package body PortScan.Packages is
       JT.SU.Delete (Source => lineblock, From => 1, Through => CR_loc);
    end nextline;
 
+
+   ----------------------
+   --  queue_is_empty  --
+   ----------------------
+   function queue_is_empty return Boolean is
+   begin
+      return rank_queue.Is_Empty;
+   end queue_is_empty;
+
+
 end PortScan.Packages;

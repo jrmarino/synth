@@ -30,10 +30,14 @@ package PortScan.Packages is
    --  (Well, it's limited to "*.txz" matches, but normally that's everything)
    procedure wipe_out_repository (repository : String);
 
+   --  Sometimes, especially with the single ports-mgmt/pkg check, there is
+   --  nothing left to do after the sanity check.  Let's provide a way to
+   --  detect that case.
+   function queue_is_empty return Boolean;
+
 private
 
    stored_packages : package_crate.Map;
-
    --  This function returns "True" if the scanned options exactly match
    --  the options in the already-built package.  Usually it's already known
    --  that a package exists before the function is called, but an existence
