@@ -66,6 +66,7 @@ private
                          depends_phase : Boolean := False;
                          skip_header   : Boolean := False)
                          return Boolean;
+   function  dynamically_linked (base, filename : String) return Boolean;
    procedure stack_linked_libraries (id : builders; base, filename : String);
    procedure log_linked_libraries (id : builders);
 

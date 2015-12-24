@@ -620,6 +620,22 @@ package body PortScan.Buildcycle is
    end exec_phase;
 
 
+   --------------------------
+   --  dynamically_linked  --
+   --------------------------
+   function dynamically_linked (base, filename : String) return Boolean
+   is
+      command : String := chroot & base & " /usr/bin/file -b " &
+        "-e ascii -e encoding -e tar -e compress " & filename;
+      comres  : JT.Text;
+      dlindex : Natural;
+   begin
+      comres := generic_system_command (command);
+      dlindex := JT.SU.Index (comres, "dynamically linked");
+      return dlindex > 0;
+   end dynamically_linked;
+
+
    ----------------------------
    --  log_linked_libraries  --
    ----------------------------
@@ -650,7 +666,7 @@ package body PortScan.Buildcycle is
       end loop;
    exception
          --  the command result was not zero, so it was an expected format
-         --  or static file.  Just skip it.
+         --  or static file.  Just skip it.  (Should never happen)
       when bad_result : others => null;
    end stack_linked_libraries;
 
@@ -688,7 +704,9 @@ package body PortScan.Buildcycle is
          crlen2 := JT.SU.Length (comres);
          exit when crlen1 = crlen2;
          crlen1 := crlen2;
-         stack_linked_libraries (id, root, JT.USS (topline));
+         if dynamically_linked (root, JT.USS (topline)) then
+            stack_linked_libraries (id, root, JT.USS (topline));
+         end if;
       end loop;
       trackers (id).dynlink.Iterate (log_dump'Access);
    end log_linked_libraries;
