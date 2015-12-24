@@ -5,9 +5,9 @@ package Definitions is
 
    pragma Pure;
 
-   synth_version_major : constant := 0;
-   synth_version_minor : constant := 9;
-   synth_version_point : constant := 0;
+   synth_version_major : constant String := "0";
+   synth_version_minor : constant String := "90";
+   copywrite_years     : constant String := "2015-2016";
 
    jobs_per_cpu  : constant := 2;
 

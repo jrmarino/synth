@@ -5,6 +5,7 @@ with PortScan.Ops;
 with PortScan.Packages;
 with PortScan.Buildcycle;
 with Parameters;
+with Actions;
 with Ada.Text_IO;
 with Ada.Numerics.Discrete_Random;
 with Ada.Strings.Unbounded;
@@ -36,6 +37,8 @@ begin
       return;
    end if;
 
+   Actions.print_version;
+
    Replicant.initialize;
 --     Replicant.launch_slave (3);
 --     Replicant.launch_slave (12);
@@ -66,7 +69,7 @@ begin
    if not PortScan.Packages.queue_is_empty then
       PortScan.Buildcycle.initialize (False);
       pid := PortScan.Ops.top_buildable_port;
-      T.Put_Line ("bingo... ");
+      T.Put_Line ("Rebuilding pkg(8) First ...");
 
       Replicant.launch_slave (id => 1);
       pkg_good := PortScan.Buildcycle.build_package
