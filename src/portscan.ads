@@ -171,5 +171,6 @@ private
    function find_colon (Source : String) return Natural;
    function scrub_phase (Source : String) return JT.Text;
    function get_catport (PR : port_record) return String;
+   function get_ccache return String;
 
 end PortScan;

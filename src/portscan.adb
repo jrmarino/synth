@@ -9,10 +9,13 @@ with Util.Streams.Buffered;
 with GNAT.String_Split;
 with Ada.Exceptions;
 
+with Parameters;
+
 package body PortScan is
 
    package AD  renames Ada.Directories;
    package EX  renames Ada.Exceptions;
+   package PM  renames Parameters;
    package RGX renames GNAT.Regpat;
    package STR renames Util.Streams;
    package GSS renames GNAT.String_Split;
@@ -380,7 +383,7 @@ package body PortScan is
       fullport : constant String := portsdir & "/" & catport;
       command  : constant String := "/usr/bin/make -C " & fullport &
                  " PORTSDIR=" & portsdir &
-                 " PACKAGE_BUILDING=yes" &
+                 " PACKAGE_BUILDING=yes" & get_ccache &
                  " -VPKGVERSION -VPKGFILE:T -VMAKE_JOBS_NUMBER -VIGNORE" &
                  " -VFETCH_DEPENDS -VEXTRACT_DEPENDS -VPATCH_DEPENDS" &
                  " -VBUILD_DEPENDS -VLIB_DEPENDS -VRUN_DEPENDS" &
@@ -822,6 +825,19 @@ package body PortScan is
    begin
       return JT.USS (catport);
    end get_catport;
+
+
+   ------------------
+   --  get_ccache  --
+   ------------------
+   function get_ccache return String
+   is
+   begin
+      if AD.Exists (JT.USS (PM.configuration.dir_ccache)) then
+         return " WITH_CCACHE_BUILD=yes CCACHE_DIR=/ccache";
+      end if;
+      return "";
+   end get_ccache;
 
 
 end PortScan;

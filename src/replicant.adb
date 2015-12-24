@@ -589,7 +589,8 @@ package body Replicant is
       end if;
 
       if AD.Exists (mount_target (ccache)) then
-         mount_nullfs (mount_target (ccache), location (slave_base, ccache));
+         mount_nullfs (mount_target (ccache), location (slave_base, ccache),
+                       mode => readwrite);
       end if;
 
       mount_devices (location (slave_base, dev));
