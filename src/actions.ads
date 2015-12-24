@@ -7,4 +7,7 @@ package Actions is
    --  output of "synth version"
    procedure print_version;
 
+   --  output of "synth help"
+   procedure print_help;
+
 end Actions;

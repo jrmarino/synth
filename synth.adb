@@ -38,6 +38,7 @@ begin
    end if;
 
    Actions.print_version;
+   Actions.print_help;
 
    Replicant.initialize;
 --     Replicant.launch_slave (3);
