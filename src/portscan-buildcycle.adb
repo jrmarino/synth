@@ -109,8 +109,8 @@ package body PortScan.Buildcycle is
 
       TIO.Put_Line (trackers (id).log_handle, "=> Building " &
                       get_catport (all_ports (sequence_id)));
-      TIO.Put      (FA.all, "Platform: " & JT.USS (uname_mrv));
       TIO.Put_Line (FA.all, "Started : " & timestamp (trackers (id).head_time));
+      TIO.Put      (FA.all, "Platform: " & JT.USS (uname_mrv));
       TIO.Put_Line (FA.all, LAT.LF & log_section (H_ENV, True));
       TIO.Put      (FA.all, get_environment (id));
       TIO.Put_Line (FA.all, log_section (H_ENV, False) & LAT.LF);
