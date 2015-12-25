@@ -4,13 +4,19 @@
 
 with Ada.Text_IO;
 with Ada.Characters.Latin_1;
+with GNAT.OS_Lib;
 
+with JohnnyText;
+with Parameters;
 with Definitions;   use Definitions;
 
 package body Actions is
 
    package TIO renames Ada.Text_IO;
    package LAT renames Ada.Characters.Latin_1;
+   package OSL renames GNAT.OS_Lib;
+   package JT  renames JohnnyText;
+   package PM  renames Parameters;
 
    ---------------------
    --  print_version  --
@@ -114,5 +120,148 @@ package body Actions is
       TIO.Put_Line ("It may also be a path to a file containing one origin " &
                       "per line." & LAT.LF);
    end print_help;
+
+
+   -----------------------------
+   --  launch_configure_menu  --
+   -----------------------------
+   procedure launch_configure_menu
+   is
+      dashes : constant String (1 .. 79) := (others => LAT.Equals_Sign);
+      indent : constant String (1 ..  3) := (others => LAT.Space);
+      subtype ofield is String (1 .. 30);
+      type option is range 1 .. 13;
+      type desc_type is array (option) of ofield;
+      descriptions : desc_type :=
+         (
+      --  012345678901234567890123456789
+          "[A] Ports directory           ",
+          "[B] Packages directory        ",
+          "[C] Distfiles directory       ",
+          "[D] Repository directory      ",
+          "[E] Port options directory    ",
+          "[F] Build logs directory      ",
+          "[G] Build base directory      ",
+          "[H] System root directory     ",
+          "[I] Compiler cache directory  ",
+          "[J] Num. concurrent builders  ",
+          "[K] Max. jobs per builder     ",
+          "[L] Use tmpfs for work area   ",
+          "[M] Use tmpfs for /usr/local  ");
+
+      optX1A : constant String := "[>]   Switch profiles (changes discarded)";
+      optX1B : constant String := "[>]   Switch profiles";
+      optX2A : constant String := "[ESC] Exit without saving changes";
+      optX3A : constant String := "[RET] Save changes (starred)";
+      optX3B : constant String := "[RET] Exit";
+
+      dupe     : PM.configuration_record := PM.configuration;
+      pristine : Boolean;
+      procedure print_opt (opt : option);
+      procedure print_opt (opt : option)
+      is
+         orig : JT.Text;
+         next : JT.Text;
+         show : JT.Text;
+         orignat : builders;
+         nextnat : builders;
+         origbool : Boolean;
+         nextbool : Boolean;
+         equivalent : Boolean;
+      begin
+         TIO.Put (indent & descriptions (opt));
+         case opt is
+            when 1 => orig := dupe.dir_portsdir;
+                      next := PM.configuration.dir_portsdir;
+            when 2 => orig := dupe.dir_packages;
+                      next := PM.configuration.dir_packages;
+            when 3 => orig := dupe.dir_distfiles;
+                      next := PM.configuration.dir_distfiles;
+            when 4 => orig := dupe.dir_repository;
+                      next := PM.configuration.dir_repository;
+            when 5 => orig := dupe.dir_options;
+                      next := PM.configuration.dir_options;
+            when 6 => orig := dupe.dir_logs;
+                      next := PM.configuration.dir_logs;
+            when 7 => orig := dupe.dir_buildbase;
+                      next := PM.configuration.dir_buildbase;
+            when 8 => orig := dupe.dir_system;
+                      next := PM.configuration.dir_system;
+            when 9 => orig := dupe.dir_ccache;
+                      next := PM.configuration.dir_ccache;
+            when 10 => orignat := dupe.num_builders;
+                       nextnat := PM.configuration.num_builders;
+            when 11 => orignat := dupe.jobs_limit;
+                       nextnat := PM.configuration.jobs_limit;
+            when 12 => origbool := dupe.tmpfs_workdir;
+                       nextbool := PM.configuration.tmpfs_workdir;
+            when 13 => origbool := dupe.tmpfs_localbase;
+                       nextbool := PM.configuration.tmpfs_localbase;
+         end case;
+         case opt is
+            when 1 .. 9   => equivalent := JT.equivalent (orig, next);
+                             show := next;
+            when 10 .. 11 => equivalent := (orignat = nextnat);
+                             show := JT.int2text (Integer (nextnat));
+            when 12 .. 13 => equivalent := (origbool = nextbool);
+                             show := JT.bool2text (nextbool);
+         end case;
+         if equivalent then
+            TIO.Put_Line (" " & JT.USS (show));
+         else
+            TIO.Put_Line ("*" & JT.USS (show));
+            pristine := False;
+         end if;
+      end print_opt;
+   begin
+      clear_screen;
+      TIO.Put_Line ("Synth configuration profile: " &
+                      JT.USS (PM.configuration.profile));
+      TIO.Put_Line (dashes);
+      pristine := True;
+      for line in option'Range loop
+         print_opt (line);
+      end loop;
+      TIO.Put_Line ("");
+      if pristine then
+         TIO.Put_Line (indent & optX1B);
+         TIO.Put_Line (indent & optX3B);
+      else
+         TIO.Put_Line (indent & optX1A);
+         TIO.Put_Line (indent & optX2A);
+         TIO.Put_Line (indent & optX3A);
+      end if;
+
+
+   end launch_configure_menu;
+
+
+   -----------------------
+   --  generic_execute  --
+   -----------------------
+   function generic_execute (command : String) return Boolean
+   is
+      Args        : OSL.Argument_List_Access;
+      Exit_Status : Integer;
+   begin
+      Args := OSL.Argument_String_To_List (command);
+      Exit_Status := OSL.Spawn
+        (Program_Name => Args (Args'First).all,
+         Args         => Args (Args'First + 1 .. Args'Last));
+      OSL.Free (Args);
+      return Exit_Status = 0;
+   end generic_execute;
+
+
+   --------------------
+   --  clear_screen  --
+   --------------------
+   procedure clear_screen
+   is
+      result  : Boolean;
+      command : constant String := "/usr/bin/clear";
+   begin
+      result := generic_execute (command);
+   end clear_screen;
 
 end Actions;

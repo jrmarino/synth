@@ -80,4 +80,45 @@ package body JohnnyText is
       return AS.Fixed.Trim (S, AS.Both);
    end trim;
 
+   ---------------
+   --  int2str  --
+   ---------------
+   function int2str  (A : Integer) return String
+   is
+      raw : constant String := A'Img;
+      len : constant Natural := raw'Length;
+   begin
+      return raw (2 .. len);
+   end int2str;
+
+
+   ----------------
+   --  int2text  --
+   ----------------
+   function int2text (A : Integer) return Text is
+   begin
+      return SUS (int2str (A));
+   end int2text;
+
+
+   ----------------
+   --  bool2str  --
+   ----------------
+   function bool2str  (A : Boolean) return String is
+   begin
+      if A then
+         return "true";
+      end if;
+      return "false";
+   end bool2str;
+
+
+   -----------------
+   --  bool2text  --
+   -----------------
+   function bool2text (A : Boolean) return Text is
+   begin
+      return SUS (bool2str (A));
+   end bool2text;
+
 end JohnnyText;

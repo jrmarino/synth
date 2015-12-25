@@ -27,4 +27,12 @@ package JohnnyText is
    function trim (US : Text) return Text;
    function trim (S : String) return String;
 
+   --  unpadded numeric image
+   function int2str  (A : Integer) return String;
+   function int2text (A : Integer) return Text;
+
+   --  convert boolean to lowercase string
+   function bool2str  (A : Boolean) return String;
+   function bool2text (A : Boolean) return Text;
+
 end JohnnyText;
