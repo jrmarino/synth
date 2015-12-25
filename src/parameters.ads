@@ -14,6 +14,7 @@ package Parameters is
    type configuration_record is
       record
          operating_sys   : JT.Text;
+         profile         : JT.Text;
          dir_system      : JT.Text;
          dir_repository  : JT.Text;
          dir_packages    : JT.Text;
@@ -30,15 +31,17 @@ package Parameters is
          tmpfs_localbase : Boolean;
       end record;
 
-   configuration : configuration_record;
+   configuration  : configuration_record;
+   active_profile : JT.Text;
+
+   update_config : exception;
 
    --  This procedure will create a default configuration file if one
    --  does not already exist, otherwise it will it load it.  In every case,
    --  the "configuration" record will be populated after this is run.
    --  returns "True" on success
-   function load_configuration (num_cores : cpu_range;
-                                profile   : String := live_system)
-                                return Boolean;
+   function load_configuration (num_cores : cpu_range) return Boolean;
+   procedure write_configuration (profile : String := live_system);
 
 private
 
@@ -73,6 +76,7 @@ private
    std_sysbase    : constant String := "/";
    std_opsys      : constant String := "UnKnown";
    no_ccache      : constant String := "disabled";
+   master_section : constant String := "Global Configuration";
 
    Field_01 : constant String := "Directory_packages";
    Field_02 : constant String := "Directory_repository";
@@ -89,6 +93,8 @@ private
    Field_13 : constant String := "Directory_options";
    Field_14 : constant String := "Directory_system";
 
+   global_01 : constant String := "profile_selected";
+
    procedure default_parallelism (num_cores : cpu_range;
                                   num_builders : out Integer;
                                   jobs_per_builder : out Integer);
@@ -101,8 +107,9 @@ private
    function extract_integer (profile, mark : String; default : Integer)
                              return Integer;
 
-   function section_exists (profile : String) return Boolean;
+   function section_exists (profile, mark : String) return Boolean;
    function all_params_present (profile : String) return Boolean;
+   function all_global_present return Boolean;
    function generated_section return String;
    function param_set (profile, field : String) return Boolean;
    function query_generic (value : String) return String;
@@ -110,5 +117,7 @@ private
    function query_opsys return String;
    function enough_memory return Boolean;
    procedure query_physical_memory;
+   procedure write_blank_section (section : String);
+   procedure write_master_section;
 
 end Parameters;

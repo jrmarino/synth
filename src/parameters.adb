@@ -17,13 +17,12 @@ package body Parameters is
    --------------------------
    --  load_configuration  --
    --------------------------
-   function load_configuration (num_cores : cpu_range;
-                                profile   : String := live_system)
-                                return Boolean
+   function load_configuration (num_cores : cpu_range) return Boolean
    is
       def_builders   : Integer;
       def_jlimit     : Integer;
       fields_present : Boolean;
+      global_present : Boolean;
    begin
       default_parallelism (num_cores        => num_cores,
                            num_builders     => def_builders,
@@ -50,103 +49,136 @@ package body Parameters is
       internal_config.Init (File_Name => conf_location,
                             On_Type_Mismatch => Config.Be_Quiet);
 
-      if section_exists (profile => profile) then
-         fields_present := all_params_present (profile);
+      if section_exists (master_section, global_01) then
+         global_present := all_global_present;
       else
-         declare
-            File_Handle : TIO.File_Type;
-         begin
-            TIO.Open (File => File_Handle,
-                      Mode => TIO.Append_File,
-                      Name => conf_location);
-            TIO.Put_Line (File_Handle, "");
-            TIO.Put_Line (File_Handle, "[" & profile & "]");
-            TIO.Close (File_Handle);
-         exception
-            when Error : others =>
-               TIO.Put_Line ("Failed to append " & conf_location);
-               return False;
-         end;
-         fields_present := False;
+         write_blank_section (master_section);
+         global_present := False;
       end if;
 
-      configuration.dir_packages :=
-        extract_string (profile, Field_01, LS_Packages);
+      configuration.profile :=
+        extract_string (master_section, global_01, live_system);
 
-      configuration.dir_repository := configuration.dir_packages;
-      JT.SU.Append (configuration.dir_repository, "/All");
-
-      configuration.dir_portsdir :=
-        extract_string (profile, Field_03, std_ports_loc);
-
-      if param_set (profile, Field_04) then
-         configuration.dir_distfiles :=
-           extract_string (profile, Field_04, std_distfiles);
-      else
-         configuration.dir_distfiles :=
-           extract_string (profile, Field_04, query_distfiles);
+      if not global_present then
+         write_master_section;
       end if;
 
-      configuration.dir_buildbase :=
-        extract_string (profile, Field_05, LS_Buildbase);
+      declare
+         profile : constant String := JT.USS (configuration.profile);
+      begin
+         if section_exists (profile, Field_01) then
+            fields_present := all_params_present (profile);
+         else
+            write_blank_section (section => profile);
+            fields_present := False;
+         end if;
 
-      configuration.dir_logs :=
-        extract_string (profile, Field_06, LS_Logs);
+         configuration.dir_packages :=
+           extract_string (profile, Field_01, LS_Packages);
 
-      configuration.dir_ccache :=
-        extract_string (profile, Field_07, no_ccache);
+         configuration.dir_repository := configuration.dir_packages;
+         JT.SU.Append (configuration.dir_repository, "/All");
 
-      configuration.num_builders := builders
-        (extract_integer (profile, Field_08, def_builders));
+         configuration.dir_portsdir :=
+           extract_string (profile, Field_03, std_ports_loc);
 
-      configuration.jobs_limit := builders
-        (extract_integer (profile, Field_09, def_jlimit));
+         if param_set (profile, Field_04) then
+            configuration.dir_distfiles :=
+              extract_string (profile, Field_04, std_distfiles);
+         else
+            configuration.dir_distfiles :=
+              extract_string (profile, Field_04, query_distfiles);
+         end if;
 
-      if param_set (profile, Field_10) then
-         configuration.tmpfs_workdir :=
-           extract_boolean (profile, Field_10, False);
-      else
-         configuration.tmpfs_workdir :=
-           extract_boolean (profile, Field_10, enough_memory);
-      end if;
+         configuration.dir_buildbase :=
+           extract_string (profile, Field_05, LS_Buildbase);
 
-      if param_set (profile, Field_11) then
-         configuration.tmpfs_localbase :=
-           extract_boolean (profile, Field_11, False);
-      else
-         configuration.tmpfs_localbase :=
-           extract_boolean (profile, Field_11, enough_memory);
-      end if;
+         configuration.dir_logs :=
+           extract_string (profile, Field_06, LS_Logs);
 
-      if param_set (profile, Field_12) then
-         configuration.operating_sys :=
-           extract_string (profile, Field_12, std_opsys);
-      else
-         configuration.operating_sys :=
-           extract_string (profile, Field_12, query_opsys);
-      end if;
+         configuration.dir_ccache :=
+           extract_string (profile, Field_07, no_ccache);
 
-      configuration.dir_options :=
-        extract_string (profile, Field_13, std_options);
+         configuration.num_builders := builders
+           (extract_integer (profile, Field_08, def_builders));
 
-      configuration.dir_system :=
-        extract_string (profile, Field_14, std_sysbase);
+         configuration.jobs_limit := builders
+           (extract_integer (profile, Field_09, def_jlimit));
+
+         if param_set (profile, Field_10) then
+            configuration.tmpfs_workdir :=
+              extract_boolean (profile, Field_10, False);
+         else
+            configuration.tmpfs_workdir :=
+              extract_boolean (profile, Field_10, enough_memory);
+         end if;
+
+         if param_set (profile, Field_11) then
+            configuration.tmpfs_localbase :=
+              extract_boolean (profile, Field_11, False);
+         else
+            configuration.tmpfs_localbase :=
+              extract_boolean (profile, Field_11, enough_memory);
+         end if;
+
+         if param_set (profile, Field_12) then
+            configuration.operating_sys :=
+              extract_string (profile, Field_12, std_opsys);
+         else
+            configuration.operating_sys :=
+              extract_string (profile, Field_12, query_opsys);
+         end if;
+
+         configuration.dir_options :=
+           extract_string (profile, Field_13, std_options);
+
+         configuration.dir_system :=
+           extract_string (profile, Field_14, std_sysbase);
+      end;
 
       if not fields_present then
-         declare
-            contents : String := generated_section;
-         begin
-            internal_config.Replace_Section (profile, contents);
-         exception
-            when Error : others =>
-               TIO.Put_Line ("Failed to update [" & profile & "] at "
-                 & conf_location);
-               return False;
-         end;
+         write_configuration (JT.USS (configuration.profile));
       end if;
 
       return True;
+   exception
+      when mishap : others =>  return False;
    end load_configuration;
+
+
+   ---------------------------
+   --  write_configuration  --
+   ---------------------------
+   procedure write_configuration (profile : String := live_system)
+   is
+      contents : String := generated_section;
+   begin
+      internal_config.Replace_Section (profile, contents);
+   exception
+      when Error : others =>
+         raise update_config
+           with "Failed to update [" & profile & "] at " & conf_location;
+   end write_configuration;
+
+
+   ---------------------------
+   --  write_blank_section  --
+   ---------------------------
+   procedure write_blank_section (section : String)
+   is
+      File_Handle : TIO.File_Type;
+   begin
+      TIO.Open (File => File_Handle,
+                Mode => TIO.Append_File,
+                Name => conf_location);
+      TIO.Put_Line (File_Handle, "");
+      TIO.Put_Line (File_Handle, "[" & section & "]");
+      TIO.Close (File_Handle);
+   exception
+      when Error : others =>
+         raise update_config
+           with "Failed to append [" & section & "] at " & conf_location;
+   end write_blank_section;
 
 
    ---------------------------
@@ -228,9 +260,9 @@ package body Parameters is
    ----------------------
    --  section_exists  --
    ----------------------
-   function section_exists (profile : String) return Boolean is
+   function section_exists (profile, mark : String) return Boolean is
    begin
-      return param_set (profile, Field_01);
+      return param_set (profile, mark);
    end section_exists;
 
    --------------------------
@@ -254,6 +286,16 @@ package body Parameters is
         param_set (profile, Field_13) and then
         param_set (profile, Field_14);
    end all_params_present;
+
+
+   --------------------------
+   --  all_global_present  --
+   --------------------------
+   function all_global_present return Boolean is
+   begin
+      return
+        param_set (master_section, global_01);
+   end all_global_present;
 
 
    -------------------------
@@ -391,6 +433,10 @@ package body Parameters is
 
    end query_physical_memory;
 
+
+   ---------------------
+   --  enough_memory  --
+   ---------------------
    function enough_memory return Boolean is
       megs_per_slave : Natural;
    begin
@@ -398,5 +444,26 @@ package body Parameters is
       megs_per_slave := memory_megs / Positive (configuration.num_builders);
       return megs_per_slave >= 1280;
    end enough_memory;
+
+   ----------------------------
+   --  write_master_section  --
+   ----------------------------
+   procedure write_master_section
+   is
+      function USS (US : JT.Text) return String;
+      function USS (US : JT.Text) return String is
+      begin
+         return "= " & JT.USS (US) & LAT.LF;
+      end USS;
+      contents : String :=
+        global_01 & USS (configuration.profile);
+   begin
+      internal_config.Replace_Section (master_section, contents);
+   exception
+      when Error : others =>
+         raise update_config
+           with "Failed to update [" & master_section & "] at " & conf_location;
+   end write_master_section;
+
 
 end Parameters;
