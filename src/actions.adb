@@ -4,6 +4,8 @@
 
 with Ada.Text_IO;
 with Ada.Characters.Latin_1;
+with Ada.Integer_Text_IO;
+with Ada.Directories;
 with GNAT.OS_Lib;
 
 with JohnnyText;
@@ -12,7 +14,9 @@ with Definitions;   use Definitions;
 
 package body Actions is
 
+   package AD  renames Ada.Directories;
    package TIO renames Ada.Text_IO;
+   package INT renames Ada.Integer_Text_IO;
    package LAT renames Ada.Characters.Latin_1;
    package OSL renames GNAT.OS_Lib;
    package JT  renames JohnnyText;
@@ -134,7 +138,7 @@ package body Actions is
       type desc_type is array (option) of ofield;
       descriptions : desc_type :=
          (
-      --  012345678901234567890123456789
+      --   012345678901234567890123456789
           "[A] Ports directory           ",
           "[B] Packages directory        ",
           "[C] Distfiles directory       ",
@@ -158,6 +162,12 @@ package body Actions is
       dupe     : PM.configuration_record := PM.configuration;
       pristine : Boolean;
       procedure print_opt (opt : option);
+      procedure print_menu;
+      procedure print_header;
+      procedure change_boolean_option (opt : option);
+      procedure change_positive_option (opt : option);
+      procedure change_directory_option (opt : option);
+
       procedure print_opt (opt : option)
       is
          orig : JT.Text;
@@ -171,32 +181,32 @@ package body Actions is
       begin
          TIO.Put (indent & descriptions (opt));
          case opt is
-            when 1 => orig := dupe.dir_portsdir;
-                      next := PM.configuration.dir_portsdir;
-            when 2 => orig := dupe.dir_packages;
-                      next := PM.configuration.dir_packages;
-            when 3 => orig := dupe.dir_distfiles;
-                      next := PM.configuration.dir_distfiles;
-            when 4 => orig := dupe.dir_repository;
-                      next := PM.configuration.dir_repository;
-            when 5 => orig := dupe.dir_options;
-                      next := PM.configuration.dir_options;
-            when 6 => orig := dupe.dir_logs;
-                      next := PM.configuration.dir_logs;
-            when 7 => orig := dupe.dir_buildbase;
-                      next := PM.configuration.dir_buildbase;
-            when 8 => orig := dupe.dir_system;
-                      next := PM.configuration.dir_system;
-            when 9 => orig := dupe.dir_ccache;
-                      next := PM.configuration.dir_ccache;
-            when 10 => orignat := dupe.num_builders;
-                       nextnat := PM.configuration.num_builders;
-            when 11 => orignat := dupe.jobs_limit;
-                       nextnat := PM.configuration.jobs_limit;
-            when 12 => origbool := dupe.tmpfs_workdir;
-                       nextbool := PM.configuration.tmpfs_workdir;
-            when 13 => origbool := dupe.tmpfs_localbase;
-                       nextbool := PM.configuration.tmpfs_localbase;
+            when 1 => next := dupe.dir_portsdir;
+                      orig := PM.configuration.dir_portsdir;
+            when 2 => next := dupe.dir_packages;
+                      orig := PM.configuration.dir_packages;
+            when 3 => next := dupe.dir_distfiles;
+                      orig := PM.configuration.dir_distfiles;
+            when 4 => next := dupe.dir_repository;
+                      orig := PM.configuration.dir_repository;
+            when 5 => next := dupe.dir_options;
+                      orig := PM.configuration.dir_options;
+            when 6 => next := dupe.dir_logs;
+                      orig := PM.configuration.dir_logs;
+            when 7 => next := dupe.dir_buildbase;
+                      orig := PM.configuration.dir_buildbase;
+            when 8 => next := dupe.dir_system;
+                      orig := PM.configuration.dir_system;
+            when 9 => next := dupe.dir_ccache;
+                      orig := PM.configuration.dir_ccache;
+            when 10 => nextnat := dupe.num_builders;
+                       orignat := PM.configuration.num_builders;
+            when 11 => nextnat := dupe.jobs_limit;
+                       orignat := PM.configuration.jobs_limit;
+            when 12 => nextbool := dupe.tmpfs_workdir;
+                       origbool := PM.configuration.tmpfs_workdir;
+            when 13 => nextbool := dupe.tmpfs_localbase;
+                       origbool := PM.configuration.tmpfs_localbase;
          end case;
          case opt is
             when 1 .. 9   => equivalent := JT.equivalent (orig, next);
@@ -213,25 +223,186 @@ package body Actions is
             pristine := False;
          end if;
       end print_opt;
-   begin
-      clear_screen;
-      TIO.Put_Line ("Synth configuration profile: " &
-                      JT.USS (PM.configuration.profile));
-      TIO.Put_Line (dashes);
-      pristine := True;
-      for line in option'Range loop
-         print_opt (line);
-      end loop;
-      TIO.Put_Line ("");
-      if pristine then
-         TIO.Put_Line (indent & optX1B);
-         TIO.Put_Line (indent & optX3B);
-      else
-         TIO.Put_Line (indent & optX1A);
-         TIO.Put_Line (indent & optX2A);
-         TIO.Put_Line (indent & optX3A);
-      end if;
 
+      procedure print_header is
+      begin
+         TIO.Put_Line ("Synth configuration profile: " &
+                         JT.USS (PM.configuration.profile));
+         TIO.Put_Line (dashes);
+      end print_header;
+
+      procedure print_menu is
+      begin
+         for line in option'Range loop
+            print_opt (line);
+         end loop;
+         TIO.Put_Line ("");
+         if pristine then
+            TIO.Put_Line (indent & optX1B);
+            TIO.Put_Line (indent & optX3B);
+         else
+            TIO.Put_Line (indent & optX1A);
+            TIO.Put_Line (indent & optX2A);
+            TIO.Put_Line (indent & optX3A);
+         end if;
+         TIO.Put_Line ("");
+      end print_menu;
+
+      procedure change_boolean_option (opt : option)
+      is
+         new_value : Boolean;
+         TF : Character;
+      begin
+         clear_screen;
+         print_header;
+         print_opt (opt);
+         TIO.Put (LAT.LF & "Set parameter value (T/F): ");
+         loop
+            TIO.Get_Immediate (TF);
+            case TF is
+            when 'T' | 't' =>
+               new_value := True;
+               exit;
+            when 'F' | 'f' =>
+               new_value := False;
+               exit;
+            when others => null;
+            end case;
+         end loop;
+         case opt is
+            when 12 => dupe.tmpfs_workdir := new_value;
+            when 13 => dupe.tmpfs_localbase := new_value;
+            when others => raise menu_error
+                 with "Illegal value : " & opt'Img;
+         end case;
+      end change_boolean_option;
+
+      procedure change_positive_option (opt : option)
+      is
+         function read_positive return Positive;
+         function read_positive return Positive
+         is
+            number : Positive;
+         begin
+            INT.Get (number);
+            return number;
+         exception
+            when others =>
+               TIO.Skip_Line;
+               return 100000;
+         end read_positive;
+
+         max_value : Positive;
+         given_value : Positive;
+         continue : Boolean;
+      begin
+         loop
+            clear_screen;
+            print_header;
+            print_opt (opt);
+            case opt is
+            when 10 .. 11 => max_value := Integer (builders'Last);
+            when others => raise menu_error
+                 with "Illegal value : " & opt'Img;
+            end case;
+            TIO.Put (LAT.LF & "Set parameter value (1 to" &
+                       max_value'Img & "): ");
+            continue := True;
+            given_value := read_positive;
+
+            if given_value > max_value then
+               continue := False;
+            else
+               case opt is
+                  when 10 => dupe.num_builders := builders (given_value);
+                  when 11 => dupe.jobs_limit := builders (given_value);
+                  when others => null;
+               end case;
+               exit;
+            end if;
+            exit when continue;
+         end loop;
+      end change_positive_option;
+
+      procedure change_directory_option (opt : option)
+      is
+         continue : Boolean;
+      begin
+         loop
+            continue := False;
+            clear_screen;
+            print_header;
+            print_opt (opt);
+            TIO.Put (LAT.LF & "Set valid path for directory: ");
+            declare
+               testpath : String := TIO.Get_Line;
+            begin
+               if AD.Exists (testpath) then
+                  case opt is
+                  when 1 => dupe.dir_portsdir   := JT.SUS (testpath);
+                  when 2 => dupe.dir_packages   := JT.SUS (testpath);
+                  when 3 => dupe.dir_distfiles  := JT.SUS (testpath);
+                  when 4 => dupe.dir_repository := JT.SUS (testpath);
+                  when 5 => dupe.dir_options    := JT.SUS (testpath);
+                  when 6 => dupe.dir_logs       := JT.SUS (testpath);
+                  when 7 => dupe.dir_buildbase  := JT.SUS (testpath);
+                  when 8 => dupe.dir_system     := JT.SUS (testpath);
+                  when 9 => dupe.dir_ccache     := JT.SUS (testpath);
+                  when others => raise menu_error
+                       with "Illegal value : " & opt'Img;
+                  end case;
+                  continue := True;
+               end if;
+            exception
+               when others =>
+                  continue := True;
+            end;
+            exit when continue;
+         end loop;
+      end change_directory_option;
+
+      answer   : Character;
+      ascii    : Natural;
+      continue : Boolean := True;
+   begin
+      loop
+         pristine := True;
+         clear_screen;
+         print_header;
+         print_menu;
+
+         TIO.Put ("Press key of selection: ");
+         loop
+            TIO.Get_Immediate (answer);
+            ascii := Character'Pos (answer);
+            case answer is
+               when 'A' .. 'I' =>
+                  change_directory_option (option (ascii - 64));
+                  exit;
+               when 'a' .. 'i' =>
+                  change_directory_option (option (ascii - 96));
+                  exit;
+               when 'J' .. 'K' =>
+                  change_positive_option (option (ascii - 64));
+                  exit;
+               when 'j' .. 'k' =>
+                  change_positive_option (option (ascii - 96));
+                  exit;
+               when 'L' .. 'M' =>
+                  change_boolean_option (option (ascii - 64));
+                  exit;
+               when 'l' .. 'm' =>
+                  change_boolean_option (option (ascii - 96));
+                  exit;
+               when '>' => exit;
+               when LAT.CR | LAT.ESC =>
+                  continue := False;
+                  exit;
+               when others => null;
+            end case;
+         end loop;
+         exit when not continue;
+      end loop;
 
    end launch_configure_menu;
 

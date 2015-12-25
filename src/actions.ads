@@ -4,6 +4,8 @@
 
 package Actions is
 
+   menu_error : exception;
+
    --  output of "synth version"
    procedure print_version;
 
