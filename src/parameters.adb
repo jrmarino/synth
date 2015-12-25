@@ -19,15 +19,10 @@ package body Parameters is
    --------------------------
    function load_configuration (num_cores : cpu_range) return Boolean
    is
-      def_builders   : Integer;
-      def_jlimit     : Integer;
       fields_present : Boolean;
       global_present : Boolean;
+      sel_profile    : JT.Text;
    begin
-      default_parallelism (num_cores        => num_cores,
-                           num_builders     => def_builders,
-                           jobs_per_builder => def_jlimit);
-
       if not AD.Exists (conf_location) then
          declare
             File_Handle : TIO.File_Type;
@@ -56,15 +51,9 @@ package body Parameters is
          global_present := False;
       end if;
 
-      configuration.profile :=
-        extract_string (master_section, global_01, live_system);
-
-      if not global_present then
-         write_master_section;
-      end if;
-
+      sel_profile := extract_string (master_section, global_01, live_system);
       declare
-         profile : constant String := JT.USS (configuration.profile);
+         profile : constant String := JT.USS (sel_profile);
       begin
          if section_exists (profile, Field_01) then
             fields_present := all_params_present (profile);
@@ -72,78 +61,82 @@ package body Parameters is
             write_blank_section (section => profile);
             fields_present := False;
          end if;
-
-         configuration.dir_packages :=
-           extract_string (profile, Field_01, LS_Packages);
-
-         configuration.dir_repository := configuration.dir_packages;
-         JT.SU.Append (configuration.dir_repository, "/All");
-
-         configuration.dir_portsdir :=
-           extract_string (profile, Field_03, std_ports_loc);
-
-         if param_set (profile, Field_04) then
-            configuration.dir_distfiles :=
-              extract_string (profile, Field_04, std_distfiles);
-         else
-            configuration.dir_distfiles :=
-              extract_string (profile, Field_04, query_distfiles);
-         end if;
-
-         configuration.dir_buildbase :=
-           extract_string (profile, Field_05, LS_Buildbase);
-
-         configuration.dir_logs :=
-           extract_string (profile, Field_06, LS_Logs);
-
-         configuration.dir_ccache :=
-           extract_string (profile, Field_07, no_ccache);
-
-         configuration.num_builders := builders
-           (extract_integer (profile, Field_08, def_builders));
-
-         configuration.jobs_limit := builders
-           (extract_integer (profile, Field_09, def_jlimit));
-
-         if param_set (profile, Field_10) then
-            configuration.tmpfs_workdir :=
-              extract_boolean (profile, Field_10, False);
-         else
-            configuration.tmpfs_workdir :=
-              extract_boolean (profile, Field_10, enough_memory);
-         end if;
-
-         if param_set (profile, Field_11) then
-            configuration.tmpfs_localbase :=
-              extract_boolean (profile, Field_11, False);
-         else
-            configuration.tmpfs_localbase :=
-              extract_boolean (profile, Field_11, enough_memory);
-         end if;
-
-         if param_set (profile, Field_12) then
-            configuration.operating_sys :=
-              extract_string (profile, Field_12, std_opsys);
-         else
-            configuration.operating_sys :=
-              extract_string (profile, Field_12, query_opsys);
-         end if;
-
-         configuration.dir_options :=
-           extract_string (profile, Field_13, std_options);
-
-         configuration.dir_system :=
-           extract_string (profile, Field_14, std_sysbase);
+         configuration := load_specific_profile (profile, num_cores);
       end;
-
       if not fields_present then
          write_configuration (JT.USS (configuration.profile));
+      end if;
+
+      if not global_present then
+         write_master_section;
       end if;
 
       return True;
    exception
       when mishap : others =>  return False;
    end load_configuration;
+
+
+   -----------------------------
+   --  load_specific_profile  --
+   -----------------------------
+   function load_specific_profile (profile : String; num_cores : cpu_range)
+                                   return configuration_record
+   is
+      def_builders : Integer;
+      def_jlimit   : Integer;
+      res          : configuration_record;
+   begin
+      --  The profile *must* exist before this procedure is called!
+      default_parallelism (num_cores        => num_cores,
+                           num_builders     => def_builders,
+                           jobs_per_builder => def_jlimit);
+
+      res.dir_packages   := extract_string (profile, Field_01, LS_Packages);
+      res.dir_portsdir   := extract_string (profile, Field_03, std_ports_loc);
+      res.dir_repository := res.dir_packages;
+      JT.SU.Append (res.dir_repository, "/All");
+
+      if param_set (profile, Field_04) then
+         res.dir_distfiles := extract_string (profile, Field_04, std_distfiles);
+      else
+         res.dir_distfiles :=
+           extract_string (profile, Field_04, query_distfiles);
+      end if;
+
+      res.dir_buildbase := extract_string (profile, Field_05, LS_Buildbase);
+      res.dir_logs := extract_string (profile, Field_06, LS_Logs);
+      res.dir_ccache := extract_string (profile, Field_07, no_ccache);
+      res.num_builders := builders
+        (extract_integer (profile, Field_08, def_builders));
+      res.jobs_limit := builders
+        (extract_integer (profile, Field_09, def_jlimit));
+
+      if param_set (profile, Field_10) then
+         res.tmpfs_workdir := extract_boolean (profile, Field_10, False);
+      else
+         res.tmpfs_workdir := extract_boolean
+           (profile, Field_10, enough_memory (res.num_builders));
+      end if;
+
+      if param_set (profile, Field_11) then
+         res.tmpfs_localbase := extract_boolean (profile, Field_11, False);
+      else
+         res.tmpfs_localbase := extract_boolean
+           (profile, Field_11, enough_memory (res.num_builders));
+      end if;
+
+      if param_set (profile, Field_12) then
+         res.operating_sys := extract_string (profile, Field_12, std_opsys);
+      else
+         res.operating_sys := extract_string (profile, Field_12, query_opsys);
+      end if;
+
+      res.dir_options := extract_string (profile, Field_13, std_options);
+      res.dir_system  := extract_string (profile, Field_14, std_sysbase);
+      res.profile     := JT.SUS (profile);
+      return res;
+   end load_specific_profile;
 
 
    ---------------------------
@@ -437,11 +430,11 @@ package body Parameters is
    ---------------------
    --  enough_memory  --
    ---------------------
-   function enough_memory return Boolean is
+   function enough_memory (num_builders : builders) return Boolean is
       megs_per_slave : Natural;
    begin
       query_physical_memory;
-      megs_per_slave := memory_megs / Positive (configuration.num_builders);
+      megs_per_slave := memory_megs / Positive (num_builders);
       return megs_per_slave >= 1280;
    end enough_memory;
 
@@ -520,8 +513,8 @@ package body Parameters is
       result.dir_options     := JT.SUS (std_options);
       result.num_builders    := builders (def_builders);
       result.jobs_limit      := builders (def_jlimit);
-      result.tmpfs_workdir   := enough_memory;
-      result.tmpfs_localbase := enough_memory;
+      result.tmpfs_workdir   := enough_memory (result.num_builders);
+      result.tmpfs_localbase := enough_memory (result.num_builders);
       return result;
    end default_profile;
 

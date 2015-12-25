@@ -46,6 +46,8 @@ package Parameters is
    function sections_list return JT.Text;
    function default_profile (new_profile : String;
                              num_cores : cpu_range) return configuration_record;
+   function load_specific_profile (profile : String; num_cores : cpu_range)
+                                   return configuration_record;
 
 private
 
@@ -119,7 +121,7 @@ private
    function query_generic (value : String) return String;
    function query_distfiles return String;
    function query_opsys return String;
-   function enough_memory return Boolean;
+   function enough_memory (num_builders : builders) return Boolean;
    procedure query_physical_memory;
    procedure write_master_section;
 
