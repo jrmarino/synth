@@ -355,7 +355,7 @@ package body PortScan.Buildcycle is
    begin
       content := generic_system_command (command);
       for k in result_range loop
-         nextline (lineblock => content, firstline => topline);
+         JT.nextline (lineblock => content, firstline => topline);
          case k is
             when 1 => TIO.Put_Line
                  (LA.all, split_collection (topline, "CONFIGURE_ENV"));
@@ -372,25 +372,6 @@ package body PortScan.Buildcycle is
          end case;
       end loop;
    end dump_port_variables;
-
-
-   ----------------
-   --  nextline  --
-   ----------------
-   procedure nextline (lineblock, firstline : out JT.Text)
-   is
-      CR_loc : Natural;
-      CR : constant String (1 .. 1) := (1 => Character'Val (10));
-   begin
-      CR_loc := JT.SU.Index (Source => lineblock, Pattern => CR);
-      if CR_loc = 0 then
-         firstline := lineblock;
-         return;
-      end if;
-      firstline := JT.SUS
-        (JT.SU.Slice (Source => lineblock, Low => 1, High => CR_loc - 1));
-      JT.SU.Delete (Source => lineblock, From => 1, Through => CR_loc);
-   end nextline;
 
 
    ----------------
@@ -541,9 +522,9 @@ package body PortScan.Buildcycle is
    end exec_phase_deinstall;
 
 
-   ---------------
-   --  execute  --
-   ---------------
+   -----------------------
+   --  generic_execute  --
+   -----------------------
    function generic_execute (id : builders; command : String) return Boolean
    is
       Args        : OSL.Argument_List_Access;
@@ -648,7 +629,7 @@ package body PortScan.Buildcycle is
       comres := generic_system_command (command);
       crlen1 := JT.SU.Length (comres);
       loop
-         nextline (lineblock => comres, firstline => topline);
+         JT.nextline (lineblock => comres, firstline => topline);
          crlen2 := JT.SU.Length (comres);
          exit when crlen1 = crlen2;
          crlen1 := crlen2;
@@ -697,7 +678,7 @@ package body PortScan.Buildcycle is
       comres := generic_system_command (command);
       crlen1 := JT.SU.Length (comres);
       loop
-         nextline (lineblock => comres, firstline => topline);
+         JT.nextline (lineblock => comres, firstline => topline);
          crlen2 := JT.SU.Length (comres);
          exit when crlen1 = crlen2;
          crlen1 := crlen2;

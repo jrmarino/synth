@@ -516,7 +516,7 @@ package body PortScan is
       end if;
 
       for k in result_range loop
-         nextline (lineblock => content, firstline => topline);
+         JT.nextline (lineblock => content, firstline => topline);
          case k is
             when 1 => all_ports (target).port_version := topline;
             when 2 => all_ports (target).package_name := topline;
@@ -625,21 +625,6 @@ package body PortScan is
       categories.Iterate (Process => quick_scan'Access);
       prescanned := True;
    end prescan_ports_tree;
-
-
-   ---------------
-   --  nextline  --
-   ----------------
-   procedure nextline (lineblock, firstline : out JT.Text)
-   is
-      CR_loc : Natural;
-      CR : constant String (1 .. 1) := (1 => Character'Val (10));
-   begin
-      CR_loc := JT.SU.Index (Source => lineblock, Pattern => CR);
-      firstline := JT.SUS
-        (JT.SU.Slice (Source => lineblock, Low => 1, High => CR_loc - 1));
-      JT.SU.Delete (Source => lineblock, From => 1, Through => CR_loc);
-   end nextline;
 
 
    ------------------

@@ -35,4 +35,7 @@ package JohnnyText is
    function bool2str  (A : Boolean) return String;
    function bool2text (A : Boolean) return Text;
 
+   --  Return first line of block of lines (line is removed from block)
+   procedure nextline (lineblock, firstline : out Text);
+
 end JohnnyText;

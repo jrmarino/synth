@@ -266,7 +266,7 @@ package body PortScan.Packages is
          end if;
          content := generic_system_command (command);
          loop
-            nextline (lineblock => content, firstline => topline);
+            JT.nextline (lineblock => content, firstline => topline);
             exit when JT.IsBlank (topline);
             colon := JT.SU.Index (Source => topline, Pattern => ":");
             if colon < 2 then
@@ -344,7 +344,7 @@ package body PortScan.Packages is
          end if;
          content := generic_system_command (command);
          loop
-            nextline (lineblock => content, firstline => topline);
+            JT.nextline (lineblock => content, firstline => topline);
             exit when JT.IsBlank (topline);
             colon := JT.SU.Index (Source => topline, Pattern => ":");
             if colon < 2 then
@@ -416,7 +416,7 @@ package body PortScan.Packages is
          return False;
       end if;
       content := generic_system_command (command);
-      nextline (lineblock => content, firstline => topline);
+      JT.nextline (lineblock => content, firstline => topline);
       if JT.equivalent (topline, calculated_abi) then
          return True;
       end if;
@@ -425,26 +425,6 @@ package body PortScan.Packages is
       end if;
       return False;
    end passed_abi_check;
-
-
-   ---------------
-   --  nextline  --
-   ----------------
-   procedure nextline (lineblock, firstline : out JT.Text)
-   is
-      CR_loc : Natural;
-      CR : constant String (1 .. 1) := (1 => Character'Val (10));
-   begin
-      --  As long as the string isn't empty, we'll find a carriage return
-      if JT.IsBlank (lineblock) then
-         firstline := JT.blank;
-         return;
-      end if;
-      CR_loc := JT.SU.Index (Source => lineblock, Pattern => CR);
-      firstline := JT.SUS (JT.SU.Slice
-                           (Source => lineblock, Low => 1, High => CR_loc - 1));
-      JT.SU.Delete (Source => lineblock, From => 1, Through => CR_loc);
-   end nextline;
 
 
    ----------------------

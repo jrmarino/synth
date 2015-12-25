@@ -483,7 +483,6 @@ package body Replicant is
       TIO.Put_Line (makeconf, "WRKDIRPREFIX=/construction");
       TIO.Put_Line (makeconf, "PORT_DBDIR=/options");
       TIO.Put_Line (makeconf, "PACKAGES=/packages");
-
       TIO.Put_Line (makeconf, "MAKE_JOBS_NUMBER_LIMIT=" &
                       (JT.trim (PM.configuration.jobs_limit'Img)));
 

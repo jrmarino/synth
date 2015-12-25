@@ -167,6 +167,7 @@ package body Actions is
       procedure change_boolean_option (opt : option);
       procedure change_positive_option (opt : option);
       procedure change_directory_option (opt : option);
+      procedure switch_profile;
 
       procedure print_opt (opt : option)
       is
@@ -361,6 +362,68 @@ package body Actions is
          end loop;
       end change_directory_option;
 
+      procedure switch_profile
+      is
+         function list_profiles (limit : Natural := 0; total : out Natural)
+                                 return JT.Text;
+         all_profiles : JT.Text := PM.sections_list;
+         selected     : JT.Text;
+         continue     : Boolean;
+         max_menu     : Natural;
+         number       : Positive;
+
+         function list_profiles (limit : Natural := 0; total : out Natural)
+                                 return JT.Text
+         is
+            topline  : JT.Text;
+            profiles : JT.Text := all_profiles;
+            crlen1   : Natural := JT.SU.Length (profiles);
+            crlen2   : Natural;
+         begin
+            total := 0;
+            loop
+               JT.nextline (lineblock => profiles, firstline => topline);
+               total := total + 1;
+               if limit = 0 then
+                  TIO.Put_Line (indent & "[" & JT.int2str (total) & "] " &
+                                  JT.USS (topline));
+               elsif limit = total then
+                  return topline;
+               end if;
+               crlen2 := JT.SU.Length (profiles);
+               exit when crlen1 = crlen2;
+               crlen1 := crlen2;
+            end loop;
+            total := total + 1;
+            TIO.Put_Line (indent & "[" & JT.int2str (total) &
+                            "] create new profile");
+            return JT.blank;
+         end list_profiles;
+      begin
+         loop
+            continue := False;
+            clear_screen;
+            print_header;
+            selected := list_profiles (total => max_menu);
+            TIO.Put (LAT.LF & "Select profile number: ");
+            declare
+            begin
+               INT.Get (number);
+            exception
+               when others =>
+                  TIO.Skip_Line;
+                  number := 1000;
+            end;
+            if number < max_menu then
+               continue := True;
+            elsif number = max_menu then
+               continue := True;
+            end if;
+            exit when continue;
+         end loop;
+      end switch_profile;
+
+
       answer   : Character;
       ascii    : Natural;
       continue : Boolean := True;
@@ -394,7 +457,9 @@ package body Actions is
                when 'l' .. 'm' =>
                   change_boolean_option (option (ascii - 96));
                   exit;
-               when '>' => exit;
+               when '>' =>
+                  switch_profile;
+                  exit;
                when LAT.LF =>
                   if not pristine then
                      PM.configuration := dupe;

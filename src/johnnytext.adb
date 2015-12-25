@@ -121,4 +121,23 @@ package body JohnnyText is
       return SUS (bool2str (A));
    end bool2text;
 
+
+   ----------------
+   --  nextline  --
+   ----------------
+   procedure nextline (lineblock, firstline : out Text)
+   is
+      CR_loc : Natural;
+      CR : constant String (1 .. 1) := (1 => Character'Val (10));
+   begin
+      CR_loc := SU.Index (Source => lineblock, Pattern => CR);
+      if CR_loc = 0 then
+         firstline := lineblock;
+         return;
+      end if;
+      firstline := SUS (SU.Slice
+                        (Source => lineblock, Low => 1, High => CR_loc - 1));
+      SU.Delete (Source => lineblock, From => 1, Through => CR_loc);
+   end nextline;
+
 end JohnnyText;

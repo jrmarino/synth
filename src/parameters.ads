@@ -21,7 +21,6 @@ package Parameters is
          dir_portsdir    : JT.Text;
          dir_distfiles   : JT.Text;
          dir_buildbase   : JT.Text;
-         dir_localbase   : JT.Text;
          dir_logs        : JT.Text;
          dir_ccache      : JT.Text;
          dir_options     : JT.Text;
@@ -41,7 +40,12 @@ package Parameters is
    --  the "configuration" record will be populated after this is run.
    --  returns "True" on success
    function load_configuration (num_cores : cpu_range) return Boolean;
+
    procedure write_configuration (profile : String := live_system);
+   procedure write_blank_section (section : String);
+   function sections_list return JT.Text;
+   function default_profile (new_profile : String;
+                             num_cores : cpu_range) return configuration_record;
 
 private
 
@@ -117,7 +121,6 @@ private
    function query_opsys return String;
    function enough_memory return Boolean;
    procedure query_physical_memory;
-   procedure write_blank_section (section : String);
    procedure write_master_section;
 
 end Parameters;

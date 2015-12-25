@@ -66,7 +66,6 @@ private
    procedure establish_package_architecture;
 
    procedure scan_repository (repository : String);
-   procedure nextline (lineblock, firstline : out JT.Text);
 
    function generic_system_command (command : String) return JT.Text;
 

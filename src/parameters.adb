@@ -466,4 +466,63 @@ package body Parameters is
    end write_master_section;
 
 
+   ---------------------
+   --  sections_list  --
+   ---------------------
+   function sections_list return JT.Text
+   is
+      handle : TIO.File_Type;
+      result : JT.Text;
+   begin
+      TIO.Open (File => handle, Mode => TIO.In_File, Name => conf_location);
+      while not TIO.End_Of_File (handle) loop
+         declare
+            Line : String := TIO.Get_Line (handle);
+         begin
+
+            if Line'Length > 0 and then
+              Line (1) = '[' and then
+              Line /= "[Global Configuration]"
+            then
+               JT.SU.Append (result, Line (2 .. Line'Last - 1));
+            end if;
+         end;
+      end loop;
+      TIO.Close (handle);
+      return result;
+   end sections_list;
+
+
+   -----------------------
+   --  default_profile  --
+   -----------------------
+   function default_profile (new_profile : String;
+                             num_cores : cpu_range) return configuration_record
+   is
+      result       : configuration_record;
+      def_builders : Integer;
+      def_jlimit   : Integer;
+   begin
+      default_parallelism (num_cores        => num_cores,
+                           num_builders     => def_builders,
+                           jobs_per_builder => def_jlimit);
+
+      result.operating_sys   := JT.SUS (query_opsys);
+      result.profile         := JT.SUS (new_profile);
+      result.dir_system      := JT.SUS (std_sysbase);
+      result.dir_repository  := JT.SUS (LS_Packages & "/All");
+      result.dir_packages    := JT.SUS (LS_Packages);
+      result.dir_portsdir    := JT.SUS (std_ports_loc);
+      result.dir_distfiles   := JT.SUS (std_distfiles);
+      result.dir_buildbase   := JT.SUS (LS_Buildbase);
+      result.dir_logs        := JT.SUS (LS_Logs);
+      result.dir_ccache      := JT.SUS (no_ccache);
+      result.dir_options     := JT.SUS (std_options);
+      result.num_builders    := builders (def_builders);
+      result.jobs_limit      := builders (def_jlimit);
+      result.tmpfs_workdir   := enough_memory;
+      result.tmpfs_localbase := enough_memory;
+      return result;
+   end default_profile;
+
 end Parameters;

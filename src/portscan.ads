@@ -169,7 +169,6 @@ private
    procedure wipe_make_queue;
 
    --  some helper routines
-   procedure nextline (lineblock, firstline : out JT.Text);
    function find_colon (Source : String) return Natural;
    function scrub_phase (Source : String) return JT.Text;
    function get_catport (PR : port_record) return String;
