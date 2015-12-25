@@ -484,6 +484,9 @@ package body Replicant is
       TIO.Put_Line (makeconf, "PORT_DBDIR=/options");
       TIO.Put_Line (makeconf, "PACKAGES=/packages");
 
+      TIO.Put_Line (makeconf, "MAKE_JOBS_NUMBER_LIMIT=" &
+                      (JT.trim (PM.configuration.jobs_limit'Img)));
+
       if AD.Exists (JT.USS (PM.configuration.dir_ccache)) then
          TIO.Put_Line (makeconf, "WITH_CCACHE_BUILD=yes");
          TIO.Put_Line (makeconf, "CCACHE_DIR=/ccache");
