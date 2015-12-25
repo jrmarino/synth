@@ -10,7 +10,6 @@ with GNAT.OS_Lib;
 
 with JohnnyText;
 with Parameters;
-with Definitions;   use Definitions;
 
 package body Actions is
 
@@ -129,7 +128,7 @@ package body Actions is
    -----------------------------
    --  launch_configure_menu  --
    -----------------------------
-   procedure launch_configure_menu
+   procedure launch_configure_menu (num_cores : cpu_range)
    is
       dashes : constant String (1 .. 79) := (others => LAT.Equals_Sign);
       indent : constant String (1 ..  3) := (others => LAT.Space);
@@ -383,6 +382,9 @@ package body Actions is
             total := 0;
             loop
                JT.nextline (lineblock => profiles, firstline => topline);
+               crlen2 := JT.SU.Length (profiles);
+               exit when crlen1 = crlen2;
+               crlen1 := crlen2;
                total := total + 1;
                if limit = 0 then
                   TIO.Put_Line (indent & "[" & JT.int2str (total) & "] " &
@@ -390,9 +392,6 @@ package body Actions is
                elsif limit = total then
                   return topline;
                end if;
-               crlen2 := JT.SU.Length (profiles);
-               exit when crlen1 = crlen2;
-               crlen1 := crlen2;
             end loop;
             total := total + 1;
             TIO.Put_Line (indent & "[" & JT.int2str (total) &
@@ -415,8 +414,33 @@ package body Actions is
                   number := 1000;
             end;
             if number < max_menu then
+               declare
+                  dummy : Natural;
+                  nprof : JT.Text;
+               begin
+                  nprof := list_profiles (limit => number, total => dummy);
+                  dupe := PM.load_specific_profile (JT.USS (nprof), num_cores);
+                  PM.configuration := dupe;
+                  PM.write_master_section;
+               end;
                continue := True;
             elsif number = max_menu then
+               clear_screen;
+               print_header;
+               TIO.Skip_Line;
+               TIO.Put (LAT.LF & "Name of new profile: ");
+               declare
+                  newname : String := TIO.Get_Line;
+                  empty   : PM.configuration_record;
+               begin
+                  dupe := PM.default_profile (newname, num_cores);
+                  empty.profile := dupe.profile;
+                  empty.operating_sys := dupe.operating_sys;
+                  PM.configuration := empty;
+                  PM.write_master_section;
+               exception
+                  when others => null;
+               end;
                continue := True;
             end if;
             exit when continue;

@@ -477,7 +477,7 @@ package body Parameters is
               Line (1) = '[' and then
               Line /= "[Global Configuration]"
             then
-               JT.SU.Append (result, Line (2 .. Line'Last - 1));
+               JT.SU.Append (result, Line (2 .. Line'Last - 1) & LAT.LF);
             end if;
          end;
       end loop;
@@ -515,6 +515,9 @@ package body Parameters is
       result.jobs_limit      := builders (def_jlimit);
       result.tmpfs_workdir   := enough_memory (result.num_builders);
       result.tmpfs_localbase := enough_memory (result.num_builders);
+
+      write_blank_section (section => new_profile);
+
       return result;
    end default_profile;
 

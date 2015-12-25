@@ -1,6 +1,7 @@
 --  This file is covered by the Internet Software Consortium (ISC) License
 --  Reference: ../License.txt
 
+with Definitions;   use Definitions;
 
 package Actions is
 
@@ -13,7 +14,7 @@ package Actions is
    procedure print_help;
 
    --  Interactive configuration menu
-   procedure launch_configure_menu;
+   procedure launch_configure_menu (num_cores : cpu_range);
 
 private
 

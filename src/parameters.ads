@@ -48,6 +48,7 @@ package Parameters is
                              num_cores : cpu_range) return configuration_record;
    function load_specific_profile (profile : String; num_cores : cpu_range)
                                    return configuration_record;
+   procedure write_master_section;
 
 private
 
@@ -123,6 +124,5 @@ private
    function query_opsys return String;
    function enough_memory (num_builders : builders) return Boolean;
    procedure query_physical_memory;
-   procedure write_master_section;
 
 end Parameters;
