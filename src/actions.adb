@@ -395,7 +395,14 @@ package body Actions is
                   change_boolean_option (option (ascii - 96));
                   exit;
                when '>' => exit;
-               when LAT.CR | LAT.ESC =>
+               when LAT.LF =>
+                  if not pristine then
+                     PM.configuration := dupe;
+                     PM.write_configuration (profile => JT.USS (dupe.profile));
+                  end if;
+                  continue := False;
+                  exit;
+               when LAT.ESC =>
                   continue := False;
                   exit;
                when others => null;
