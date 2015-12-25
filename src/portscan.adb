@@ -9,13 +9,10 @@ with Util.Streams.Buffered;
 with GNAT.String_Split;
 with Ada.Exceptions;
 
-with Parameters;
-
 package body PortScan is
 
    package AD  renames Ada.Directories;
    package EX  renames Ada.Exceptions;
-   package PM  renames Parameters;
    package RGX renames GNAT.Regpat;
    package STR renames Util.Streams;
    package GSS renames GNAT.String_Split;

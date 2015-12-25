@@ -11,8 +11,6 @@ with Util.Streams.Pipes;
 with Util.Streams.Buffered;
 with Util.Processes;
 
-with Parameters;
-
 package body PortScan.Buildcycle is
 
    package ACA renames Ada.Calendar.Arithmetic;
@@ -21,7 +19,6 @@ package body PortScan.Buildcycle is
    package AD  renames Ada.Directories;
    package OSL renames GNAT.OS_Lib;
    package STR renames Util.Streams;
-   package PM  renames Parameters;
 
 
    ---------------------

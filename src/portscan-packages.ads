@@ -37,7 +37,10 @@ package PortScan.Packages is
 
 private
 
-   stored_packages : package_crate.Map;
+   stored_packages    : package_crate.Map;
+   calculated_abi     : JT.Text;
+   calculated_alt_abi : JT.Text;
+
    --  This function returns "True" if the scanned options exactly match
    --  the options in the already-built package.  Usually it's already known
    --  that a package exists before the function is called, but an existence
@@ -52,8 +55,20 @@ private
                                      skip_exist_check : Boolean := False)
                                      return Boolean;
 
+   --  This function returns "True" if the scanned package has the expected
+   --  package ABI, e.g. dragonfly:4.6:x86:64, freebsd:10:amd64
+   function passed_abi_check (repository : String; id : port_id;
+                              skip_exist_check : Boolean := False)
+                              return Boolean;
+
+   --  This calculates the ABI for the platform and stores it.  The value is
+   --  used by passed_abi_check()
+   procedure establish_package_architecture;
+
    procedure scan_repository (repository : String);
    procedure nextline (lineblock, firstline : out JT.Text);
+
+   function generic_system_command (command : String) return JT.Text;
 
 
 end PortScan.Packages;

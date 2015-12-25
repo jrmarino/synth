@@ -491,19 +491,6 @@ package body Replicant is
 
       TIO.Close (makeconf);
 
-
-      ---  TEMPORARY !!!
-      declare
-         pkgconf  : TIO.File_Type;
-      begin
-         TIO.Create (File => pkgconf,
-                     Mode => TIO.Out_File,
-                     Name => path_to_etc & "/../usr/local/etc/pkg.conf");
-         TIO.Put_Line (pkgconf, "ABI = " & Ada.Characters.Latin_1.Quotation &
-                         "dragonfly:4.4:x86:64" &
-                         Ada.Characters.Latin_1.Quotation);
-         TIO.Close (pkgconf);
-      end;
    end create_make_conf;
 
 

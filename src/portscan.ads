@@ -11,6 +11,7 @@ with Ada.Containers.Vectors;
 with Ada.Characters.Latin_1;
 
 with JohnnyText;
+with Parameters;
 with Definitions;  use Definitions;
 
 package PortScan is
@@ -19,6 +20,7 @@ package PortScan is
    package AC  renames Ada.Containers;
    package TIO renames Ada.Text_IO;
    package LAT renames Ada.Characters.Latin_1;
+   package PM  renames Parameters;
 
    type port_id   is private;
    port_match_failed : constant port_id;
