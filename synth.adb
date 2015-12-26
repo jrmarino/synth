@@ -10,7 +10,7 @@ with Parameters;
 procedure synth
 is
    type mandate_type is (unset, status, help, configure, version, up_system,
-                         up_repo, purge, everything, build, install,
+                         up_repo, purge, everything, build, install, force,
                          just_build, test);
 
    mandate : mandate_type := unset;
@@ -42,6 +42,8 @@ begin
          mandate := install;
       elsif first = "build" then
          mandate := build;
+      elsif first = "force" then
+         mandate := force;
       elsif first = "just-build" then
          mandate := just_build;
       elsif first = "upgrade-system" then
@@ -96,6 +98,9 @@ begin
             when build =>
                TIO.Put_Line ("BUILD to be implemented ...");
                return;
+            when force =>
+               TIO.Put_Line ("FORCE to be implemented ...");
+               return;
             when install =>
                TIO.Put_Line ("INSTALL to be implemented ...");
                return;
@@ -107,7 +112,7 @@ begin
       else
          --  We have exactly one argument
          case mandate is
-            when build | just_build | install | test =>
+            when build | force | just_build | install | test =>
                ACT.print_version;
                TIO.Put_Line (comerr & "'" & first &
                                "' requires at least one argument.");
@@ -135,7 +140,7 @@ begin
 
          case mandate is
             when build | just_build | install | test | version | help |
-                 unset =>
+                 force | unset =>
                --  Handled above.  Don't use "others" here;
                --  we don't want to disable full coverage
                null;
