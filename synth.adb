@@ -5,6 +5,7 @@ with Ada.Command_Line;
 with Ada.Text_IO;
 with Actions;
 with PortScan;
+with PortScan.Pilot;
 with Parameters;
 
 procedure synth
@@ -18,6 +19,7 @@ is
    package CLI renames Ada.Command_Line;
    package TIO renames Ada.Text_IO;
    package ACT renames Actions;
+   package PIL renames PortScan.Pilot;
 
 begin
 
@@ -29,6 +31,7 @@ begin
    declare
       first  : constant String := CLI.Argument (1);
       comerr : constant String := "Synth command error: ";
+      badcfg : constant String := "Synth error: configuration failed to load.";
    begin
       if first = "help" then
          mandate := help;
@@ -74,12 +77,14 @@ begin
             when others => null;
          end case;
 
-         --  TO DO: check validity of Arguments 2+
-
          PortScan.set_cores;
-         if not Parameters.load_configuration (PortScan.cores_available)
-         then
-            TIO.Put_Line (comerr & "configuration failed to load.");
+         if not Parameters.load_configuration (PortScan.cores_available) then
+            TIO.Put_Line (badcfg);
+            return;
+         end if;
+
+         if not PIL.store_origins then
+            --  error messages emitted by store_origins, just exit now
             return;
          end if;
 
@@ -132,9 +137,8 @@ begin
          end case;
 
          PortScan.set_cores;
-         if not Parameters.load_configuration (PortScan.cores_available)
-         then
-            TIO.Put_Line ("Synth error: configuration failed to load.");
+         if not Parameters.load_configuration (PortScan.cores_available) then
+            TIO.Put_Line (badcfg);
             return;
          end if;
 

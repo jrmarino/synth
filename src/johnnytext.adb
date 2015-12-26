@@ -169,7 +169,7 @@ package body JohnnyText is
       if slash = 0 then
          return S;
       end if;
-      return S (1 .. slash - 1);
+      return S (S'First .. slash - 1);
    end part_1;
 
 
