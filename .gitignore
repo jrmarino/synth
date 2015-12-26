@@ -1,4 +1,5 @@
 build
+synth.adb.orig
 
 # Object file
 *.o
