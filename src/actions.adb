@@ -152,8 +152,9 @@ package body Actions is
           "[L] Use tmpfs for work area   ",
           "[M] Use tmpfs for /usr/local  ");
 
-      optX1A : constant String := "[>]   Switch profiles (changes discarded)";
-      optX1B : constant String := "[>]   Switch profiles";
+      optX1A : constant String := "[>]   Switch/create profiles " &
+                                         "(changes discarded)";
+      optX1B : constant String := "[>]   Switch/create profiles";
       optX2A : constant String := "[ESC] Exit without saving changes";
       optX3A : constant String := "[RET] Save changes (starred)";
       optX3B : constant String := "[RET] Exit";
@@ -387,15 +388,20 @@ package body Actions is
                crlen1 := crlen2;
                total := total + 1;
                if limit = 0 then
-                  TIO.Put_Line (indent & "[" & JT.int2str (total) & "] " &
-                                  JT.USS (topline));
+                  TIO.Put_Line
+                    (indent & "[" & JT.int2str (total) & "] Switch to " &
+                       LAT.Quotation & JT.USS (topline) & LAT.Quotation &
+                       " profile");
                elsif limit = total then
                   return topline;
                end if;
             end loop;
             total := total + 1;
             TIO.Put_Line (indent & "[" & JT.int2str (total) &
-                            "] create new profile");
+                            "] Create new profile");
+            total := total + 1;
+            TIO.Put_Line (indent & "[" & JT.int2str (total) &
+                            "] Do nothing (return to previous screen)");
             return JT.blank;
          end list_profiles;
       begin
@@ -413,7 +419,9 @@ package body Actions is
                   TIO.Skip_Line;
                   number := 1000;
             end;
-            if number < max_menu then
+            if number = max_menu then
+               continue := True;
+            elsif number < max_menu - 1 then
                declare
                   dummy : Natural;
                   nprof : JT.Text;
@@ -424,7 +432,7 @@ package body Actions is
                   PM.write_master_section;
                end;
                continue := True;
-            elsif number = max_menu then
+            elsif number = max_menu - 1 then
                clear_screen;
                print_header;
                TIO.Skip_Line;
