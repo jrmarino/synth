@@ -9,6 +9,7 @@ with Ada.Containers.Hashed_Maps;
 with Ada.Containers.Ordered_Sets;
 with Ada.Containers.Vectors;
 with Ada.Characters.Latin_1;
+with Ada.Directories;
 
 with JohnnyText;
 with Parameters;
@@ -18,6 +19,7 @@ package PortScan is
 
    package JT  renames JohnnyText;
    package AC  renames Ada.Containers;
+   package AD  renames Ada.Directories;
    package TIO renames Ada.Text_IO;
    package LAT renames Ada.Characters.Latin_1;
    package PM  renames Parameters;

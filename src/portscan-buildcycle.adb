@@ -3,8 +3,6 @@
 
 with Ada.Calendar.Arithmetic;
 with Ada.Calendar.Formatting;
-with Ada.Strings.Fixed;
-with Ada.Directories;
 with Ada.Direct_IO;
 with GNAT.OS_Lib;
 with Util.Streams.Pipes;
@@ -15,8 +13,6 @@ package body PortScan.Buildcycle is
 
    package ACA renames Ada.Calendar.Arithmetic;
    package ACF renames Ada.Calendar.Formatting;
-   package ASF renames Ada.Strings.Fixed;
-   package AD  renames Ada.Directories;
    package OSL renames GNAT.OS_Lib;
    package STR renames Util.Streams;
 
@@ -380,12 +376,9 @@ package body PortScan.Buildcycle is
    function log_name (sid : port_id) return String
    is
       catport : constant String := get_catport (all_ports (sid));
-      slash   : Integer;
    begin
-      slash := ASF.Index (catport, "/");
       return JT.USS (PM.configuration.dir_logs) & "/" &
-        catport (1 .. slash - 1) & "___" &
-        catport (slash + 1 .. catport'Last) & ".log";
+        JT.part_1 (catport) & "___" & JT.part_2 (catport) & ".log";
    end log_name;
 
 
@@ -606,11 +599,9 @@ package body PortScan.Buildcycle is
       command : String := chroot & base & " /usr/bin/file -b " &
         "-e ascii -e encoding -e tar -e compress " & filename;
       comres  : JT.Text;
-      dlindex : Natural;
    begin
       comres := generic_system_command (command);
-      dlindex := JT.SU.Index (comres, "dynamically linked");
-      return dlindex > 0;
+      return JT.contains (comres, "dynamically linked");
    end dynamically_linked;
 
 
@@ -624,7 +615,6 @@ package body PortScan.Buildcycle is
       topline : JT.Text;
       crlen1  : Natural;
       crlen2  : Natural;
-      dlindex : Natural;
    begin
       comres := generic_system_command (command);
       crlen1 := JT.SU.Length (comres);
@@ -634,8 +624,7 @@ package body PortScan.Buildcycle is
          exit when crlen1 = crlen2;
          crlen1 := crlen2;
          if not JT.IsBlank (topline) then
-            dlindex := JT.SU.Index (topline, "NEEDED");
-            if dlindex > 0 then
+            if JT.contains (topline, "NEEDED") then
                if not trackers (id).dynlink.Contains (topline) then
                   trackers (id).dynlink.Append (topline);
                end if;

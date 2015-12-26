@@ -1,7 +1,6 @@
 --  This file is covered by the Internet Software Consortium (ISC) License
 --  Reference: ../License.txt
 
-
 with Ada.Text_IO;
 with Ada.Characters.Latin_1;
 with Ada.Integer_Text_IO;

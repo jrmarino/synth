@@ -1,14 +1,12 @@
 --  This file is covered by the Internet Software Consortium (ISC) License
 --  Reference: ../License.txt
 
-with Ada.Directories;
 with Util.Streams.Pipes;
 with Util.Streams.Buffered;
 with PortScan.Ops;
 
 package body PortScan.Packages is
 
-   package AD  renames Ada.Directories;
    package STR renames Util.Streams;
    package OPS renames PortScan.Ops;
 

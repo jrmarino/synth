@@ -2,7 +2,6 @@
 --  Reference: ../License.txt
 
 with Ada.Strings.Hash;
-with Ada.Directories;
 with GNAT.Regpat;
 with Util.Streams.Pipes;
 with Util.Streams.Buffered;
@@ -11,7 +10,6 @@ with Ada.Exceptions;
 
 package body PortScan is
 
-   package AD  renames Ada.Directories;
    package EX  renames Ada.Exceptions;
    package RGX renames GNAT.Regpat;
    package STR renames Util.Streams;
