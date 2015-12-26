@@ -140,12 +140,30 @@ package body PortScan.Pilot is
    ---------------------------------
    --  sanity_check_then_prefail  --
    ---------------------------------
-   function sanity_check_then_prefail return Boolean
+   function sanity_check_then_prefail (delete_first : Boolean := False)
+                                       return Boolean
    is
+      procedure force_delete (plcursor : portkey_crate.Cursor);
       ptid : PortScan.port_id;
       num_skipped : Natural;
+
+      procedure force_delete (plcursor : portkey_crate.Cursor)
+      is
+         origin : JT.Text := portkey_crate.Key (plcursor);
+         pndx   : constant port_index := ports_keys.Element (origin);
+         tball  : constant String := JT.USS (PM.configuration.dir_repository) &
+                           "/" & JT.USS (all_ports (pndx).package_name);
+      begin
+         if AD.Exists (tball) then
+            AD.Delete_File (tball);
+         end if;
+      end force_delete;
    begin
       start_time := CAL.Clock;
+
+      if delete_first then
+         portlist.Iterate (Process => force_delete'Access);
+      end if;
 
       PKG.limited_sanity_check (JT.USS (PM.configuration.dir_repository));
       bld_counter := (OPS.queue_length, 0, 0, 0, 0);
@@ -210,8 +228,80 @@ package body PortScan.Pilot is
          TIO.Put_Line ("            failed:" & bld_counter (failure)'Img);
          TIO.Put_Line ("");
          TIO.Put_Line (CYC.log_duration (start_time, stop_time));
+         TIO.Put_Line ("The build logs can be found at: " &
+                         JT.USS (PM.configuration.dir_logs));
       end if;
    end perform_bulk_run;
+
+
+   -------------------------------------------
+   --  verify_desire_to_rebuild_repository  --
+   -------------------------------------------
+   function verify_desire_to_rebuild_repository return Boolean
+   is
+      answer : Boolean;
+      YN : Character;
+   begin
+      TIO.Put ("Would you like to rebuild the local repository (Y/N)? ");
+      loop
+         TIO.Get_Immediate (YN);
+         case YN is
+            when 'Y' | 'y' =>
+               answer := True;
+               exit;
+            when 'N' | 'n' =>
+               answer := False;
+               exit;
+            when others => null;
+         end case;
+      end loop;
+      TIO.Put (YN & LAT.LF);
+      return answer;
+   end verify_desire_to_rebuild_repository;
+
+
+   -----------------------------------------
+   --  verify_desire_to_install_packages  --
+   -----------------------------------------
+   function verify_desire_to_install_packages return Boolean is
+      answer : Boolean;
+      YN : Character;
+   begin
+      TIO.Put ("Would you like to upgrade your system with the new " &
+               "packages now (Y/N)? ");
+      loop
+         TIO.Get_Immediate (YN);
+         case YN is
+            when 'Y' | 'y' =>
+               answer := True;
+               exit;
+            when 'N' | 'n' =>
+               answer := False;
+               exit;
+            when others => null;
+         end case;
+      end loop;
+      TIO.Put (YN & LAT.LF);
+      return answer;
+   end verify_desire_to_install_packages;
+
+
+   ---------------------------------
+   --  rebuild_local_respository  --
+   ---------------------------------
+   procedure rebuild_local_respository is
+   begin
+      null;
+   end rebuild_local_respository;
+
+
+   --------------------------------------------
+   --  install_new_packages_to_live_system   --
+   --------------------------------------------
+   procedure install_new_packages_to_live_system is
+   begin
+      null;
+   end install_new_packages_to_live_system;
 
 
    ------------------

@@ -106,16 +106,50 @@ begin
                end if;
                return;
             when build =>
-               TIO.Put_Line ("BUILD to be implemented ...");
+               if PIL.build_pkg8_as_necessary and then
+                 PIL.scan_stack_of_single_ports and then
+                 PIL.sanity_check_then_prefail
+               then
+                  PIL.perform_bulk_run (testmode => False);
+                  if PIL.verify_desire_to_rebuild_repository then
+                     PIL.rebuild_local_respository;
+                     if PIL.verify_desire_to_install_packages then
+                        PIL.install_new_packages_to_live_system;
+                     end if;
+                  end if;
+               end if;
                return;
             when force =>
-               TIO.Put_Line ("FORCE to be implemented ...");
+               if PIL.build_pkg8_as_necessary and then
+                 PIL.scan_stack_of_single_ports and then
+                 PIL.sanity_check_then_prefail (delete_first => True)
+               then
+                  PIL.perform_bulk_run (testmode => False);
+                  if PIL.verify_desire_to_rebuild_repository then
+                     PIL.rebuild_local_respository;
+                     if PIL.verify_desire_to_install_packages then
+                        PIL.install_new_packages_to_live_system;
+                     end if;
+                  end if;
+               end if;
                return;
             when install =>
-               TIO.Put_Line ("INSTALL to be implemented ...");
+               if PIL.build_pkg8_as_necessary and then
+                 PIL.scan_stack_of_single_ports and then
+                 PIL.sanity_check_then_prefail
+               then
+                  PIL.perform_bulk_run (testmode => False);
+                  PIL.rebuild_local_respository;
+                  PIL.install_new_packages_to_live_system;
+               end if;
                return;
             when test =>
-               TIO.Put_Line ("TEST to be implemented ...");
+               if PIL.build_pkg8_as_necessary and then
+                 PIL.scan_stack_of_single_ports and then
+                 PIL.sanity_check_then_prefail
+               then
+                  PIL.perform_bulk_run (testmode => True);
+               end if;
                return;
          end case;
 

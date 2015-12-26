@@ -24,11 +24,25 @@ package PortScan.Pilot is
    --  For each ignored port, cascade the failures (designated "skipped" ports)
    --  Starts the build log documenting all this.
    --  Return True if no problems are encountered.
-   function sanity_check_then_prefail return Boolean;
+   function sanity_check_then_prefail (delete_first : Boolean := False)
+                                       return Boolean;
 
    --  Everything is fine so kick of the parallel builders.  They will
    --  continue until everything is complete.
    procedure perform_bulk_run (testmode : Boolean);
+
+   --  Return "true" if the user confirms the repository should be re/built.
+   function verify_desire_to_rebuild_repository return Boolean;
+
+   --  Return "true" if the user confirms to run "pkg upgrade" against the
+   --  local repository.
+   function verify_desire_to_install_packages return Boolean;
+
+   --  Post-build, rebuild the local repository with pkg(8)
+   procedure rebuild_local_respository;
+
+   --  post-repo, upgrade the same packages request
+   procedure install_new_packages_to_live_system;
 
    pilot_log : exception;
 
