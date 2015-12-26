@@ -1,12 +1,9 @@
 --  This file is covered by the Internet Software Consortium (ISC) License
 --  Reference: ../License.txt
 
-with Ada.Calendar;
 with JohnnyText;
 
 package PortScan.Buildcycle is
-
-   package AC renames Ada.Calendar;
 
    cycle_log_error : exception;
    cycle_cmd_error : exception;
@@ -14,13 +11,18 @@ package PortScan.Buildcycle is
    procedure initialize (test_mode : Boolean);
    function build_package (id : builders; sequence_id : port_id) return Boolean;
 
+   --  Expose for overall build log
+   function timestamp (hack : CAL.Time) return String;
+   function log_duration (start, stop : CAL.Time) return String;
+   function elapsed_now return String;
+
 private
 
    type trackrec is
       record
          seq_id     : port_id;
-         head_time  : AC.Time;
-         tail_time  : AC.Time;
+         head_time  : CAL.Time;
+         tail_time  : CAL.Time;
          log_handle : aliased TIO.File_Type;
          dynlink    : string_crate.Vector;
       end record;
@@ -45,7 +47,6 @@ private
    function  exec_phase_depends (id : builders; phase : String) return Boolean;
    function  exec_phase_deinstall (id : builders) return Boolean;
 
-   function  timestamp      (hack : AC.Time) return String;
    function  generic_system_command (command : String) return JT.Text;
 
    function  get_environment (id : builders) return String;
@@ -68,5 +69,6 @@ private
    function  dynamically_linked (base, filename : String) return Boolean;
    procedure stack_linked_libraries (id : builders; base, filename : String);
    procedure log_linked_libraries (id : builders);
+   function  elapsed_HH_MM_SS (start, stop : CAL.Time) return String;
 
 end PortScan.Buildcycle;

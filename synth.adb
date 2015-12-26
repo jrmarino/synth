@@ -98,7 +98,12 @@ begin
                TIO.Put_Line ("multi-arg STATUS to be implemented ...");
                return;
             when just_build =>
-               TIO.Put_Line ("JUST-BUILD to be implemented ...");
+               if PIL.build_pkg8_as_necessary and then
+                 PIL.scan_stack_of_single_ports and then
+                 PIL.sanity_check_then_prefail
+               then
+                  PIL.perform_bulk_run (testmode => False);
+               end if;
                return;
             when build =>
                TIO.Put_Line ("BUILD to be implemented ...");

@@ -31,12 +31,13 @@ package PortScan.Ops is
 
    --  The port build failed, so set all reverse dependences as skipped
    --  Remove the port from the queue when this is done.
-   procedure cascade_failed_build (id : port_id);
+   procedure cascade_failed_build (id : port_id; numskipped : out Natural;
+                                   logs : dim_handlers);
 
    --  Kick off bulk run using the given number of builders
    --  The rank_queue and all_ports must be already set up (it's recommended
    --  To eliminate the ignored ports and subsequent skips first.
-   procedure parallel_bulk_run (num_builders : builders);
+   procedure parallel_bulk_run (num_builders : builders; logs : dim_handlers);
 
    --  Before starting to build a port, lock it.  This is required for
    --  parallel building.

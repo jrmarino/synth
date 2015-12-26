@@ -5,6 +5,7 @@
 --  too new: Container_Checks, Tampering_Check
 
 with Ada.Text_IO;
+with Ada.Calendar;
 with Ada.Containers.Hashed_Maps;
 with Ada.Containers.Ordered_Sets;
 with Ada.Containers.Vectors;
@@ -19,10 +20,14 @@ package PortScan is
 
    package JT  renames JohnnyText;
    package AC  renames Ada.Containers;
+   package CAL renames Ada.Calendar;
    package AD  renames Ada.Directories;
    package TIO renames Ada.Text_IO;
    package LAT renames Ada.Characters.Latin_1;
    package PM  renames Parameters;
+
+   type count_type is (total, success, failure, ignored, skipped);
+   type dim_handlers is array (count_type) of TIO.File_Type;
 
    type port_id   is private;
    port_match_failed : constant port_id;
@@ -175,5 +180,14 @@ private
    function scrub_phase (Source : String) return JT.Text;
    function get_catport (PR : port_record) return String;
    function get_ccache return String;
+
+   type dim_counters is array (count_type) of Natural;
+
+   --  bulk run variables
+
+   Flog        : dim_handlers;
+   start_time  : CAL.Time;
+   stop_time   : CAL.Time;
+   bld_counter : dim_counters := (0, 0, 0, 0, 0);
 
 end PortScan;

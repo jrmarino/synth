@@ -14,7 +14,7 @@ package body PortScan.Ops is
    -------------------------
    --  parallel_bulk_run  --
    -------------------------
-   procedure parallel_bulk_run (num_builders : builders)
+   procedure parallel_bulk_run (num_builders : builders; logs : dim_handlers)
    is
       instructions   : dim_instruction   := (others => port_match_failed);
       builder_states : dim_builder_state := (others => idle);
@@ -22,6 +22,7 @@ package body PortScan.Ops is
       available      : Positive          := Integer (num_builders);
       target         : port_id;
       all_idle       : Boolean;
+      cntskip        : Natural;
 
       task type build (builder : builders);
       task body build
@@ -157,10 +158,23 @@ package body PortScan.Ops is
                      TIO.Put_Line ("Built [" & slave'Img & "] " &
                                      port_name (instructions (slave)));
                      cascade_successful_build (instructions (slave));
+                     bld_counter (success) := bld_counter (success) + 1;
+                     TIO.Put_Line (logs (success), CYC.elapsed_now & " " &
+                                      port_name (instructions (slave)));
+                     TIO.Put_Line (logs (total), CYC.elapsed_now & " " &
+                                     port_name (instructions (slave)) &
+                                     " success");
                   else
-                     TIO.Put_Line ("FAILED!! ==> " &
-                                     port_name (instructions (slave)));
-                     cascade_failed_build (instructions (slave));
+                     cascade_failed_build (instructions (slave), cntskip, logs);
+                     bld_counter (skipped) := bld_counter (skipped) + cntskip;
+                     bld_counter (failure) := bld_counter (failure) + 1;
+                     TIO.Put_Line (logs (total), CYC.elapsed_now &
+                                     port_name (instructions (slave)) &
+                                     " FAILED! skipped:" &
+                                     JT.int2str (cntskip));
+                     TIO.Put_Line (logs (failure), CYC.elapsed_now & " " &
+                                   port_name (instructions (slave)) &
+                                     " (skipped" & cntskip'Img & ")");
                   end if;
                   instructions (slave) := port_match_failed;
                   if run_complete then
@@ -190,15 +204,22 @@ package body PortScan.Ops is
    ----------------------------
    --  cascade_failed_build  --
    ----------------------------
-   procedure cascade_failed_build (id : port_id)
+   procedure cascade_failed_build (id : port_id; numskipped : out Natural;
+                                   logs : dim_handlers)
    is
-      purged : PortScan.port_id;
+      purged  : PortScan.port_id;
+      culprit : constant String := port_name (id);
    begin
+      numskipped := 0;
       loop
          purged := skip_next_reverse_dependency (id);
          exit when purged = port_match_failed;
          if skip_verified (purged) then
-            TIO.Put_Line ("   skipped: " & port_name (purged));
+            numskipped := numskipped + 1;
+            TIO.Put_Line (logs (total), "           Skipped: " &
+                            port_name (purged));
+            TIO.Put_Line (logs (skipped), port_name (purged) &
+                            " by " & culprit);
          end if;
       end loop;
       unlist_port (id);

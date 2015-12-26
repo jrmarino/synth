@@ -84,7 +84,7 @@ package body PortScan.Buildcycle is
            with "initialization attempted with port_id = 0";
       end if;
       trackers (id).dynlink.Clear;
-      trackers (id).head_time := AC.Clock;
+      trackers (id).head_time := CAL.Clock;
       declare
          log_path : constant String := log_name (sequence_id);
       begin
@@ -128,46 +128,85 @@ package body PortScan.Buildcycle is
    is
      FA    : access TIO.File_Type;
    begin
-      trackers (id).tail_time := AC.Clock;
+      trackers (id).tail_time := CAL.Clock;
       FA := trackers (id).log_handle'Access;
       TIO.Put_Line (FA.all, "Finished: " & timestamp (trackers (id).tail_time));
-      declare
-         diff_days : ACA.Day_Count;
-         diff_secs : Duration;
-         leap_secs : ACA.Leap_Seconds_Count;
-         use type ACA.Day_Count;
-      begin
-         ACA.Difference (Left    => trackers (id).tail_time,
-                         Right   => trackers (id).head_time,
-                         Days    => diff_days,
-                         Seconds => diff_secs,
-                         Leap_Seconds => leap_secs);
-         TIO.Put (FA.all, "Duration:");
-         if diff_days > 0 then
-            if diff_days = 1 then
-               TIO.Put_Line (FA.all, " 1 day and" &
-                             ACF.Image (Elapsed_Time => diff_secs));
-            else
-               TIO.Put_Line (FA.all, diff_days'Img & " days and" &
-                               ACF.Image (Elapsed_Time => diff_secs));
-            end if;
-         else
-            TIO.Put_Line (FA.all, " " & ACF.Image (Elapsed_Time => diff_secs));
-         end if;
-      end;
+      TIO.Put_Line (FA.all, log_duration (start => trackers (id).head_time,
+                                          stop  => trackers (id).tail_time));
       TIO.Close (trackers (id).log_handle);
    end finalize_log;
+
+
+   --------------------
+   --  log_duration  --
+   --------------------
+   function log_duration (start, stop : CAL.Time) return String
+   is
+      raw : JT.Text := JT.SUS ("Duration:");
+      diff_days : ACA.Day_Count;
+      diff_secs : Duration;
+      leap_secs : ACA.Leap_Seconds_Count;
+      use type ACA.Day_Count;
+   begin
+      ACA.Difference (Left    => stop,
+                      Right   => start,
+                      Days    => diff_days,
+                      Seconds => diff_secs,
+                      Leap_Seconds => leap_secs);
+      if diff_days > 0 then
+         if diff_days = 1 then
+            JT.SU.Append (raw, " 1 day and" &
+                            ACF.Image (Elapsed_Time => diff_secs));
+         else
+            JT.SU.Append (raw, diff_days'Img & " days and" &
+                            ACF.Image (Elapsed_Time => diff_secs));
+         end if;
+      else
+         JT.SU.Append (raw, " " & ACF.Image (Elapsed_Time => diff_secs));
+      end if;
+      return JT.USS (raw);
+   end log_duration;
+
+
+   ------------------------
+   --  elapsed_HH_MM_SS  --
+   ------------------------
+   function elapsed_HH_MM_SS (start, stop : CAL.Time) return String
+   is
+      diff_days : ACA.Day_Count;
+      diff_secs : Duration;
+      leap_secs : ACA.Leap_Seconds_Count;
+      totalsecs : Duration;
+      use type ACA.Day_Count;
+   begin
+      ACA.Difference (Left    => stop,
+                      Right   => start,
+                      Days    => diff_days,
+                      Seconds => diff_secs,
+                      Leap_Seconds => leap_secs);
+      totalsecs := diff_secs + (Duration (diff_days) * 3600 * 24);
+      return ACF.Image (Elapsed_Time => diff_secs);
+   end elapsed_HH_MM_SS;
+
+
+   -------------------
+   --  elapsed_now  --
+   -------------------
+   function elapsed_now return String is
+   begin
+      return elapsed_HH_MM_SS (start => start_time, stop => CAL.Clock);
+   end elapsed_now;
 
 
    -----------------
    --  timestamp  --
    -----------------
-   function timestamp (hack : AC.Time) return String
+   function timestamp (hack : CAL.Time) return String
    is
-      function MON   (num : AC.Month_Number) return String;
+      function MON   (num : CAL.Month_Number) return String;
       function WKDAY (day : ACF.Day_Name) return String;
 
-      function MON (num : AC.Month_Number) return String is
+      function MON (num : CAL.Month_Number) return String is
       begin
          case num is
             when 1 => return "JAN";
@@ -197,8 +236,8 @@ package body PortScan.Buildcycle is
          end case;
       end WKDAY;
    begin
-      return WKDAY (ACF.Day_Of_Week (hack)) & "," & AC.Day (hack)'Img & " " &
-        MON (AC.Month (hack)) & AC.Year (hack)'Img & " at" &
+      return WKDAY (ACF.Day_Of_Week (hack)) & "," & CAL.Day (hack)'Img & " " &
+        MON (CAL.Month (hack)) & CAL.Year (hack)'Img & " at" &
         ACF.Image (hack)(11 .. 19) & " UTC";
    end timestamp;
 

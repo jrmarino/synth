@@ -11,11 +11,42 @@ package PortScan.Pilot is
    --  (command line or inside file) are verified and arguments are correct.
    function store_origins return Boolean;
 
+   --  Prebuilds pkg(8) in SL01 builder if necessary.
+   --  Returns True unless a failure was encountered.
+   function build_pkg8_as_necessary return Boolean;
+
+   --  Iterate through stack of individual build requests and scan each one.
+   --  If any scan fails, return False.
+   function scan_stack_of_single_ports return Boolean;
+
+   --  Runs post-scan sanity check
+   --  If successful, then scans for all "ignored" ports, failing them
+   --  For each ignored port, cascade the failures (designated "skipped" ports)
+   --  Starts the build log documenting all this.
+   --  Return True if no problems are encountered.
+   function sanity_check_then_prefail return Boolean;
+
+   --  Everything is fine so kick of the parallel builders.  They will
+   --  continue until everything is complete.
+   procedure perform_bulk_run (testmode : Boolean);
+
+   pilot_log : exception;
+
 private
+
+   subtype logname_field is String (1 .. 19);
+   type dim_logname  is array (count_type) of logname_field;
 
    portlist : portkey_crate.Map;
 
    badport : constant String := "Invalid port origin: ";
+   bailing : constant String := "  (Synth must exit)";
+   pkgng   : constant String := "ports-mgmt/pkg";
+   logname : constant dim_logname := ("00_last_results.log",
+                                      "01_success_list.log",
+                                      "02_failure_list.log",
+                                      "03_ignored_list.log",
+                                      "04_skipped_list.log");
 
    --  scan given file.  Everything line must be either blank (whitespace
    --  ignored) or a valid port origin, and returns true if it is.
@@ -24,5 +55,12 @@ private
 
    --  return true if "cat" exists and "port" exists
    function valid_catport (catport : String) return Boolean;
+
+   --  wrapper for portlist.insert that prevents duplicate key inserts
+   procedure plinsert (key : String; dummy : Natural);
+
+   --  build log operations
+   procedure start_logging (flavor : count_type);
+   procedure stop_logging (flavor : count_type);
 
 end PortScan.Pilot;
