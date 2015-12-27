@@ -46,7 +46,7 @@ package body Actions is
                       "<list of port origins | filename>" & LAT.LF);
       TIO.Put_Line ("zero-parameter-option includes 'help', 'configure', " &
                       "'version' (this screen),");
-      TIO.Put_Line (zp & "'status', 'upgrade-system', 'update-repository',");
+      TIO.Put_Line (zp & "'status', 'upgrade-system', 'rebuild-repository',");
       TIO.Put_Line (zp & "'everything', 'purge-distfiles'");
       TIO.Put_Line ("list-option includes  'status', 'build', 'just-build', " &
                       "'install', 'force'");
@@ -65,7 +65,7 @@ package body Actions is
       opt01 : constant ofield := "status              ";
       opt02 : constant ofield := "configure           ";
       opt03 : constant ofield := "upgrade-system      ";
-      opt04 : constant ofield := "update-repository   ";
+      opt04 : constant ofield := "rebuild-repository  ";
       opt05 : constant ofield := "purge-distfiles     ";
       opt06 : constant ofield := "everything          ";
       opt07 : constant ofield := "version             ";

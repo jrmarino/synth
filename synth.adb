@@ -51,7 +51,7 @@ begin
          mandate := just_build;
       elsif first = "upgrade-system" then
          mandate := up_system;
-      elsif first = "update-repository" then
+      elsif first = "rebuild-repository" then
          mandate := up_repo;
       elsif first = "purge-distfiles" then
          mandate := purge;
@@ -198,7 +198,9 @@ begin
                TIO.Put_Line ("UPGRADE-SYSTEM to be implemented ...");
                return;
             when up_repo =>
-               TIO.Put_Line ("UPDATE_REPO to be implemented ...");
+               if PIL.rebuild_local_respository then
+                  null;
+               end if;
                return;
             when purge =>
                PIL.purge_distfiles;
