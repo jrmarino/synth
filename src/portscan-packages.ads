@@ -38,9 +38,11 @@ package PortScan.Packages is
 
 private
 
-   stored_packages    : package_crate.Map;
-   calculated_abi     : JT.Text;
-   calculated_alt_abi : JT.Text;
+   stored_packages     : package_crate.Map;
+   calculated_abi      : JT.Text;
+   calculated_alt_abi  : JT.Text;
+   calc_abi_noarch     : JT.Text;
+   calc_alt_abi_noarch : JT.Text;
 
    --  This function returns "True" if the scanned options exactly match
    --  the options in the already-built package.  Usually it's already known

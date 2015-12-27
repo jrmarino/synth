@@ -422,7 +422,13 @@ package body PortScan.Packages is
       if JT.equivalent (topline, calculated_abi) then
          return True;
       end if;
+      if JT.equivalent (topline, calc_abi_noarch) then
+         return True;
+      end if;
       if JT.equivalent (topline, calculated_alt_abi) then
+         return True;
+      end if;
+      if JT.equivalent (topline, calc_alt_abi_noarch) then
          return True;
       end if;
       return False;
@@ -493,9 +499,12 @@ package body PortScan.Packages is
                           JT.SU.Slice (UN, 1, ndxdot - 1) & ".");
             JT.SU.Append (calculated_abi, even
                           (JT.SU.Slice (UN, ndxdot + 1, ndxdash - 1)) & ":");
+            calc_abi_noarch := calculated_abi;
             JT.SU.Append (calculated_abi, suffix
                           (JT.SU.Slice (UN, ndxspc + 1, unlen)));
-            calculated_alt_abi := calculated_abi;
+            JT.SU.Append (calc_abi_noarch, "*");
+            calculated_alt_abi  := calculated_abi;
+            calc_alt_abi_noarch := calc_abi_noarch;
          end;
       else
          declare
@@ -511,10 +520,14 @@ package body PortScan.Packages is
                           JT.SU.Slice (UN, 1, ndxdot - 1) & ".");
             JT.SU.Append (calculated_alt_abi,
                           JT.SU.Slice (UN, 1, ndxdot - 1) & ".");
+            calc_abi_noarch     := calculated_abi;
+            calc_alt_abi_noarch := calculated_alt_abi;
             JT.SU.Append (calculated_abi,
                           JT.SU.Slice (UN, ndxspc + 1, unlen));
             JT.SU.Append (calculated_alt_abi, suffix
                           (JT.SU.Slice (UN, ndxspc + 1, unlen)));
+            JT.SU.Append (calc_abi_noarch, "*");
+            JT.SU.Append (calc_alt_abi_noarch, "*");
          end;
       end if;
    end establish_package_architecture;
