@@ -19,6 +19,10 @@ package PortScan.Buildcycle is
    --  The actual command to build a local repository (Returns True on success)
    function build_repository (id : builders) return Boolean;
 
+   --  Allows other packages to call external commands (e.g. Pilot)
+   --  Returns "True" on success
+   function external_command (command : String) return Boolean;
+
 private
 
    type trackrec is

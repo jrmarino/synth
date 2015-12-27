@@ -50,6 +50,13 @@ package PortScan.Pilot is
    --  search the actual package directory.  Remove non-matches without asking.
    procedure purge_distfiles;
 
+   --  Create a pkg repo conf file (requires root permission)
+   function write_pkg_repos_configuration_file return Boolean;
+
+   --  There are no specific packages to update.  It's just a generic
+   --  "pkg upgrade" limited to local repository with "yes" confirmed.
+   procedure upgrade_system_everything;
+
    pilot_log : exception;
 
 private

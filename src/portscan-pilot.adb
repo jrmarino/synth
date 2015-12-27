@@ -602,4 +602,46 @@ package body PortScan.Pilot is
       TIO.Put_Line ("Recovered" & display_kmg (bytes_purged));
    end purge_distfiles;
 
+
+   ------------------------------------------
+   --  write_pkg_repos_configuration_file  --
+   ------------------------------------------
+   function write_pkg_repos_configuration_file return Boolean
+   is
+      --  Hardcoded to /usr/local, can't be helped until the live system
+      --  localbase is a configuration item.  (In reality it's valid 99%+)
+      target : constant String := "/usr/local/etc/pkg/repos/00_synth.conf";
+      pkgdir : constant String := JT.USS (PM.configuration.dir_packages);
+      handle : TIO.File_Type;
+   begin
+      if AD.Exists (target) then
+         AD.Delete_File (target);
+      end if;
+      TIO.Create (File => handle, Mode => TIO.Out_File, Name => target);
+      TIO.Put_Line (handle, "# Automatically generated." & LAT.LF);
+      TIO.Put_Line (handle, "Synth: {");
+      TIO.Put_Line (handle, "  url      : file://" & pkgdir & ",");
+      TIO.Put_Line (handle, "  priority : 0,");
+      TIO.Put_Line (handle, "  enabled  : yes,");
+      TIO.Put_Line (handle, "}");
+      TIO.Close (handle);
+      return True;
+   exception
+      when others => return False;
+   end write_pkg_repos_configuration_file;
+
+
+   ---------------------------------
+   --  upgrade_system_everything  --
+   ---------------------------------
+   procedure upgrade_system_everything
+   is
+      command : constant String :=
+        "/usr/local/sbin/pkg upgrade --yes --repository Synth";
+   begin
+      if not CYC.external_command (command) then
+         TIO.Put_Line ("Unfortunately, the system upgraded failed.");
+      end if;
+   end upgrade_system_everything;
+
 end PortScan.Pilot;

@@ -748,4 +748,20 @@ package body PortScan.Buildcycle is
       trackers (id).dynlink.Iterate (log_dump'Access);
    end log_linked_libraries;
 
+
+   ------------------------
+   --  external_command  --
+   ------------------------
+   function external_command (command : String) return Boolean
+   is
+      Args        : OSL.Argument_List_Access;
+      Exit_Status : Integer;
+   begin
+      Args := OSL.Argument_String_To_List (command);
+      Exit_Status := OSL.Spawn (Program_Name => Args (Args'First).all,
+                                Args => Args (Args'First + 1 .. Args'Last));
+      OSL.Free (Args);
+      return Exit_Status = 0;
+   end external_command;
+
 end PortScan.Buildcycle;
