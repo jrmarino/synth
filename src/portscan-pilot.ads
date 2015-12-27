@@ -43,9 +43,6 @@ package PortScan.Pilot is
    function rebuild_local_respository (use_full_scan : Boolean := True)
                                        return Boolean;
 
-   --  post-repo, upgrade the same packages request
-   procedure install_new_packages_to_live_system;
-
    --  gather every single distfile in ports tree (via distinfo) and then
    --  search the actual package directory.  Remove non-matches without asking.
    procedure purge_distfiles;
@@ -56,6 +53,10 @@ package PortScan.Pilot is
    --  There are no specific packages to update.  It's just a generic
    --  "pkg upgrade" limited to local repository with "yes" confirmed.
    procedure upgrade_system_everything;
+
+   --  Similar to above, but updates the packages already specified by
+   --  the "list" commands
+   procedure upgrade_system_exactly;
 
    pilot_log : exception;
 

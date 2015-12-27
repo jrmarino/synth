@@ -115,7 +115,7 @@ begin
                     PIL.rebuild_local_respository and then
                     PIL.verify_desire_to_install_packages
                   then
-                     PIL.install_new_packages_to_live_system;
+                     PIL.upgrade_system_exactly;
                   end if;
                end if;
                return;
@@ -129,7 +129,7 @@ begin
                     PIL.rebuild_local_respository and then
                     PIL.verify_desire_to_install_packages
                   then
-                     PIL.install_new_packages_to_live_system;
+                     PIL.upgrade_system_exactly;
                   end if;
                end if;
                return;
@@ -139,8 +139,9 @@ begin
                  PIL.sanity_check_then_prefail
                then
                   PIL.perform_bulk_run (testmode => False);
-                  if PIL.rebuild_local_respository then
-                     PIL.install_new_packages_to_live_system;
+                  if PIL.rebuild_local_respository
+                  then
+                     PIL.upgrade_system_exactly;
                   end if;
                end if;
                return;

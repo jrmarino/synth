@@ -338,15 +338,6 @@ package body PortScan.Pilot is
    end rebuild_local_respository;
 
 
-   --------------------------------------------
-   --  install_new_packages_to_live_system   --
-   --------------------------------------------
-   procedure install_new_packages_to_live_system is
-   begin
-      null;
-   end install_new_packages_to_live_system;
-
-
    ------------------
    --  valid_file  --
    ------------------
@@ -643,5 +634,33 @@ package body PortScan.Pilot is
          TIO.Put_Line ("Unfortunately, the system upgraded failed.");
       end if;
    end upgrade_system_everything;
+
+
+   ------------------------------
+   --  upgrade_system_exactly  --
+   ------------------------------
+   procedure upgrade_system_exactly
+   is
+      procedure build_train (plcursor : portkey_crate.Cursor);
+      base_command : constant String :=
+        "/usr/local/sbin/pkg upgrade --yes --repository Synth";
+      caboose : JT.Text;
+
+      procedure build_train (plcursor : portkey_crate.Cursor) is
+      begin
+         JT.SU.Append (caboose, " ");
+         JT.SU.Append (caboose, portkey_crate.Key (plcursor));
+      end build_train;
+   begin
+      portlist.Iterate (Process => build_train'Access);
+      declare
+         command : constant String :=
+           base_command & JT.USS (caboose);
+      begin
+         if not CYC.external_command (command) then
+            TIO.Put_Line ("Unfortunately, the system upgraded failed.");
+         end if;
+      end;
+   end upgrade_system_exactly;
 
 end PortScan.Pilot;
