@@ -291,9 +291,17 @@ package body PortScan.Pilot is
    ---------------------------------
    --  rebuild_local_respository  --
    ---------------------------------
-   procedure rebuild_local_respository is
+   procedure rebuild_local_respository (use_full_scan : Boolean := True) is
    begin
-      null;
+      if use_full_scan then
+         PortScan.reset_ports_tree;
+         if PortScan.scan_entire_ports_tree
+           (JT.USS (PM.configuration.dir_portsdir))
+         then
+            PortScan.set_build_priority;
+            PKG.clean_repository (JT.USS (PM.configuration.dir_repository));
+         end if;
+      end if;
    end rebuild_local_respository;
 
 

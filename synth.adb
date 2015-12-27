@@ -204,6 +204,8 @@ begin
                return;
             when everything =>
                TIO.Put_Line ("EVERYTHING to be implemented ...");
+               --  run PKG.clean_repository instead of limited sanity check
+               --  don't run it again before repos building
                return;
          end case;
       end if;

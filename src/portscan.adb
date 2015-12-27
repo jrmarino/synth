@@ -190,7 +190,10 @@ package body PortScan is
                populate_port_data (portsdir, target_port);
             end if;
          exception
-            when issue : others =>  EX.Reraise_Occurrence (issue);
+            when issue : others =>
+               TIO.Put_Line (LAT.LF & "culprit: " &
+                               get_catport (all_ports (target_port)));
+               EX.Reraise_Occurrence (issue);
          end populate;
       begin
          make_queue (lot).Iterate (populate'Access);
@@ -198,22 +201,21 @@ package body PortScan is
       exception
          when issue : nonexistent_port =>
             aborted := True;
-            TIO.Put_Line (LAT.LF & "Scan aborted because dependency could " &
+            TIO.Put_Line ("Scan aborted because dependency could " &
                             "not be located.");
             TIO.Put_Line (EX.Exception_Message (issue));
          when issue : bmake_execution =>
             aborted := True;
-            TIO.Put_Line (LAT.LF & "Scan aborted because 'make' encounted " &
+            TIO.Put_Line ("Scan aborted because 'make' encounted " &
                             "an error in the Makefile.");
             TIO.Put_Line (EX.Exception_Message (issue));
          when issue : make_garbage =>
             aborted := True;
-            TIO.Put_Line (LAT.LF & "Scan aborted because dependency is " &
-                            "malformed.");
+            TIO.Put_Line ("Scan aborted because dependency is malformed.");
             TIO.Put_Line (EX.Exception_Message (issue));
          when issue : others =>
             aborted := True;
-            TIO.Put_Line (LAT.LF & "Scan aborted for an unknown reason.");
+            TIO.Put_Line ("Scan aborted for an unknown reason.");
             TIO.Put_Line (EX.Exception_Message (issue));
       end scan;
 

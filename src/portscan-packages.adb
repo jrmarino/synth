@@ -155,8 +155,10 @@ package body PortScan.Packages is
    ------------------------
    procedure clean_repository (repository : String)
    is
-      procedure save_package (cursor : ranking_crate.Cursor);
-      procedure save_package (cursor : ranking_crate.Cursor)
+      procedure mark_package (cursor : ranking_crate.Cursor);
+      procedure kill_package (cursor : package_crate.Cursor);
+
+      procedure mark_package (cursor : ranking_crate.Cursor)
       is
          QR  : constant queue_record := ranking_crate.Element (cursor);
          pcc : package_crate.Cursor;
@@ -167,23 +169,25 @@ package body PortScan.Packages is
          if pcc /= package_crate.No_Element then
             stored_packages.Delete (Position => pcc);
          end if;
-      end save_package;
-   begin
-      scan_repository (repository);
-      TIO.Put_Line ("Scanned");
+      end mark_package;
 
-      rank_queue.Iterate (save_package'Access);
-
-      declare
-         cursor : package_crate.Cursor := stored_packages.First;
-         use type package_crate.Cursor;
+      procedure kill_package (cursor : package_crate.Cursor)
+      is
+         pkgname : constant String := JT.USS (package_crate.Key (cursor));
       begin
-         while cursor /= package_crate.No_Element loop
-            TIO.Put_Line ("remove " & JT.USS (package_crate.Key (cursor)));
-            cursor := package_crate.Next (cursor);
-         end loop;
-      end;
-
+         TIO.Put_Line ("Removed: " & pkgname);
+         AD.Delete_File (repository & "/" & pkgname);
+      exception
+         when others =>
+            TIO.Put_Line ("         Failed to remove " & pkgname);
+      end kill_package;
+   begin
+      --  The entire tree must have been scanned *before* this procedure
+      --  is executed (see Portscan.scan_entire_ports_tree)
+      scan_repository (repository);
+      rank_queue.Iterate (mark_package'Access);
+      stored_packages.Iterate (kill_package'Access);
+      stored_packages.Clear;
    end clean_repository;
 
 

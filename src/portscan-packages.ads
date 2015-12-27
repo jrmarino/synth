@@ -23,11 +23,12 @@ package PortScan.Packages is
                                     pkg_exists, pkg_removed : out Boolean);
 
    --  Iterate through the final build queue to remove any packages that
-   --  match the current package names
+   --  match the current package names (currently unused)
    procedure remove_queue_packages (repository : String);
 
    --  This procedure empties the given repository without discrimination.
    --  (Well, it's limited to "*.txz" matches, but normally that's everything)
+   --  (currently unused)
    procedure wipe_out_repository (repository : String);
 
    --  Sometimes, especially with the single ports-mgmt/pkg check, there is
