@@ -2,6 +2,7 @@
 --  Reference: ../License.txt
 
 with Ada.Command_Line;
+with Ada.Strings.Fixed;
 with PortScan.Ops;
 with PortScan.Packages;
 with PortScan.Buildcycle;
@@ -10,6 +11,7 @@ with Replicant;
 package body PortScan.Pilot is
 
    package CLI renames Ada.Command_Line;
+   package ASF renames Ada.Strings.Fixed;
    package OPS renames PortScan.Ops;
    package PKG renames PortScan.Packages;
    package CYC renames PortScan.Buildcycle;
@@ -435,5 +437,128 @@ package body PortScan.Pilot is
       end if;
       TIO.Close (Flog (flavor));
    end stop_logging;
+
+
+   -----------------------
+   --  purge_distfiles  --
+   -----------------------
+   procedure purge_distfiles
+   is
+      type disktype is mod 2**64;
+      procedure scan (plcursor : portkey_crate.Cursor);
+      procedure kill (plcursor : portkey_crate.Cursor);
+      procedure walk (name : String);
+      function display_kmg (number : disktype) return String;
+      bytes_purged : disktype := 0;
+      tracker : port_id := 0;
+      distfiles : portkey_crate.Map;
+      rmfiles   : portkey_crate.Map;
+
+      procedure scan (plcursor : portkey_crate.Cursor)
+      is
+         origin   : JT.Text := portkey_crate.Key (plcursor);
+         pndx     : constant port_index := ports_keys.Element (origin);
+         distinfo : constant String := JT.USS (PM.configuration.dir_portsdir) &
+                     "/" & JT.USS (origin) & "/distinfo";
+         handle   : TIO.File_Type;
+         bookend  : Natural;
+      begin
+         TIO.Open (File => handle, Mode => TIO.In_File, Name => distinfo);
+         while not TIO.End_Of_File (handle) loop
+            declare
+               Line : String := TIO.Get_Line (handle);
+            begin
+               if Line (1 .. 4) = "SIZE" then
+                  bookend := ASF.Index (Line, ")");
+                  declare
+                     S : JT.Text := JT.SUS (Line (7 .. bookend - 1));
+                  begin
+                     if not distfiles.Contains (S) then
+                        tracker := tracker + 1;
+                        distfiles.Insert (S, tracker);
+                     end if;
+                  end;
+               end if;
+            end;
+         end loop;
+      exception
+         when others => null;
+      end scan;
+
+      procedure walk (name : String)
+      is
+         procedure walkdir (item : AD.Directory_Entry_Type);
+         procedure print (item : AD.Directory_Entry_Type);
+         uniqid     : port_id := 0;
+         leftindent : Natural :=
+           JT.SU.Length (PM.configuration.dir_distfiles) + 2;
+
+         procedure walkdir (item : AD.Directory_Entry_Type) is
+         begin
+            if AD.Simple_Name (item) /= "." and then
+              AD.Simple_Name (item) /= ".."
+            then
+               walk (AD.Full_Name (item));
+            end if;
+         exception
+            when AD.Name_Error => null;
+         end walkdir;
+         procedure print (item : AD.Directory_Entry_Type)
+         is
+            FN    : constant String := AD.Full_Name (item);
+            tball : JT.Text := JT.SUS (FN (leftindent .. FN'Last));
+         begin
+            if not distfiles.Contains (tball) then
+               uniqid := uniqid + 1;
+               rmfiles.Insert (Key => tball, New_Item => uniqid);
+               bytes_purged := bytes_purged + disktype (AD.Size (FN));
+            end if;
+         end print;
+      begin
+         AD.Search (name, "*", (AD.Ordinary_File => True, others => False),
+                    print'Access);
+         AD.Search (name, "", (AD.Directory => True, others => False),
+                    walkdir'Access);
+      end walk;
+
+      function display_kmg (number : disktype) return String
+      is
+         type kmgtype is delta 0.01 digits 4;
+         kilo : constant disktype := 1024;
+         mega : constant disktype := kilo * kilo;
+         giga : constant disktype := kilo * mega;
+         XXX  : kmgtype;
+      begin
+         if number > giga then
+            XXX := kmgtype (number / giga);
+            return XXX'Img & " gigabytes";
+         elsif number > mega then
+            XXX := kmgtype (number / mega);
+            return XXX'Img & " megabytes";
+         else
+            XXX := kmgtype (number / kilo);
+            return XXX'Img & " kilobytes";
+         end if;
+      end display_kmg;
+
+      procedure kill (plcursor : portkey_crate.Cursor)
+      is
+         tarball : String := JT.USS (portkey_crate.Key (plcursor));
+         path    : JT.Text := PM.configuration.dir_distfiles;
+      begin
+         JT.SU.Append (path, "/" & tarball);
+         TIO.Put_Line ("Deleting " & tarball);
+         AD.Delete_File (JT.USS (path));
+      end kill;
+
+   begin
+      PortScan.prescan_ports_tree (JT.USS (PM.configuration.dir_portsdir));
+      TIO.Put ("Scanning the distinfo file of every port in the tree ... ");
+      ports_keys.Iterate (Process => scan'Access);
+      TIO.Put_Line ("done");
+      walk (name => JT.USS (PM.configuration.dir_distfiles));
+      rmfiles.Iterate (kill'Access);
+      TIO.Put_Line ("Recovered" & display_kmg (bytes_purged));
+   end purge_distfiles;
 
 end PortScan.Pilot;

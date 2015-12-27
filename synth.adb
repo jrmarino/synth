@@ -200,7 +200,7 @@ begin
                TIO.Put_Line ("UPDATE_REPO to be implemented ...");
                return;
             when purge =>
-               TIO.Put_Line ("PURGE to be implemented ...");
+               PIL.purge_distfiles;
                return;
             when everything =>
                TIO.Put_Line ("EVERYTHING to be implemented ...");

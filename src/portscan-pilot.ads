@@ -44,6 +44,10 @@ package PortScan.Pilot is
    --  post-repo, upgrade the same packages request
    procedure install_new_packages_to_live_system;
 
+   --  gather every single distfile in ports tree (via distinfo) and then
+   --  search the actual package directory.  Remove non-matches without asking.
+   procedure purge_distfiles;
+
    pilot_log : exception;
 
 private
