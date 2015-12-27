@@ -183,6 +183,7 @@ private
    function get_catport (PR : port_record) return String;
    function scan_progress return String;
    function get_ccache return String;
+   function get_max_lots return scanners;
 
    type dim_counters is array (count_type) of Natural;
 

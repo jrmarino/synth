@@ -662,6 +662,21 @@ package body PortScan is
    end scrub_phase;
 
 
+   --------------------------
+   --  determine_max_lots  --
+   --------------------------
+   function get_max_lots return scanners
+   is
+      first_try : constant Positive := Positive (number_cores) * 3;
+   begin
+      if first_try > Positive (scanners'Last) then
+         return scanners'Last;
+      else
+         return scanners (first_try);
+      end if;
+   end get_max_lots;
+
+
    ---------------------
    --  grep_Makefile  --
    ---------------------
@@ -671,7 +686,7 @@ package body PortScan is
       matches  : RGX.Match_Array (0 .. 1);
       pattern  : constant String := "SUBDIR[[:space:]]*[:+:]=[[:space:]]*(.*)";
       regex    : constant RGX.Pattern_Matcher := RGX.Compile (pattern);
-      max_lots : constant scanners := scanners (number_cores);
+      max_lots : constant scanners := get_max_lots;
    begin
       TIO.Open (File => archive,
                 Mode => TIO.In_File,
@@ -721,7 +736,7 @@ package body PortScan is
    is
       inner_search : AD.Search_Type;
       inner_dirent : AD.Directory_Entry_Type;
-      max_lots     : constant scanners := scanners (number_cores);
+      max_lots     : constant scanners := get_max_lots;
    begin
       AD.Start_Search (Search    => inner_search,
                        Directory => portsdir & "/" & category,
