@@ -39,7 +39,9 @@ package PortScan.Pilot is
    function verify_desire_to_install_packages return Boolean;
 
    --  Post-build, rebuild the local repository with pkg(8)
-   procedure rebuild_local_respository (use_full_scan : Boolean := True);
+   --  Returns True on success
+   function rebuild_local_respository (use_full_scan : Boolean := True)
+                                       return Boolean;
 
    --  post-repo, upgrade the same packages request
    procedure install_new_packages_to_live_system;

@@ -16,6 +16,9 @@ package PortScan.Buildcycle is
    function log_duration (start, stop : CAL.Time) return String;
    function elapsed_now return String;
 
+   --  The actual command to build a local repository (Returns True on success)
+   function build_repository (id : builders) return Boolean;
+
 private
 
    type trackrec is
@@ -70,5 +73,8 @@ private
    procedure stack_linked_libraries (id : builders; base, filename : String);
    procedure log_linked_libraries (id : builders);
    function  elapsed_HH_MM_SS (start, stop : CAL.Time) return String;
+
+   --  Install pkg-static in specific builder (Returns True on success)
+   function install_pkg8 (id : builders) return Boolean;
 
 end PortScan.Buildcycle;

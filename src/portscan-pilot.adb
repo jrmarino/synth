@@ -291,7 +291,15 @@ package body PortScan.Pilot is
    ---------------------------------
    --  rebuild_local_respository  --
    ---------------------------------
-   procedure rebuild_local_respository (use_full_scan : Boolean := True) is
+   function rebuild_local_respository (use_full_scan : Boolean := True)
+                                       return Boolean
+   is
+      repo : constant String := JT.USS (PM.configuration.dir_repository);
+      main : constant String := JT.USS (PM.configuration.dir_packages);
+      xz_meta    : constant String := main & "/meta.txz";
+      xz_digest  : constant String := main & "/digests.txz";
+      xz_pkgsite : constant String := main & "/packagesite.txz";
+      build_res  : Boolean;
    begin
       if use_full_scan then
          PortScan.reset_ports_tree;
@@ -299,8 +307,33 @@ package body PortScan.Pilot is
            (JT.USS (PM.configuration.dir_portsdir))
          then
             PortScan.set_build_priority;
-            PKG.clean_repository (JT.USS (PM.configuration.dir_repository));
+         else
+            TIO.Put_Line ("Failed to scan ports tree " & bailing);
+            return False;
          end if;
+      end if;
+      PKG.clean_repository (repo);
+      PKG.limited_sanity_check (repo);
+      if AD.Exists (xz_meta) then
+         AD.Delete_File (xz_meta);
+      end if;
+      if AD.Exists (xz_digest) then
+         AD.Delete_File (xz_digest);
+      end if;
+      if AD.Exists (xz_pkgsite) then
+         AD.Delete_File (xz_pkgsite);
+      end if;
+      REP.initialize;
+      REP.launch_slave (1);
+      build_res := CYC.build_repository (1);
+      REP.destroy_slave (1);
+      REP.finalize;
+      if build_res then
+         TIO.Put_Line ("Local repository successfully rebuilt");
+         return True;
+      else
+         TIO.Put_Line ("Failed to rebuild repository" & bailing);
+         return False;
       end if;
    end rebuild_local_respository;
 
