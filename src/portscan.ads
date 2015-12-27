@@ -148,11 +148,13 @@ private
    type port_record_access is access all port_record;
 
    type dim_make_queue is array (scanners) of subqueue.Vector;
+   type dim_progress   is array (scanners) of port_index;
    type dim_all_ports  is array (port_index) of aliased port_record;
 
    all_ports    : dim_all_ports;
    ports_keys   : portkey_crate.Map;
    make_queue   : dim_make_queue;
+   mq_progress  : dim_progress := (others => 0);
    rank_queue   : ranking_crate.Set;
    number_cores : cpu_range  := cpu_range'First;
    lot_number   : scanners   := 1;
@@ -179,12 +181,12 @@ private
    function find_colon (Source : String) return Natural;
    function scrub_phase (Source : String) return JT.Text;
    function get_catport (PR : port_record) return String;
+   function scan_progress return String;
    function get_ccache return String;
 
    type dim_counters is array (count_type) of Natural;
 
    --  bulk run variables
-
    Flog        : dim_handlers;
    start_time  : CAL.Time;
    stop_time   : CAL.Time;

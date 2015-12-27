@@ -188,6 +188,7 @@ package body PortScan is
          begin
             if not aborted then
                populate_port_data (portsdir, target_port);
+               mq_progress (lot) := mq_progress (lot) + 1;
             end if;
          exception
             when issue : others =>
@@ -253,9 +254,10 @@ package body PortScan is
       scan_32 : scan (lot => 32);
 
    begin
+      TIO.Put_Line ("Scanning entire ports tree.");
       while combined_wait loop
          delay 5.0;
-         TIO.Put (".");
+         TIO.Put (scan_progress);
          combined_wait := False;
          for j in scanners'Range loop
             if not aborted and then not finished (j) then
@@ -669,7 +671,7 @@ package body PortScan is
       matches  : RGX.Match_Array (0 .. 1);
       pattern  : constant String := "SUBDIR[[:space:]]*[:+:]=[[:space:]]*(.*)";
       regex    : constant RGX.Pattern_Matcher := RGX.Compile (pattern);
-      max_lots : constant scanners := scanners'Last;
+      max_lots : constant scanners := scanners (number_cores);
    begin
       TIO.Open (File => archive,
                 Mode => TIO.In_File,
@@ -719,7 +721,7 @@ package body PortScan is
    is
       inner_search : AD.Search_Type;
       inner_dirent : AD.Directory_Entry_Type;
-      max_lots     : constant scanners := scanners'Last;
+      max_lots     : constant scanners := scanners (number_cores);
    begin
       AD.Start_Search (Search    => inner_search,
                        Directory => portsdir & "/" & category,
@@ -821,5 +823,21 @@ package body PortScan is
       return "";
    end get_ccache;
 
+
+   ---------------------
+   --  scan_progress  --
+   ---------------------
+   function scan_progress return String
+   is
+      type percent is delta 0.01 digits 5;
+      complete : port_index := 0;
+      pc : percent;
+   begin
+      for k in scanners'Range loop
+         complete := complete + mq_progress (k);
+      end loop;
+      pc := percent (100.0 * Float (complete) / Float (last_port));
+      return " progress:" & pc'Img & "%              " & LAT.CR;
+   end scan_progress;
 
 end PortScan;
