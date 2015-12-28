@@ -155,7 +155,8 @@ package body PortScan.Ops is
                when done_success | done_failure =>
                   all_idle := False;
                   if builder_states (slave) = done_success then
-                     TIO.Put_Line ("Built [" & slave'Img & "] " &
+                     TIO.Put_Line (TIO.Standard_Output,
+                                   "Built [" & slave'Img & "] " &
                                      port_name (instructions (slave)));
                      cascade_successful_build (instructions (slave));
                      bld_counter (success) := bld_counter (success) + 1;
@@ -168,13 +169,16 @@ package body PortScan.Ops is
                      cascade_failed_build (instructions (slave), cntskip, logs);
                      bld_counter (skipped) := bld_counter (skipped) + cntskip;
                      bld_counter (failure) := bld_counter (failure) + 1;
-                     TIO.Put_Line (logs (total), CYC.elapsed_now &
+                     TIO.Put_Line (logs (total), CYC.elapsed_now & " " &
                                      port_name (instructions (slave)) &
                                      " FAILED! skipped:" &
                                      JT.int2str (cntskip));
                      TIO.Put_Line (logs (failure), CYC.elapsed_now & " " &
                                    port_name (instructions (slave)) &
                                      " (skipped" & cntskip'Img & ")");
+                     TIO.Put_Line (TIO.Standard_Output,
+                                   "FAILED [" & slave'Img & "] " &
+                                     port_name (instructions (slave)));
                   end if;
                   instructions (slave) := port_match_failed;
                   if run_complete then

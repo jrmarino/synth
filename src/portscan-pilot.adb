@@ -198,6 +198,10 @@ package body PortScan.Pilot is
          return True;
       else
          TIO.Put_Line ("Queue integrity lost! " & bailing);
+         stop_logging (total);
+         stop_logging (skipped);
+         stop_logging (success);
+         stop_logging (failure);
          return False;
       end if;
    end sanity_check_then_prefail;
@@ -645,7 +649,7 @@ package body PortScan.Pilot is
    is
       procedure build_train (plcursor : portkey_crate.Cursor);
       base_command : constant String :=
-        "/usr/local/sbin/pkg upgrade --yes --repository Synth";
+        "/usr/local/sbin/pkg install --yes --repository Synth";
       caboose : JT.Text;
 
       procedure build_train (plcursor : portkey_crate.Cursor) is
