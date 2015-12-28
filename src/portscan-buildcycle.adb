@@ -24,7 +24,10 @@ package body PortScan.Buildcycle is
    is
       R : Boolean;
    begin
-      initialize_log (id, sequence_id);
+      trackers (id).seq_id := sequence_id;
+      if uselog then
+         initialize_log (id);
+      end if;
       for phase in phases'Range loop
          case phase is
             when check_sanity  => R := exec_phase_generic (id, "check-sanity");
@@ -63,7 +66,9 @@ package body PortScan.Buildcycle is
          end case;
          exit when R = False;
       end loop;
-      finalize_log (id);
+      if uselog then
+         finalize_log (id);
+      end if;
       return R;
    end build_package;
 
@@ -71,7 +76,7 @@ package body PortScan.Buildcycle is
    ----------------------
    --  initialize_log  --
    ----------------------
-   procedure initialize_log (id : builders; sequence_id : port_id)
+   procedure initialize_log (id : builders)
    is
       FA    : access TIO.File_Type;
       H_ENV : constant String := "Environment";
@@ -83,15 +88,10 @@ package body PortScan.Buildcycle is
       MCONF : constant String := dump_make_conf (id);
       PTVAR : JT.Text         := get_port_variables (id);
    begin
-      trackers (id).seq_id := sequence_id;
-      if sequence_id = port_match_failed then
-         raise cycle_log_error
-           with "initialization attempted with port_id = 0";
-      end if;
       trackers (id).dynlink.Clear;
       trackers (id).head_time := CAL.Clock;
       declare
-         log_path : constant String := log_name (sequence_id);
+         log_path : constant String := log_name (trackers (id).seq_id);
       begin
          if AD.Exists (log_path) then
             AD.Delete_File (log_path);
@@ -107,7 +107,7 @@ package body PortScan.Buildcycle is
       end;
 
       TIO.Put_Line (FA.all, "=> Building " &
-                      get_catport (all_ports (sequence_id)));
+                      get_catport (all_ports (trackers (id).seq_id)));
       TIO.Put_Line (FA.all, "Started : " & timestamp (trackers (id).head_time));
       TIO.Put      (FA.all, "Platform: " & UNAME);
       TIO.Put_Line (FA.all, LAT.LF & log_section (H_ENV, True));
@@ -560,8 +560,10 @@ package body PortScan.Buildcycle is
       phase : constant String := "deinstall";
    begin
       --  This is only run during "testing" so assume that.
-      log_phase_begin (phase, id);
-      log_linked_libraries (id);
+      if uselog then
+         log_phase_begin (phase, id);
+         log_linked_libraries (id);
+      end if;
       return exec_phase (id => id, phase => phase, phaseenv => "DEVELOPER=1",
                          skip_header => True);
    end exec_phase_deinstall;
@@ -618,10 +620,12 @@ package body PortScan.Buildcycle is
       --  Descriptors.  I can't find a safe way to get the File Descriptor
       --  out of the File type.
 
-      if not skip_header then
-         log_phase_begin (phase, id);
+      if uselog then
+         if not skip_header then
+            log_phase_begin (phase, id);
+         end if;
+         TIO.Close (trackers (id).log_handle);
       end if;
-      TIO.Close (trackers (id).log_handle);
 
       declare
            command : constant String := chroot & root &
@@ -634,10 +638,12 @@ package body PortScan.Buildcycle is
       --  Reopen the log.  I guess we can leave off the exception check
       --  since it's been passing before
 
-      TIO.Open (File => trackers (id).log_handle,
-                Mode => TIO.Append_File,
-                Name => log_name (trackers (id).seq_id));
-      log_phase_end (id);
+      if uselog then
+         TIO.Open (File => trackers (id).log_handle,
+                   Mode => TIO.Append_File,
+                   Name => log_name (trackers (id).seq_id));
+         log_phase_end (id);
+      end if;
 
       return result;
    end exec_phase;

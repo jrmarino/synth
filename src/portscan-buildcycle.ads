@@ -49,8 +49,9 @@ private
    testing   : Boolean;
 
    chroot    : constant String := "/usr/sbin/chroot ";
+   uselog    : constant Boolean := True;
 
-   procedure initialize_log (id : builders; sequence_id : port_id);
+   procedure initialize_log (id : builders);
    procedure finalize_log   (id : builders);
 
    function  exec_phase_generic (id : builders; phase : String) return Boolean;
