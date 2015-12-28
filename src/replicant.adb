@@ -475,6 +475,7 @@ package body Replicant is
                   Name => path_to_etc & "/make.conf");
 
       TIO.Put_Line (makeconf, "USE_PACKAGE_DEPENDS=yes");
+      TIO.Put_Line (makeconf, "PACKAGE_BUILDING=yes");
       TIO.Put_Line (makeconf, "BATCH=yes");
       TIO.Put_Line (makeconf, "NO_BACKUP=yes");
       TIO.Put_Line (makeconf, "PKG_CREATE_VERBOSE=yes");
