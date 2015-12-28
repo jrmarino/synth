@@ -77,6 +77,11 @@ package body PortScan.Buildcycle is
       H_ENV : constant String := "Environment";
       H_OPT : constant String := "Options";
       H_CFG : constant String := "/etc/make.conf";
+      UNAME : constant String := JT.USS (uname_mrv);
+      BENV  : constant String := get_environment (id);
+      COPTS : constant String := get_options_configuration (id);
+      MCONF : constant String := dump_make_conf (id);
+      PTVAR : JT.Text         := get_port_variables (id);
    begin
       trackers (id).seq_id := sequence_id;
       if sequence_id = port_match_failed then
@@ -101,21 +106,21 @@ package body PortScan.Buildcycle is
               with "failed to create log " & log_path;
       end;
 
-      TIO.Put_Line (trackers (id).log_handle, "=> Building " &
+      TIO.Put_Line (FA.all, "=> Building " &
                       get_catport (all_ports (sequence_id)));
       TIO.Put_Line (FA.all, "Started : " & timestamp (trackers (id).head_time));
-      TIO.Put      (FA.all, "Platform: " & JT.USS (uname_mrv));
+      TIO.Put      (FA.all, "Platform: " & UNAME);
       TIO.Put_Line (FA.all, LAT.LF & log_section (H_ENV, True));
-      TIO.Put      (FA.all, get_environment (id));
+      TIO.Put      (FA.all, BENV);
       TIO.Put_Line (FA.all, log_section (H_ENV, False) & LAT.LF);
       TIO.Put_Line (FA.all, log_section (H_OPT, True));
-      TIO.Put      (FA.all, get_options_configuration (id));
+      TIO.Put      (FA.all, COPTS);
       TIO.Put_Line (FA.all, log_section (H_OPT, False) & LAT.LF);
 
-      dump_port_variables (id);
+      dump_port_variables (id => id, content => PTVAR);
 
       TIO.Put_Line (FA.all, log_section (H_CFG, True));
-      TIO.Put      (FA.all, dump_make_conf (id));
+      TIO.Put      (FA.all, MCONF);
       TIO.Put_Line (FA.all, log_section (H_CFG, False) & LAT.LF);
 
    end initialize_log;
@@ -124,15 +129,14 @@ package body PortScan.Buildcycle is
    --------------------
    --  finalize_log  --
    --------------------
-   procedure finalize_log (id : builders)
-   is
-     FA : access TIO.File_Type;
+   procedure finalize_log (id : builders) is
    begin
       trackers (id).tail_time := CAL.Clock;
-      FA := trackers (id).log_handle'Access;
-      TIO.Put_Line (FA.all, "Finished: " & timestamp (trackers (id).tail_time));
-      TIO.Put_Line (FA.all, log_duration (start => trackers (id).head_time,
-                                          stop  => trackers (id).tail_time));
+      TIO.Put_Line (trackers (id).log_handle,
+                    "Finished: " & timestamp (trackers (id).tail_time));
+      TIO.Put_Line (trackers (id).log_handle,
+                    log_duration (start => trackers (id).head_time,
+                                  stop  => trackers (id).tail_time));
       TIO.Close (trackers (id).log_handle);
    end finalize_log;
 
@@ -372,10 +376,10 @@ package body PortScan.Buildcycle is
    end split_collection;
 
 
-   ---------------------------
-   --  dump_port_variables  --
-   ---------------------------
-   procedure dump_port_variables (id : builders)
+   --------------------------
+   --  get_port_variables  --
+   --------------------------
+   function get_port_variables (id : builders) return JT.Text
    is
       root    : constant String := get_root (id);
       command : constant String := chroot & root &
@@ -383,14 +387,23 @@ package body PortScan.Buildcycle is
         get_catport (all_ports (trackers (id).seq_id)) &
         " -VCONFIGURE_ENV -VCONFIGURE_ARGS -VMAKE_ENV -VMAKE_ARGS" &
         " -VPLIST_SUB -VSUB_LIST";
+   begin
+      return generic_system_command (command);
+   end get_port_variables;
+
+
+   ---------------------------
+   --  dump_port_variables  --
+   ---------------------------
+   procedure dump_port_variables (id : builders; content : JT.Text)
+   is
       LA      : access TIO.File_Type := trackers (id).log_handle'Access;
-      content : JT.Text;
       topline : JT.Text;
+      concopy : JT.Text := content;
       type result_range is range 1 .. 6;
    begin
-      content := generic_system_command (command);
       for k in result_range loop
-         JT.nextline (lineblock => content, firstline => topline);
+         JT.nextline (lineblock => concopy, firstline => topline);
          case k is
             when 1 => TIO.Put_Line
                  (LA.all, split_collection (topline, "CONFIGURE_ENV"));
@@ -734,7 +747,10 @@ package body PortScan.Buildcycle is
    begin
       TIO.Put_Line (trackers (id).log_handle,
                     "=> Checking shared library dependencies");
+      TIO.Close (trackers (id).log_handle);
+
       comres := generic_system_command (command);
+
       crlen1 := JT.SU.Length (comres);
       loop
          JT.nextline (lineblock => comres, firstline => topline);
@@ -745,7 +761,11 @@ package body PortScan.Buildcycle is
             stack_linked_libraries (id, root, JT.USS (topline));
          end if;
       end loop;
+      TIO.Open (File => trackers (id).log_handle,
+                Mode => TIO.Append_File,
+                Name => log_name (trackers (id).seq_id));
       trackers (id).dynlink.Iterate (log_dump'Access);
+
    end log_linked_libraries;
 
 

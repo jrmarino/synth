@@ -148,7 +148,7 @@ begin
             when test =>
                if PIL.build_pkg8_as_necessary and then
                  PIL.scan_stack_of_single_ports and then
-                 PIL.sanity_check_then_prefail
+                 PIL.sanity_check_then_prefail (delete_first => True)
                then
                   PIL.perform_bulk_run (testmode => True);
                end if;
