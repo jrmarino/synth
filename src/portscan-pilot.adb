@@ -184,13 +184,14 @@ package body PortScan.Pilot is
                          OPS.port_name (ptid) & " has been ignored: " &
                          OPS.ignore_reason (ptid));
          TIO.Put_Line (Flog (ignored), CYC.elapsed_now & " Reason: " &
-                          OPS.ignore_reason (ptid));
+                         OPS.ignore_reason (ptid));
          OPS.cascade_failed_build (id         => ptid,
                                    numskipped => num_skipped,
                                    logs       => Flog);
          bld_counter (skipped) := bld_counter (skipped) + num_skipped;
       end loop;
       stop_logging (ignored);
+      TIO.Flush (Flog (total));
       TIO.Put_Line (Flog (total), CYC.elapsed_now & " Sanity check complete. "
                     & "Ports remaining to build:" & OPS.queue_length'Img);
       if OPS.integrity_intact then
@@ -449,6 +450,7 @@ package body PortScan.Pilot is
          TIO.Put_Line (Flog (flavor), "");
          TIO.Put_Line (Flog (flavor), "Purging any ignored/broken ports " &
                                       "first ...");
+         TIO.Flush (Flog (flavor));
       end if;
       exception
       when others =>

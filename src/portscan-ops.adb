@@ -185,7 +185,11 @@ package body PortScan.Ops is
             end case;
          end loop;
          exit when run_complete and all_idle;
-         delay 0.15;
+         TIO.Flush (logs (success));
+         TIO.Flush (logs (failure));
+         TIO.Flush (logs (skipped));
+         TIO.Flush (logs (total));
+         delay 0.10;
       end loop;
    end parallel_bulk_run;
 
