@@ -650,8 +650,8 @@ package body PortScan.Buildcycle is
    function build_repository (id : builders) return Boolean
    is
       root    : constant String := get_root (id);
-      command : constant String := chroot & root &
-        " /usr/local/sbin/pkg-static repo /packages";
+      command : constant String := chroot & root & " " &
+        host_localbase & "/sbin/pkg-static repo /packages";
    begin
       if not install_pkg8 (id) then
          TIO.Put_Line ("Failed to install pkg-static in builder" & id'Img);
@@ -723,8 +723,8 @@ package body PortScan.Buildcycle is
                          (all_ports (trackers (id).seq_id).package_name);
       pkgname : constant String := pkgfile (1 .. pkgfile'Last - 4);
       root    : constant String := get_root (id);
-      command : constant String := chroot & root &
-        " /usr/local/sbin/pkg query %Fp " & pkgname;
+      command : constant String := chroot & root & " " &
+        host_localbase & "/sbin/pkg query %Fp " & pkgname;
 
       procedure log_dump (cursor : string_crate.Cursor) is
       begin

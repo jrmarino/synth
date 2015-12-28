@@ -8,6 +8,7 @@ package Definitions is
    synth_version_major : constant String := "0";
    synth_version_minor : constant String := "90";
    copywrite_years     : constant String := "2015-2016";
+   host_localbase      : constant String := "/usr/local";
 
    jobs_per_cpu  : constant := 2;
 

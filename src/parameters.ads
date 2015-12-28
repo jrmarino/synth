@@ -76,7 +76,7 @@ private
    LS_Packages    : constant String := "/var/synth/live_packages";
    LS_Logs        : constant String := "/var/log/synth";
    LS_Buildbase   : constant String := "/usr/obj/synth-live";
-   conf_location  : constant String := "/usr/local/etc/synth.ini";
+   conf_location  : constant String := host_localbase & "/etc/synth.ini";
    std_ports_loc  : constant String := "/usr/ports";
    std_distfiles  : constant String := "/usr/ports/distfiles";
    std_options    : constant String := "/var/db/ports";
