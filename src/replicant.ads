@@ -102,7 +102,8 @@ private
    procedure create_symlink (destination, symbolic_link : String);
 
    --  generic command, throws exception if exit code is not 0
-   procedure execute (command : String; suppress : Boolean := False);
+   procedure execute (command : String);
+   procedure silent_exec (command : String);
 
    --  create slave's /var directory tree.  Path should be an empty directory.
    procedure populate_var_folder (path : String);

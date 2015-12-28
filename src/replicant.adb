@@ -5,12 +5,12 @@ with Ada.Directories;
 with Ada.Exceptions;
 with Ada.Text_IO;
 with GNAT.OS_Lib;
+with Util.Streams.Pipes;
+with Util.Streams.Buffered;
+with Util.Processes;
 
 with Parameters;
 with JohnnyText;
-
---  remove
-with Ada.Characters.Latin_1;
 
 package body Replicant is
 
@@ -19,7 +19,7 @@ package body Replicant is
    package AD  renames Ada.Directories;
    package EX  renames Ada.Exceptions;
    package OSL renames GNAT.OS_Lib;
-
+   package STR renames Util.Streams;
    package TIO renames Ada.Text_IO;
 
 
@@ -177,7 +177,7 @@ package body Replicant is
    ---------------
    procedure unmount (device_or_node : String)
    is
-      command     : constant String := "/sbin/umount " & device_or_node;
+      command : constant String := "/sbin/umount " & device_or_node;
    begin
       execute (command);
    end unmount;
@@ -299,7 +299,7 @@ package body Replicant is
       command : constant String := "/usr/sbin/mtree -p " & path &
         " -f /etc/mtree/BSD.var.dist -deqU";
    begin
-      execute (command, True);
+      silent_exec (command);
    end populate_var_folder;
 
 
@@ -311,53 +311,49 @@ package body Replicant is
       command : constant String := "/usr/sbin/mtree -p " & path &
         " -f /etc/mtree/BSD.local.dist -deqU";
    begin
-      execute (command, True);
+      silent_exec (command);
    end populate_localbase;
 
 
    ---------------
    --  execute  --
    ---------------
-   procedure execute (command : String; suppress : Boolean := False)
+   procedure execute (command : String)
    is
       Args        : OSL.Argument_List_Access;
       Exit_Status : Integer;
    begin
       Args := OSL.Argument_String_To_List (command);
-      case suppress is
-      when False => Exit_Status :=
-           OSL.Spawn (Program_Name => Args (Args'First).all,
-                      Args         => Args (Args'First + 1 .. Args'Last));
-      when True =>
-         declare
-            closed : Boolean;
-            dummy  : TIO.File_Type;
-            FD     : OSL.File_Descriptor;
-         begin
-            TIO.Create (File => dummy);
-            declare
-               tempfile : constant String := TIO.Name (dummy);
-            begin
-               TIO.Close (dummy);
-               FD := OSL.Open_Read_Write (Name  => tempfile,
-                                          Fmode => OSL.Text);
-               OSL.Spawn (Program_Name => Args (Args'First).all,
-                          Args         => Args (Args'First + 1 .. Args'Last),
-                          Return_Code  => Exit_Status,
-                          Output_File_Descriptor => FD);
-               OSL.Close (FD, closed);
-               if closed then
-                  AD.Delete_File (tempfile);
-               end if;
-            end;
-         end;
-      end case;
+      Exit_Status := OSL.Spawn (Program_Name => Args (Args'First).all,
+                                Args => Args (Args'First + 1 .. Args'Last));
       OSL.Free (Args);
       if Exit_Status /= 0 then
          raise scenario_unexpected with
            command & " => failed with code" & Exit_Status'Img;
       end if;
    end execute;
+
+
+   -------------------
+   --  silent_exec  --
+   -------------------
+   procedure silent_exec (command : String)
+   is
+      pipe        : aliased STR.Pipes.Pipe_Stream;
+      buffer      : STR.Buffered.Buffered_Stream;
+      Exit_Status : Integer;
+   begin
+      pipe.Open (Command => command, Mode => Util.Processes.READ_ALL);
+      buffer.Initialize (Output => null,
+                         Input  => pipe'Unchecked_Access,
+                         Size   => 4096);
+      pipe.Close;
+      Exit_Status := pipe.Get_Exit_Status;
+      if Exit_Status /= 0 then
+         raise scenario_unexpected with
+           command & " => failed with code" & Exit_Status'Img;
+      end if;
+   end silent_exec;
 
 
    -------------------------
