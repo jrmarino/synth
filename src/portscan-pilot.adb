@@ -171,10 +171,10 @@ package body PortScan.Pilot is
       bld_counter := (OPS.queue_length, 0, 0, 0, 0);
 
       start_logging (total);
-      start_logging (ignored);
-      start_logging (skipped);
-      start_logging (success);
-      start_logging (failure);
+      --  start_logging (ignored);
+      --  start_logging (skipped);
+      --  start_logging (success);
+      --  start_logging (failure);
 
       loop
          ptid := OPS.next_ignored_port;
@@ -183,25 +183,25 @@ package body PortScan.Pilot is
          TIO.Put_Line (Flog (total), CYC.elapsed_now & " " &
                          OPS.port_name (ptid) & " has been ignored: " &
                          OPS.ignore_reason (ptid));
-         TIO.Put_Line (Flog (ignored), CYC.elapsed_now & " Reason: " &
-                         OPS.ignore_reason (ptid));
+         --  TIO.Put_Line (Flog (ignored), CYC.elapsed_now & " Reason: " &
+         --                  OPS.ignore_reason (ptid));
          OPS.cascade_failed_build (id         => ptid,
                                    numskipped => num_skipped,
                                    logs       => Flog);
          bld_counter (skipped) := bld_counter (skipped) + num_skipped;
       end loop;
-      stop_logging (ignored);
-      TIO.Flush (Flog (total));
+      --  stop_logging (ignored);
       TIO.Put_Line (Flog (total), CYC.elapsed_now & " Sanity check complete. "
                     & "Ports remaining to build:" & OPS.queue_length'Img);
+      TIO.Flush (Flog (total));
       if OPS.integrity_intact then
          return True;
       else
          TIO.Put_Line ("Queue integrity lost! " & bailing);
          stop_logging (total);
-         stop_logging (skipped);
-         stop_logging (success);
-         stop_logging (failure);
+         --  stop_logging (skipped);
+         --  stop_logging (success);
+         --  stop_logging (failure);
          return False;
       end if;
    end sanity_check_then_prefail;
@@ -224,9 +224,9 @@ package body PortScan.Pilot is
          REP.finalize;
          stop_time := CAL.Clock;
          stop_logging (total);
-         stop_logging (success);
-         stop_logging (failure);
-         stop_logging (skipped);
+         --  stop_logging (success);
+         --  stop_logging (failure);
+         --  stop_logging (skipped);
          TIO.Put_Line ("The task is complete.  Final tally:");
          TIO.Put_Line ("Initial queue size:" & bld_counter (total)'Img);
          TIO.Put_Line ("    packages built:" & bld_counter (success)'Img);

@@ -126,7 +126,7 @@ package body PortScan.Buildcycle is
    --------------------
    procedure finalize_log (id : builders)
    is
-     FA    : access TIO.File_Type;
+     FA : access TIO.File_Type;
    begin
       trackers (id).tail_time := CAL.Clock;
       FA := trackers (id).log_handle'Access;
