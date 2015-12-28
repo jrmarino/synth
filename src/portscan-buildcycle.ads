@@ -23,6 +23,9 @@ package PortScan.Buildcycle is
    --  Returns "True" on success
    function external_command (command : String) return Boolean;
 
+   --  Was private, but expose so Pilot can use it.
+   function generic_system_command (command : String) return JT.Text;
+
 private
 
    type trackrec is
@@ -53,8 +56,6 @@ private
    function  exec_phase_generic (id : builders; phase : String) return Boolean;
    function  exec_phase_depends (id : builders; phase : String) return Boolean;
    function  exec_phase_deinstall (id : builders) return Boolean;
-
-   function  generic_system_command (command : String) return JT.Text;
 
    function  get_environment (id : builders) return String;
    function  get_root (id : builders) return String;

@@ -488,9 +488,9 @@ package body PortScan.Pilot is
       procedure walk (name : String);
       function display_kmg (number : disktype) return String;
       bytes_purged : disktype := 0;
-      tracker : port_id := 0;
-      distfiles : portkey_crate.Map;
-      rmfiles   : portkey_crate.Map;
+      tracker      : port_id := 0;
+      distfiles    : portkey_crate.Map;
+      rmfiles      : portkey_crate.Map;
 
       procedure scan (plcursor : portkey_crate.Cursor)
       is
@@ -632,11 +632,47 @@ package body PortScan.Pilot is
    ---------------------------------
    procedure upgrade_system_everything
    is
-      command : constant String :=
-        host_localbase & "/sbin/pkg upgrade --yes --repository Synth";
+      pkgbin  : constant String := host_localbase & "/sbin/pkg";
+      command : constant String := pkgbin & " upgrade --yes --repository Synth";
+      query   : constant String := pkgbin & " query -a %o";
+      sorry   : constant String := "Unfortunately, the system upgraded failed.";
    begin
-      if not CYC.external_command (command) then
-         TIO.Put_Line ("Unfortunately, the system upgraded failed.");
+      portlist.Clear;
+      declare
+         comres  : JT.Text;
+         topline : JT.Text;
+         crlen1  : Natural;
+         crlen2  : Natural;
+         uniqid  : Natural := 0;
+      begin
+         comres := CYC.generic_system_command (query);
+         crlen1 := JT.SU.Length (comres);
+         loop
+            JT.nextline (lineblock => comres, firstline => topline);
+            crlen2 := JT.SU.Length (comres);
+            exit when crlen1 = crlen2;
+            crlen1 := crlen2;
+            uniqid := uniqid + 1;
+            plinsert (JT.USS (topline), uniqid);
+         end loop;
+      exception
+         when others =>
+            TIO.Put_Line (sorry);
+            return;
+      end;
+      if build_pkg8_as_necessary and then
+        scan_stack_of_single_ports and then
+        sanity_check_then_prefail
+      then
+         perform_bulk_run (testmode => False);
+      else
+         TIO.Put_Line (sorry);
+         return;
+      end if;
+      if rebuild_local_respository and then
+        not CYC.external_command (command)
+      then
+         TIO.Put_Line (sorry);
       end if;
    end upgrade_system_everything;
 

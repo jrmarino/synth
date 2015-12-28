@@ -16,6 +16,7 @@ package body PortScan.Ops is
    -------------------------
    procedure parallel_bulk_run (num_builders : builders; logs : dim_handlers)
    is
+      stdout         : constant TIO.File_Type := TIO.Standard_Output;
       instructions   : dim_instruction   := (others => port_match_failed);
       builder_states : dim_builder_state := (others => idle);
       run_complete   : Boolean           := False;
@@ -33,7 +34,7 @@ package body PortScan.Ops is
          build_result : Boolean;
       begin
          if builder <= num_builders then
-            TIO.Put_Line ("Starting Builder" & builder'Img);
+            TIO.Put_Line (stdout, "Starting Builder" & builder'Img);
             loop
                exit when builder_states (builder) = shutdown;
                if builder_states (builder) = tasked then
@@ -53,7 +54,7 @@ package body PortScan.Ops is
                   delay 0.1;
                end if;
             end loop;
-            TIO.Put_Line ("Builder" & builder'Img & " shutting down");
+            TIO.Put_Line (stdout, "Builder" & builder'Img & " shutting down");
          end if;
       end build;
 
@@ -155,7 +156,7 @@ package body PortScan.Ops is
                when done_success | done_failure =>
                   all_idle := False;
                   if builder_states (slave) = done_success then
-                     TIO.Put_Line ("Built [" & slave'Img & "] " &
+                     TIO.Put_Line (stdout, "Built [" & slave'Img & "] " &
                                      port_name (instructions (slave)));
                      cascade_successful_build (instructions (slave));
                      bld_counter (success) := bld_counter (success) + 1;
@@ -165,17 +166,19 @@ package body PortScan.Ops is
                                      port_name (instructions (slave)) &
                                      " success");
                   else
+                     TIO.Put_Line (logs (total), CYC.elapsed_now & " " &
+                                     port_name (instructions (slave)) &
+                                     " FAILED!");
                      cascade_failed_build (instructions (slave), cntskip, logs);
                      bld_counter (skipped) := bld_counter (skipped) + cntskip;
                      bld_counter (failure) := bld_counter (failure) + 1;
                      TIO.Put_Line (logs (total), CYC.elapsed_now & " " &
                                      port_name (instructions (slave)) &
-                                     " FAILED! skipped:" &
-                                     JT.int2str (cntskip));
+                                     " failure skips:" & JT.int2str (cntskip));
                      --  TIO.Put_Line (logs (failure), CYC.elapsed_now & " " &
                      --                port_name (instructions (slave)) &
                      --                " (skipped" & cntskip'Img & ")");
-                     TIO.Put_Line ("FAILED [" & slave'Img & "] " &
+                     TIO.Put_Line (stdout, "FAILED [" & slave'Img & "] " &
                                      port_name (instructions (slave)));
                   end if;
                   instructions (slave) := port_match_failed;
@@ -193,6 +196,7 @@ package body PortScan.Ops is
          TIO.Flush (logs (total));
          delay 0.10;
       end loop;
+      TIO.Set_Output (stdout);
    end parallel_bulk_run;
 
 
