@@ -210,17 +210,17 @@ begin
             return;
          end if;
 
+         PortScan.set_cores;
+         if not Parameters.load_configuration (PortScan.cores_available) then
+            TIO.Put_Line (badcfg);
+            return;
+         end if;
+
          if PIL.previous_run_mounts_detected then
             TIO.Put_Line (badmnt);
             if not PIL.old_mounts_successfully_removed then
                return;
             end if;
-         end if;
-
-         PortScan.set_cores;
-         if not Parameters.load_configuration (PortScan.cores_available) then
-            TIO.Put_Line (badcfg);
-            return;
          end if;
 
          PIL.create_pidfile;

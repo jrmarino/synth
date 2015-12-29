@@ -27,6 +27,8 @@ package body Parameters is
          declare
             File_Handle : TIO.File_Type;
          begin
+            mkdirp_from_file (conf_location);
+
             TIO.Create (File => File_Handle,
                         Mode => TIO.Out_File,
                         Name => conf_location);
@@ -100,8 +102,8 @@ package body Parameters is
       if param_set (profile, Field_04) then
          res.dir_distfiles := extract_string (profile, Field_04, std_distfiles);
       else
-         res.dir_distfiles :=
-           extract_string (profile, Field_04, query_distfiles);
+         res.dir_distfiles := extract_string
+           (profile, Field_04, query_distfiles (JT.USS (res.dir_portsdir)));
       end if;
 
       res.dir_buildbase := extract_string (profile, Field_05, LS_Buildbase);
@@ -129,7 +131,8 @@ package body Parameters is
       if param_set (profile, Field_12) then
          res.operating_sys := extract_string (profile, Field_12, std_opsys);
       else
-         res.operating_sys := extract_string (profile, Field_12, query_opsys);
+         res.operating_sys := extract_string
+           (profile, Field_12, query_opsys (JT.USS (res.dir_portsdir)));
       end if;
 
       res.dir_options := extract_string (profile, Field_13, std_options);
@@ -340,28 +343,28 @@ package body Parameters is
    -----------------------
    --  query_distfiles  --
    -----------------------
-   function query_distfiles return String is
+   function query_distfiles (portsdir : String) return  String is
    begin
-      return query_generic ("DISTDIR");
+      return query_generic (portsdir, "DISTDIR");
    end query_distfiles;
 
 
-   -------------------
+   ------------------
    --  query_opsys  --
    -------------------
-   function query_opsys return String is
+   function query_opsys (portsdir : String) return String is
    begin
-      return query_generic ("OPSYS");
+      return query_generic (portsdir, "OPSYS");
    end query_opsys;
 
 
    ---------------------
    --  query_generic  --
    ---------------------
-   function query_generic (value : String) return String
+   function query_generic (portsdir, value : String) return String
    is
-      command  : constant String := "make -C " &
-        JT.USS (configuration.dir_portsdir) & "/ports-mgmt/pkg -V " & value;
+      command  : constant String := "/usr/bin/make -C " & portsdir &
+                                    "/ports-mgmt/pkg -V " & value;
       pipe     : aliased STR.Pipes.Pipe_Stream;
       buffer   : STR.Buffered.Buffered_Stream;
       content  : JT.Text;
@@ -500,12 +503,12 @@ package body Parameters is
                            num_builders     => def_builders,
                            jobs_per_builder => def_jlimit);
 
-      result.operating_sys   := JT.SUS (query_opsys);
+      result.dir_portsdir    := JT.SUS (std_ports_loc);
+      result.operating_sys   := JT.SUS (query_opsys (std_ports_loc));
       result.profile         := JT.SUS (new_profile);
       result.dir_system      := JT.SUS (std_sysbase);
       result.dir_repository  := JT.SUS (LS_Packages & "/All");
       result.dir_packages    := JT.SUS (LS_Packages);
-      result.dir_portsdir    := JT.SUS (std_ports_loc);
       result.dir_distfiles   := JT.SUS (std_distfiles);
       result.dir_buildbase   := JT.SUS (LS_Buildbase);
       result.dir_logs        := JT.SUS (LS_Logs);
@@ -520,5 +523,19 @@ package body Parameters is
 
       return result;
    end default_profile;
+
+
+   ------------------------
+   --  mkdirp_from_file  --
+   ------------------------
+   procedure mkdirp_from_file (filename : String)
+   is
+      condir : String := AD.Containing_Directory (Name => filename);
+   begin
+      AD.Create_Path (New_Directory => condir);
+   exception
+      when others =>
+         raise update_config;
+   end mkdirp_from_file;
 
 end Parameters;

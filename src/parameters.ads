@@ -76,7 +76,7 @@ private
    LS_Packages    : constant String := "/var/synth/live_packages";
    LS_Logs        : constant String := "/var/log/synth";
    LS_Buildbase   : constant String := "/usr/obj/synth-live";
-   conf_location  : constant String := host_localbase & "/etc/synth.ini";
+   conf_location  : constant String := host_localbase & "/etc/synth/synth.ini";
    std_ports_loc  : constant String := "/usr/ports";
    std_distfiles  : constant String := "/usr/ports/distfiles";
    std_options    : constant String := "/var/db/ports";
@@ -119,10 +119,11 @@ private
    function all_global_present return Boolean;
    function generated_section return String;
    function param_set (profile, field : String) return Boolean;
-   function query_generic (value : String) return String;
-   function query_distfiles return String;
-   function query_opsys return String;
+   function query_generic (portsdir, value : String) return String;
+   function query_distfiles (portsdir : String) return String;
+   function query_opsys (portsdir : String) return String;
    function enough_memory (num_builders : builders) return Boolean;
    procedure query_physical_memory;
+   procedure mkdirp_from_file (filename : String);
 
 end Parameters;
