@@ -305,7 +305,7 @@ package body PortScan.Buildcycle is
    function get_environment (id : builders) return String
    is
       root    : constant String := get_root (id);
-      command : constant String := chroot & root & " /usr/bin/env";
+      command : constant String := chroot & root & environment_override;
    begin
       return JT.USS (generic_system_command (command));
    end get_environment;
@@ -317,8 +317,8 @@ package body PortScan.Buildcycle is
    function get_options_configuration (id : builders) return String
    is
       root    : constant String := get_root (id);
-      command : constant String := chroot & root &
-        " /usr/bin/make -C /xports/" &
+      command : constant String := chroot & root & environment_override &
+        "/usr/bin/make -C /xports/" &
         get_catport (all_ports (trackers (id).seq_id)) &
         " showconfig";
    begin
@@ -382,8 +382,8 @@ package body PortScan.Buildcycle is
    function get_port_variables (id : builders) return JT.Text
    is
       root    : constant String := get_root (id);
-      command : constant String := chroot & root &
-        " /usr/bin/make -C /xports/" &
+      command : constant String := chroot & root & environment_override &
+        "/usr/bin/make -C /xports/" &
         get_catport (all_ports (trackers (id).seq_id)) &
         " -VCONFIGURE_ENV -VCONFIGURE_ARGS -VMAKE_ENV -VMAKE_ARGS" &
         " -VPLIST_SUB -VSUB_LIST";
@@ -623,8 +623,8 @@ package body PortScan.Buildcycle is
       end if;
 
       declare
-           command : constant String := chroot & root &
-           " /usr/bin/env " & phaseenv & dev_flags & port_flags &
+           command : constant String := chroot & root & environment_override &
+           phaseenv & dev_flags & port_flags &
            "/usr/bin/make -C /xports/" & catport & " " & phase;
       begin
          result := generic_execute (id, command);
@@ -651,8 +651,8 @@ package body PortScan.Buildcycle is
    is
       root    : constant String := get_root (id);
       taropts : constant String := "-C / */pkg-static";
-      command : constant String := chroot & root &
-        " /usr/bin/tar -xf /packages/Latest/pkg.txz " & taropts;
+      command : constant String := chroot & root & environment_override &
+        "/usr/bin/tar -xf /packages/Latest/pkg.txz " & taropts;
    begin
       return generic_execute (id, command);
    end install_pkg8;
@@ -664,7 +664,7 @@ package body PortScan.Buildcycle is
    function build_repository (id : builders) return Boolean
    is
       root    : constant String := get_root (id);
-      command : constant String := chroot & root & " " &
+      command : constant String := chroot & root & environment_override &
         host_localbase & "/sbin/pkg-static repo /packages";
    begin
       if not install_pkg8 (id) then
@@ -748,10 +748,8 @@ package body PortScan.Buildcycle is
    begin
       TIO.Put_Line (trackers (id).log_handle,
                     "=> Checking shared library dependencies");
-      TIO.Close (trackers (id).log_handle);
 
       comres := generic_system_command (command);
-
       crlen1 := JT.SU.Length (comres);
       loop
          JT.nextline (lineblock => comres, firstline => topline);
@@ -762,9 +760,6 @@ package body PortScan.Buildcycle is
             stack_linked_libraries (id, root, JT.USS (topline));
          end if;
       end loop;
-      TIO.Open (File => trackers (id).log_handle,
-                Mode => TIO.Append_File,
-                Name => log_name (trackers (id).seq_id));
       trackers (id).dynlink.Iterate (log_dump'Access);
 
    end log_linked_libraries;
@@ -784,5 +779,21 @@ package body PortScan.Buildcycle is
       OSL.Free (Args);
       return Exit_Status = 0;
    end external_command;
+
+
+   ----------------------------
+   --  environment_override  --
+   ----------------------------
+   function environment_override return String
+   is
+      PATH : constant String := "PATH=/sbin:/bin:/usr/sbin:/usr/bin:" &
+                                "/usr/local/sbin:/usr/local/bin ";
+      TERM : constant String := "TERM=cons25 ";
+      TCAP : constant String := "TERMCAP= ";
+      USER : constant String := "USER=root ";
+      HOME : constant String := "HOME=/root ";
+   begin
+      return " /usr/bin/env " & USER & HOME & TERM & TCAP & PATH;
+   end environment_override;
 
 end PortScan.Buildcycle;

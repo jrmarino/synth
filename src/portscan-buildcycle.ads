@@ -80,6 +80,7 @@ private
    procedure stack_linked_libraries (id : builders; base, filename : String);
    procedure log_linked_libraries (id : builders);
    function  elapsed_HH_MM_SS (start, stop : CAL.Time) return String;
+   function  environment_override return String;
 
    --  Install pkg-static in specific builder (Returns True on success)
    function install_pkg8 (id : builders) return Boolean;
