@@ -1,12 +1,14 @@
 --  This file is covered by the Internet Software Consortium (ISC) License
 --  Reference: ../License.txt
 
+with Ada.Text_IO;
 with JohnnyText;
 with Definitions;   use Definitions;
 
 package Replicant is
 
    package JT  renames JohnnyText;
+   package TIO renames Ada.Text_IO;
 
    scenario_unexpected : exception;
 
@@ -140,5 +142,8 @@ private
 
    --  execute ldconfig as last action of slave creation
    procedure execute_ldconfig (id : builders);
+
+   --  Used for per-profile make.conf fragments (if they exist)
+   procedure concatenate_makeconf (makeconf_handle : TIO.File_Type);
 
 end Replicant;

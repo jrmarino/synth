@@ -4,7 +4,6 @@
 with Ada.Containers.Vectors;
 with Ada.Directories;
 with Ada.Exceptions;
-with Ada.Text_IO;
 with GNAT.OS_Lib;
 with Util.Streams.Pipes;
 with Util.Streams.Buffered;
@@ -20,7 +19,6 @@ package body Replicant is
    package EX  renames Ada.Exceptions;
    package OSL renames GNAT.OS_Lib;
    package STR renames Util.Streams;
-   package TIO renames Ada.Text_IO;
 
 
    -------------------
@@ -512,6 +510,8 @@ package body Replicant is
          TIO.Put_Line (makeconf, "CCACHE_DIR=/ccache");
       end if;
 
+      concatenate_makeconf (makeconf_handle => makeconf);
+
       TIO.Close (makeconf);
 
    end create_make_conf;
@@ -756,5 +756,30 @@ package body Replicant is
       --  No need to remove empty dirs, the upcoming run will do that.
       return True;
    end clear_existing_mounts;
+
+
+   ----------------------------
+   --  concatenate_makeconf  --
+   ----------------------------
+   procedure concatenate_makeconf (makeconf_handle : TIO.File_Type)
+   is
+      target_name : constant String := PM.synth_confdir & "/" &
+        JT.USS (PM.configuration.profile) & "-make.conf";
+      fragment : TIO.File_Type;
+   begin
+      if AD.Exists (target_name) then
+         TIO.Open (File => fragment, Mode => TIO.In_File, Name => target_name);
+         while not TIO.End_Of_File (fragment) loop
+            declare
+               Line : String := TIO.Get_Line (fragment);
+            begin
+               TIO.Put_Line (makeconf_handle, Line);
+            end;
+         end loop;
+         TIO.Close (fragment);
+      end if;
+   exception
+      when others => null;
+   end concatenate_makeconf;
 
 end Replicant;
