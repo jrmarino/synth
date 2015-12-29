@@ -766,9 +766,17 @@ package body PortScan.Pilot is
 
             --  exception raised by line below if pid not found.
             comres := CYC.generic_system_command (command);
-            return JT.contains (comres, "synth");
+            if JT.contains (comres, "synth") then
+               return True;
+            else
+               --  pidfile is obsolete, remove it.
+               AD.Delete_File (pidfile);
+               return False;
+            end if;
          exception
             when others =>
+               --  pidfile contains garbage, remove it
+               AD.Delete_File (pidfile);
                return False;
          end;
       end if;
