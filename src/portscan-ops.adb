@@ -33,7 +33,7 @@ package body PortScan.Ops is
          build_result : Boolean;
       begin
          if builder <= num_builders then
-            --  TIO.Put_Line ("Starting Builder" & builder'Img);
+            TIO.Put_Line ("Starting Builder" & builder'Img);
             loop
                exit when builder_states (builder) = shutdown;
                if builder_states (builder) = tasked then
@@ -53,7 +53,7 @@ package body PortScan.Ops is
                   delay 0.1;
                end if;
             end loop;
-            --  TIO.Put_Line ("Builder" & builder'Img & " shutting down");
+            TIO.Put_Line ("Builder" & builder'Img & " shutting down");
          end if;
       end build;
 
@@ -155,8 +155,8 @@ package body PortScan.Ops is
                when done_success | done_failure =>
                   all_idle := False;
                   if builder_states (slave) = done_success then
-                     --  TIO.Put_Line ("Built [" & slave'Img & "] " &
-                     --                port_name (instructions (slave)));
+                     TIO.Put_Line ("Built [" & slave'Img & "] " &
+                                     port_name (instructions (slave)));
                      cascade_successful_build (instructions (slave));
                      bld_counter (success) := bld_counter (success) + 1;
                      --  TIO.Put_Line (logs (success), CYC.elapsed_now & " " &
@@ -177,8 +177,8 @@ package body PortScan.Ops is
                      --  TIO.Put_Line (logs (failure), CYC.elapsed_now & " " &
                      --                port_name (instructions (slave)) &
                      --                " (skipped" & cntskip'Img & ")");
-                     --    TIO.Put_Line (stdout, "FAILED [" & slave'Img & "] " &
-                     --                    port_name (instructions (slave)));
+                     TIO.Put_Line ("FAILED [" & slave'Img & "] " &
+                                     port_name (instructions (slave)));
                   end if;
                   instructions (slave) := port_match_failed;
                   if run_complete then
@@ -195,7 +195,6 @@ package body PortScan.Ops is
          TIO.Flush (logs (total));
          delay 0.10;
       end loop;
-      TIO.Set_Output (File => TIO.Standard_Output);
    end parallel_bulk_run;
 
 

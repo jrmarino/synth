@@ -1,0 +1,16 @@
+project SynthExec is
+
+   for Object_Dir use "build";
+   for Main use ("synthexec.adb");
+   for Source_Dirs use ("synthexec");
+
+   package Pretty_Printer is
+      for Default_Switches ("ada") use ("-c0", "-pU", "-aU", "-kU", "-l3");
+   end Pretty_Printer;
+
+   package Compiler is
+      for Default_Switches ("ada") use ("-O2");
+   end Compiler;
+
+end SynthExec;
+

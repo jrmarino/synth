@@ -576,19 +576,14 @@ package body PortScan.Buildcycle is
    is
       Args        : OSL.Argument_List_Access;
       Exit_Status : Integer;
-      FD          : OSL.File_Descriptor;
+      synthexec   : constant String := host_localbase & "/libexec/synthexec";
+      truecommand : constant String := synthexec & " " &
+                             log_name (trackers (id).seq_id) & " " & command;
    begin
-      FD := OSL.Open_Append (Name  => log_name (trackers (id).seq_id),
-                             Fmode => OSL.Text);
-
-      Args := OSL.Argument_String_To_List (command);
-      OSL.Spawn (Program_Name => Args (Args'First).all,
-                 Args         => Args (Args'First + 1 .. Args'Last),
-                 Return_Code  => Exit_Status,
-                 Output_File_Descriptor => FD);
+      Args := OSL.Argument_String_To_List (truecommand);
+      Exit_Status := OSL.Spawn (Program_Name => Args (Args'First).all,
+                                Args => Args (Args'First + 1 .. Args'Last));
       OSL.Free (Args);
-
-      OSL.Close (FD);
       return Exit_Status = 0;
    end generic_execute;
 
