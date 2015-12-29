@@ -725,4 +725,81 @@ package body PortScan.Pilot is
       end;
    end insufficient_privileges;
 
+
+   ---------------
+   --  head_n1  --
+   ---------------
+   function head_n1 (filename : String) return String
+   is
+      handle : TIO.File_Type;
+   begin
+      TIO.Open (File => handle, Mode => TIO.In_File, Name => filename);
+      if TIO.End_Of_File (handle) then
+         TIO.Close (handle);
+         return "";
+      end if;
+
+      declare
+         line : constant String := TIO.Get_Line (handle);
+      begin
+         TIO.Close (handle);
+         return line;
+      end;
+   end head_n1;
+
+
+   -----------------------
+   --  already_running  --
+   -----------------------
+   function already_running return Boolean
+   is
+      pid    : Integer;
+      comres : JT.Text;
+   begin
+      if AD.Exists (pidfile) then
+         declare
+            textpid : constant String := head_n1 (pidfile);
+            command : constant String := "/bin/ps -p " & textpid;
+         begin
+            --  test if valid by converting it (exception if fails)
+            pid := Integer'Value (textpid);
+
+            --  exception raised by line below if pid not found.
+            comres := CYC.generic_system_command (command);
+            return JT.contains (comres, "synth");
+         exception
+            when others =>
+               return False;
+         end;
+      end if;
+      return False;
+   end already_running;
+
+
+   -----------------------
+   --  destroy_pidfile  --
+   -----------------------
+   procedure destroy_pidfile is
+   begin
+      if AD.Exists (pidfile) then
+         AD.Delete_File (pidfile);
+      end if;
+   exception
+      when others => null;
+   end destroy_pidfile;
+
+
+   ----------------------
+   --  create_pidfile  --
+   ----------------------
+   procedure create_pidfile
+   is
+      pidtext : constant String := JT.int2str (Get_PID);
+      handle  : TIO.File_Type;
+   begin
+      TIO.Create (File => handle, Mode => TIO.Out_File, Name => pidfile);
+      TIO.Put_Line (handle, pidtext);
+      TIO.Close (handle);
+   end create_pidfile;
+
 end PortScan.Pilot;

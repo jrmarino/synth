@@ -61,6 +61,13 @@ package PortScan.Pilot is
    --  Returns True if the root users didn't execute Synth.
    function insufficient_privileges return Boolean;
 
+   --  Returns True if a pidfile is found and it's a valid synth process
+   function already_running return Boolean;
+
+   --  Create a pidfile on major actions and remove it when complete.
+   procedure create_pidfile;
+   procedure destroy_pidfile;
+
    pilot_log : exception;
 
 private
@@ -73,6 +80,7 @@ private
    badport : constant String := "Invalid port origin: ";
    bailing : constant String := "  (Synth must exit)";
    pkgng   : constant String := "ports-mgmt/pkg";
+   pidfile : constant String := "/var/run/synth.pid";
    logname : constant dim_logname := ("00_last_results.log",
                                       "01_success_list.log",
                                       "02_failure_list.log",
@@ -93,5 +101,12 @@ private
    --  build log operations
    procedure start_logging (flavor : count_type);
    procedure stop_logging (flavor : count_type);
+
+   --  generic function to return first line of file.
+   function head_n1 (filename : String) return String;
+
+   --  helper for create_pidfile
+   function Get_PID return Integer;
+   pragma Import (C, Get_PID, "getpid");
 
 end PortScan.Pilot;

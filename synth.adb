@@ -33,6 +33,7 @@ begin
       comerr : constant String := "Synth command error: ";
       badcfg : constant String := "Synth error: configuration failed to load.";
       regjoe : constant String := "Only the root user can execute that.";
+      holdon : constant String := "Synth is already running on this system.";
    begin
       if first = "help" then
          mandate := help;
@@ -94,6 +95,13 @@ begin
             return;
          end if;
 
+         if PIL.already_running then
+            TIO.Put_Line (holdon);
+            return;
+         end if;
+
+         PIL.create_pidfile;
+
          ----------------------------------
          --  Multiple argument commands  --
          ----------------------------------
@@ -113,7 +121,6 @@ begin
                then
                   PIL.perform_bulk_run (testmode => False);
                end if;
-               return;
             when build =>
                if PIL.build_pkg8_as_necessary and then
                  PIL.scan_stack_of_single_ports and then
@@ -127,7 +134,6 @@ begin
                      PIL.upgrade_system_exactly;
                   end if;
                end if;
-               return;
             when force =>
                if PIL.build_pkg8_as_necessary and then
                  PIL.scan_stack_of_single_ports and then
@@ -141,7 +147,6 @@ begin
                      PIL.upgrade_system_exactly;
                   end if;
                end if;
-               return;
             when install =>
                if PIL.build_pkg8_as_necessary and then
                  PIL.scan_stack_of_single_ports and then
@@ -153,7 +158,6 @@ begin
                      PIL.upgrade_system_exactly;
                   end if;
                end if;
-               return;
             when test =>
                if PIL.build_pkg8_as_necessary and then
                  PIL.scan_stack_of_single_ports and then
@@ -161,7 +165,6 @@ begin
                then
                   PIL.perform_bulk_run (testmode => True);
                end if;
-               return;
          end case;
 
       else
@@ -194,11 +197,18 @@ begin
             return;
          end if;
 
+         if PIL.already_running then
+            TIO.Put_Line (holdon);
+            return;
+         end if;
+
          PortScan.set_cores;
          if not Parameters.load_configuration (PortScan.cores_available) then
             TIO.Put_Line (badcfg);
             return;
          end if;
+
+         PIL.create_pidfile;
 
          case mandate is
             when build | just_build | install | test | version | help |
@@ -208,28 +218,24 @@ begin
                null;
             when configure =>
                ACT.launch_configure_menu (PortScan.cores_available);
-               return;
             when status =>
                TIO.Put_Line ("single STATUS to be implemented ...");
-               return;
             when up_system =>
                if PIL.write_pkg_repos_configuration_file then
                   PIL.upgrade_system_everything;
                end if;
-               return;
             when up_repo =>
                PIL.upgrade_system_everything (skip_installation => True);
-               return;
             when purge =>
                PIL.purge_distfiles;
-               return;
             when everything =>
                TIO.Put_Line ("EVERYTHING to be implemented ...");
                --  run PKG.clean_repository instead of limited sanity check
                --  don't run it again before repos building
-               return;
          end case;
       end if;
    end;
+
+   PIL.destroy_pidfile;
 
 end synth;
