@@ -826,6 +826,7 @@ package body PortScan.Pilot is
    function old_mounts_successfully_removed return Boolean is
    begin
       if REP.clear_existing_mounts then
+         TIO.Put_Line ("Dismounting successful!");
          return True;
       end if;
       TIO.Put_Line ("The attempt failed. " &

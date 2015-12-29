@@ -180,6 +180,8 @@ package body Replicant is
       command : constant String := "/sbin/umount " & device_or_node;
    begin
       execute (command);
+   exception
+      when others => null;  -- silently fail
    end unmount;
 
 
@@ -727,7 +729,7 @@ package body Replicant is
 
       procedure annihilate (cursor : crate.Cursor) is
       begin
-         TIO.Put_Line (JT.USS (crate.Element (cursor)));
+         unmount (JT.USS (crate.Element (cursor)));
       end annihilate;
    begin
       comres := internal_system_command (command1);
@@ -745,11 +747,14 @@ package body Replicant is
       end loop;
 
       sorter.Sort (Container => mpoints);
-
       mpoints.Reverse_Iterate (Process => annihilate'Access);
 
-      --  don't forget to delete buildbase !!
-      return False;
+      if synth_mounts_exist then
+         return False;
+      end if;
+
+      --  No need to remove empty dirs, the upcoming run will do that.
+      return True;
    end clear_existing_mounts;
 
 end Replicant;
