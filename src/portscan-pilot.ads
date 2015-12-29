@@ -68,6 +68,14 @@ package PortScan.Pilot is
    procedure create_pidfile;
    procedure destroy_pidfile;
 
+   --  Checks if things are mounted from aborted previous run.
+   --  The action upon "True" would be to try to clean them up (else abort)
+   function previous_run_mounts_detected return Boolean;
+
+   --  Returns True if all the old mounts were unmounted without issue.
+   --  If not, it will emit messages so Synth can just eject directly.
+   function old_mounts_successfully_removed return Boolean;
+
    pilot_log : exception;
 
 private

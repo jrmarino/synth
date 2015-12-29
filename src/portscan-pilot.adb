@@ -810,4 +810,31 @@ package body PortScan.Pilot is
       TIO.Close (handle);
    end create_pidfile;
 
+
+   ------------------------------------
+   --  previous_run_mounts_detected  --
+   ------------------------------------
+   function previous_run_mounts_detected return Boolean is
+   begin
+      return REP.synth_mounts_exist;
+   end previous_run_mounts_detected;
+
+
+   ---------------------------------------
+   --  old_mounts_successfully_removed  --
+   ---------------------------------------
+   function old_mounts_successfully_removed return Boolean is
+   begin
+      if REP.clear_existing_mounts then
+         return True;
+      end if;
+      TIO.Put_Line ("The attempt failed. " &
+                      "Check for stuck or ongoing processes and kill them.");
+      TIO.Put_Line ("After that, try running Synth again or just manually " &
+                      "unmount everything");
+      TIO.Put_Line ("still attached to " &
+                      JT.USS (PM.configuration.dir_buildbase));
+      return False;
+   end old_mounts_successfully_removed;
+
 end PortScan.Pilot;

@@ -4,7 +4,6 @@
 with Ada.Command_Line;
 with Ada.Text_IO;
 with Actions;
-with PortScan;
 with PortScan.Pilot;
 with Parameters;
 
@@ -34,6 +33,8 @@ begin
       badcfg : constant String := "Synth error: configuration failed to load.";
       regjoe : constant String := "Only the root user can execute that.";
       holdon : constant String := "Synth is already running on this system.";
+      badmnt : constant String := "Builder mounts detected; attempting to " &
+                                  "remove them automatically ...";
    begin
       if first = "help" then
          mandate := help;
@@ -98,6 +99,13 @@ begin
          if PIL.already_running then
             TIO.Put_Line (holdon);
             return;
+         end if;
+
+         if PIL.previous_run_mounts_detected then
+            TIO.Put_Line (badmnt);
+            if not PIL.old_mounts_successfully_removed then
+               return;
+            end if;
          end if;
 
          PIL.create_pidfile;
@@ -200,6 +208,13 @@ begin
          if PIL.already_running then
             TIO.Put_Line (holdon);
             return;
+         end if;
+
+         if PIL.previous_run_mounts_detected then
+            TIO.Put_Line (badmnt);
+            if not PIL.old_mounts_successfully_removed then
+               return;
+            end if;
          end if;
 
          PortScan.set_cores;

@@ -1,9 +1,12 @@
 --  This file is covered by the Internet Software Consortium (ISC) License
 --  Reference: ../License.txt
 
+with JohnnyText;
 with Definitions;   use Definitions;
 
 package Replicant is
+
+   package JT  renames JohnnyText;
 
    scenario_unexpected : exception;
 
@@ -19,6 +22,12 @@ package Replicant is
 
    --  This removes the password database
    procedure finalize;
+
+   --  Returns True if any mounts are detected (used by pilot)
+   function synth_mounts_exist return Boolean;
+
+   --  Returns True if the attempt to clear mounts is successful.
+   function clear_existing_mounts return Boolean;
 
 private
 
@@ -104,6 +113,7 @@ private
    --  generic command, throws exception if exit code is not 0
    procedure execute (command : String);
    procedure silent_exec (command : String);
+   function  internal_system_command (command : String) return JT.Text;
 
    --  create slave's /var directory tree.  Path should be an empty directory.
    procedure populate_var_folder (path : String);

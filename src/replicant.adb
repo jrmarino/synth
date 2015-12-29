@@ -1,6 +1,7 @@
 --  This file is covered by the Internet Software Consortium (ISC) License
 --  Reference: ../License.txt
 
+with Ada.Containers.Vectors;
 with Ada.Directories;
 with Ada.Exceptions;
 with Ada.Text_IO;
@@ -10,12 +11,11 @@ with Util.Streams.Buffered;
 with Util.Processes;
 
 with Parameters;
-with JohnnyText;
 
 package body Replicant is
 
-   package JT  renames JohnnyText;
    package PM  renames Parameters;
+   package AC  renames Ada.Containers;
    package AD  renames Ada.Directories;
    package EX  renames Ada.Exceptions;
    package OSL renames GNAT.OS_Lib;
@@ -344,9 +344,6 @@ package body Replicant is
       Exit_Status : Integer;
    begin
       pipe.Open (Command => command, Mode => Util.Processes.READ_ALL);
-      buffer.Initialize (Output => null,
-                         Input  => pipe'Unchecked_Access,
-                         Size   => 4096);
       pipe.Close;
       Exit_Status := pipe.Get_Exit_Status;
       if Exit_Status /= 0 then
@@ -354,6 +351,31 @@ package body Replicant is
            command & " => failed with code" & Exit_Status'Img;
       end if;
    end silent_exec;
+
+
+   ------------------------------
+   -- internal_system_command  --
+   ------------------------------
+   function internal_system_command (command : String) return JT.Text
+   is
+      pipe    : aliased STR.Pipes.Pipe_Stream;
+      buffer  : STR.Buffered.Buffered_Stream;
+      content : JT.Text;
+      status  : Integer;
+   begin
+      pipe.Open (Command => command, Mode => Util.Processes.READ_ALL);
+      buffer.Initialize (Output => null,
+                         Input  => pipe'Unchecked_Access,
+                         Size   => 4096);
+      buffer.Read (Into => content);
+      pipe.Close;
+      status := pipe.Get_Exit_Status;
+      if status /= 0 then
+         raise scenario_unexpected with "cmd: " & command &
+           " (return code =" & status'Img & ")";
+      end if;
+      return content;
+   end internal_system_command;
 
 
    -------------------------
@@ -650,5 +672,84 @@ package body Replicant is
    exception
       when hiccup : others => EX.Reraise_Occurrence (hiccup);
    end destroy_slave;
+
+
+   --------------------------
+   --  synth_mounts_exist  --
+   --------------------------
+   function synth_mounts_exist return Boolean
+   is
+      buildbase : constant String := JT.USS (PM.configuration.dir_buildbase);
+      command   : constant String := "/bin/df -h";
+      comres    : JT.Text;
+      topline   : JT.Text;
+      crlen1    : Natural;
+      crlen2    : Natural;
+   begin
+      comres := internal_system_command (command);
+      crlen1 := JT.SU.Length (comres);
+      loop
+         JT.nextline (lineblock => comres, firstline => topline);
+         crlen2 := JT.SU.Length (comres);
+         exit when crlen1 = crlen2;
+         crlen1 := crlen2;
+         if JT.contains (topline, buildbase) then
+            return True;
+         end if;
+      end loop;
+      return False;
+   exception
+      when others =>
+         return True;
+   end synth_mounts_exist;
+
+
+   -----------------------------
+   --  clear_existing_mounts  --
+   -----------------------------
+   function clear_existing_mounts return Boolean
+   is
+      package crate is new AC.Vectors (Index_Type   => Positive,
+                                       Element_Type => JT.Text,
+                                       "="          => JT.SU."=");
+      package sorter is new crate.Generic_Sorting ("<" => JT.SU."<");
+      procedure annihilate (cursor : crate.Cursor);
+
+      buildbase : constant String := JT.USS (PM.configuration.dir_buildbase);
+      command1  : constant String := "/bin/df -h";
+      comres    : JT.Text;
+      topline   : JT.Text;
+      crlen1    : Natural;
+      crlen2    : Natural;
+      mindex    : Natural;
+      mlength   : Natural;
+      mpoints   : crate.Vector;
+
+      procedure annihilate (cursor : crate.Cursor) is
+      begin
+         TIO.Put_Line (JT.USS (crate.Element (cursor)));
+      end annihilate;
+   begin
+      comres := internal_system_command (command1);
+      crlen1 := JT.SU.Length (comres);
+      loop
+         JT.nextline (lineblock => comres, firstline => topline);
+         crlen2 := JT.SU.Length (comres);
+         exit when crlen1 = crlen2;
+         crlen1 := crlen2;
+         if JT.contains (topline, buildbase) then
+            mindex  := JT.SU.Index (topline, buildbase);
+            mlength := JT.SU.Length (topline);
+            mpoints.Append (JT.SUS (JT.SU.Slice (topline, mindex, mlength)));
+         end if;
+      end loop;
+
+      sorter.Sort (Container => mpoints);
+
+      mpoints.Reverse_Iterate (Process => annihilate'Access);
+
+      --  don't forget to delete buildbase !!
+      return False;
+   end clear_existing_mounts;
 
 end Replicant;
