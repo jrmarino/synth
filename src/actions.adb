@@ -27,7 +27,7 @@ package body Actions is
    is
       version   : constant String := synth_version_major & "." &
                   synth_version_minor;
-      copyright : constant String := "Copyright (C) " & copywrite_years &
+      copyright : constant String := "Copyright (C) " & copyright_years &
                   " John R. Marino";
       tagline   : constant String := "Custom package repository builder for " &
                   "FreeBSD and DragonFly " & version;

@@ -7,10 +7,9 @@ package Definitions is
 
    synth_version_major : constant String := "0";
    synth_version_minor : constant String := "90";
-   copywrite_years     : constant String := "2015-2016";
+   copyright_years     : constant String := "2015-2016";
    host_localbase      : constant String := "/usr/local";
-
-   jobs_per_cpu  : constant := 2;
+   jobs_per_cpu        : constant := 2;
 
    type cpu_range is range 1 .. 32;
    type scanners  is range cpu_range'First .. cpu_range'Last;
