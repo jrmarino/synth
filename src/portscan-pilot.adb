@@ -630,7 +630,7 @@ package body PortScan.Pilot is
    ---------------------------------
    --  upgrade_system_everything  --
    ---------------------------------
-   procedure upgrade_system_everything
+   procedure upgrade_system_everything (skip_installation : Boolean := False)
    is
       pkgbin  : constant String := host_localbase & "/sbin/pkg";
       command : constant String := pkgbin & " upgrade --yes --repository Synth";
@@ -669,10 +669,13 @@ package body PortScan.Pilot is
          TIO.Put_Line (sorry);
          return;
       end if;
-      if rebuild_local_respository and then
-        not CYC.external_command (command)
-      then
-         TIO.Put_Line (sorry);
+      if rebuild_local_respository then
+         if not skip_installation then
+            if CYC.external_command (command)
+            then
+               TIO.Put_Line (sorry);
+            end if;
+         end if;
       end if;
    end upgrade_system_everything;
 

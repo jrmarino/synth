@@ -88,6 +88,9 @@ begin
             return;
          end if;
 
+         ----------------------------------
+         --  Multiple argument commands  --
+         ----------------------------------
          case mandate is
             when help | configure | version | up_repo | up_system | purge |
                  everything | unset =>
@@ -156,7 +159,9 @@ begin
          end case;
 
       else
-         --  We have exactly one argument
+         --------------------------------
+         --  Single argument commands  --
+         --------------------------------
          case mandate is
             when build | force | just_build | install | test =>
                ACT.print_version;
@@ -201,9 +206,7 @@ begin
                end if;
                return;
             when up_repo =>
-               if PIL.rebuild_local_respository then
-                  null;
-               end if;
+               PIL.upgrade_system_everything (skip_installation => True);
                return;
             when purge =>
                PIL.purge_distfiles;

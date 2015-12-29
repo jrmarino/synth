@@ -52,7 +52,7 @@ package PortScan.Pilot is
 
    --  There are no specific packages to update.  It's just a generic
    --  "pkg upgrade" limited to local repository with "yes" confirmed.
-   procedure upgrade_system_everything;
+   procedure upgrade_system_everything (skip_installation : Boolean := False);
 
    --  Similar to above, but updates the packages already specified by
    --  the "list" commands
