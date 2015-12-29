@@ -1,8 +1,8 @@
 --  This file is covered by the Internet Software Consortium (ISC) License
 --  Reference: ../License.txt
 
---  pragma Suppress (All_Checks);
---  too new: Container_Checks, Tampering_Check
+--  GCC 6.0 only (skip Container_Checks until identified need arises)
+pragma Suppress (Tampering_Check);
 
 with Ada.Text_IO;
 with Ada.Calendar;
