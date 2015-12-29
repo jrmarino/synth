@@ -1,5 +1,8 @@
-with "util.gpr";
-with "ini_file_manager.gpr";
+with "external/lib/gnat/util.gpr";
+with "external/lib/gnat/ini_file_manager.gpr";
+
+--  with "util.gpr";
+--  with "ini_file_manager.gpr";
 
 project Default is
 
@@ -16,4 +19,3 @@ project Default is
    end Compiler;
 
 end Default;
-
