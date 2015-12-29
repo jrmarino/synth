@@ -58,6 +58,9 @@ package PortScan.Pilot is
    --  the "list" commands
    procedure upgrade_system_exactly;
 
+   --  Returns True if the root users didn't execute Synth.
+   function insufficient_privileges return Boolean;
+
    pilot_log : exception;
 
 private

@@ -32,6 +32,7 @@ begin
       first  : constant String := CLI.Argument (1);
       comerr : constant String := "Synth command error: ";
       badcfg : constant String := "Synth error: configuration failed to load.";
+      regjoe : constant String := "Only the root user can execute that.";
    begin
       if first = "help" then
          mandate := help;
@@ -85,6 +86,11 @@ begin
 
          if not PIL.store_origins then
             --  error messages emitted by store_origins, just exit now
+            return;
+         end if;
+
+         if PIL.insufficient_privileges then
+            TIO.Put_Line (regjoe);
             return;
          end if;
 
@@ -181,6 +187,12 @@ begin
                return;
             when others => null;
          end case;
+
+
+         if PIL.insufficient_privileges then
+            TIO.Put_Line (regjoe);
+            return;
+         end if;
 
          PortScan.set_cores;
          if not Parameters.load_configuration (PortScan.cores_available) then

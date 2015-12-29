@@ -707,4 +707,22 @@ package body PortScan.Pilot is
       end;
    end upgrade_system_exactly;
 
+
+   -------------------------------
+   --  insufficient_privileges  --
+   -------------------------------
+   function insufficient_privileges return Boolean
+   is
+      command : constant String := "/usr/bin/id -u";
+      result  : JT.Text := CYC.generic_system_command (command);
+      topline : JT.Text;
+   begin
+      JT.nextline (lineblock => result, firstline => topline);
+      declare
+         resint : constant Integer := Integer'Value (JT.USS (topline));
+      begin
+         return (resint /= 0);
+      end;
+   end insufficient_privileges;
+
 end PortScan.Pilot;
