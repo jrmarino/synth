@@ -36,6 +36,9 @@ package PortScan.Packages is
    --  detect that case.
    function queue_is_empty return Boolean;
 
+   --  Returns the size of the queue before it was pared down.
+   function original_queue_size return Natural;
+
 private
 
    stored_packages     : package_crate.Map;
@@ -43,6 +46,7 @@ private
    calculated_alt_abi  : JT.Text;
    calc_abi_noarch     : JT.Text;
    calc_alt_abi_noarch : JT.Text;
+   original_queue_len  : AC.Count_Type;
 
    --  This function returns "True" if the scanned options exactly match
    --  the options in the already-built package.  Usually it's already known

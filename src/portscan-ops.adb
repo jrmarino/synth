@@ -159,8 +159,8 @@ package body PortScan.Ops is
                                      port_name (instructions (slave)));
                      cascade_successful_build (instructions (slave));
                      bld_counter (success) := bld_counter (success) + 1;
-                     --  TIO.Put_Line (logs (success), CYC.elapsed_now & " " &
-                     --                   port_name (instructions (slave)));
+                     TIO.Put_Line (logs (success), CYC.elapsed_now & " " &
+                                     port_name (instructions (slave)));
                      TIO.Put_Line (logs (total), CYC.elapsed_now & " " &
                                      port_name (instructions (slave)) &
                                      " success");
@@ -174,9 +174,9 @@ package body PortScan.Ops is
                      TIO.Put_Line (logs (total), CYC.elapsed_now & " " &
                                      port_name (instructions (slave)) &
                                      " failure skips:" & JT.int2str (cntskip));
-                     --  TIO.Put_Line (logs (failure), CYC.elapsed_now & " " &
-                     --                port_name (instructions (slave)) &
-                     --                " (skipped" & cntskip'Img & ")");
+                     TIO.Put_Line (logs (failure), CYC.elapsed_now & " " &
+                                     port_name (instructions (slave)) &
+                                     " (skipped" & cntskip'Img & ")");
                      TIO.Put_Line ("FAILED [" & slave'Img & "] " &
                                      port_name (instructions (slave)));
                   end if;
@@ -189,9 +189,9 @@ package body PortScan.Ops is
             end case;
          end loop;
          exit when run_complete and all_idle;
-         --  TIO.Flush (logs (success));
-         --  TIO.Flush (logs (failure));
-         --  TIO.Flush (logs (skipped));
+         TIO.Flush (logs (success));
+         TIO.Flush (logs (failure));
+         TIO.Flush (logs (skipped));
          TIO.Flush (logs (total));
          delay 0.10;
       end loop;
@@ -226,8 +226,8 @@ package body PortScan.Ops is
             numskipped := numskipped + 1;
             TIO.Put_Line (logs (total), "           Skipped: " &
                             port_name (purged));
-            --  TIO.Put_Line (logs (skipped), port_name (purged) &
-            --                  " by " & culprit);
+            TIO.Put_Line (logs (skipped), port_name (purged) &
+                            " by " & culprit);
          end if;
       end loop;
       unlist_port (id);

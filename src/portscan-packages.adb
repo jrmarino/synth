@@ -141,6 +141,7 @@ package body PortScan.Packages is
       end prune_queue;
    begin
       establish_package_architecture;
+      original_queue_len := rank_queue.Length;
       while not clean_pass loop
          clean_pass := True;
          already_built.Clear;
@@ -532,5 +533,13 @@ package body PortScan.Packages is
       end if;
    end establish_package_architecture;
 
+
+   ---------------------------
+   --  original_queue_size  --
+   ---------------------------
+   function original_queue_size return Natural is
+   begin
+      return Natural (original_queue_len);
+   end original_queue_size;
 
 end PortScan.Packages;
