@@ -223,9 +223,7 @@ package body PortScan.Ops is
                sumdata.Failed    := bld_counter (failure);
                sumdata.Ignored   := bld_counter (ignored);
                sumdata.Skipped   := bld_counter (skipped);
-               sumdata.elapsed   := CYC.log_duration
-                                    (start => start_time,
-                                     stop => CAL.Clock) (11 .. 18);
+               sumdata.elapsed   := CYC.elapsed_now;
                DPY.summarize (sumdata);
 --              else
 --                 for b in builders'First .. num_builders loop

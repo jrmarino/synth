@@ -13,12 +13,13 @@ package body Display is
    function launch_monitor (num_builders : builders) return Boolean is
    begin
       TIC.Init_Screen;
+      if not TIC.Has_Colors then
+         TIC.End_Windows;
+         return False;
+      end if;
       TIC.Set_Echo_Mode (False);
       TIC.Set_Raw_Mode (True);
       TIC.Set_Cbreak_Mode (True);
-      if not TIC.Has_Colors then
-         return False;
-      end if;
 
       TIC.Start_Color;
       TIC.Init_Pair (TIC.Color_Pair (1), TIC.White,  TIC.Black);
@@ -63,7 +64,7 @@ package body Display is
    begin
       zone_summary := TIC.Create (
                       Number_Of_Lines       => 2,
-                      Number_Of_Columns     => 80,
+                      Number_Of_Columns     => app_width,
                       First_Line_Position   => 0,
                       First_Column_Position => 0);
    end launch_summary_zone;
@@ -78,7 +79,7 @@ package body Display is
       height  : constant TIC.Line_Position := TIC.Line_Position (hghtint);
    begin
       zone_builders := TIC.Create (Number_Of_Lines       => height,
-                                   Number_Of_Columns     => 80,
+                                   Number_Of_Columns     => app_width,
                                    First_Line_Position   => 2,
                                    First_Column_Position => 0);
    end launch_builders_zone;
@@ -95,7 +96,7 @@ package body Display is
       viewpos    : constant TIC.Line_Position := TIC.Line_Position (consumed);
    begin
       zone_actions := TIC.Create (Number_Of_Lines       => viewheight,
-                                  Number_Of_Columns     => 80,
+                                  Number_Of_Columns     => app_width,
                                   First_Line_Position   => viewpos,
                                   First_Column_Position => 0);
    end launch_actions_zone;
@@ -173,15 +174,16 @@ package body Display is
       line2 (64 .. 67) := L2F5;
       line2 (70 .. 77) := data.elapsed;
 
-      TIC.Set_Character_Attributes (Win => zone_summary,
-                                    Attr => TIC.Normal_Video,
+      TIC.Set_Character_Attributes (Win   => zone_summary,
+                                    Attr  => TIC.Normal_Video,
                                     Color => TIC.Color_Pair (c_standard));
 
       TIC.Move_Cursor (Win => zone_summary, Line => 0, Column => 0);
       TIC.Add (Win => zone_summary, Str => line1);
       TIC.Move_Cursor (Win => zone_summary, Line => 1, Column => 0);
       TIC.Add (Win => zone_summary, Str => line2);
-      TIC.Refresh;
+
+      TIC.Refresh (Win => zone_summary);
    end summarize;
 
 

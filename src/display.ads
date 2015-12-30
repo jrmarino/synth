@@ -36,6 +36,7 @@ private
 
    type builder_palette is array (builders) of TIC.Color_Pair;
 
+   app_width     : TIC.Column_Count := 80;
    zone_summary  : TIC.Window;
    zone_builders : TIC.Window;
    zone_actions  : TIC.Window;
