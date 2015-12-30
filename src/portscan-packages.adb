@@ -542,4 +542,119 @@ package body PortScan.Packages is
       return Natural (original_queue_len);
    end original_queue_size;
 
+
+   ----------------------------------
+   --  passed_options_cache_check  --
+   ----------------------------------
+   function passed_options_cache_check (id : port_id) return Boolean
+   is
+      target_dname : String := JT.replace (get_catport (all_ports (id)),
+                                           reject => LAT.Solidus,
+                                           shiny  => LAT.Low_Line);
+      target_path : constant String := JT.USS (PM.configuration.dir_options) &
+        LAT.Solidus & target_dname & LAT.Solidus & "options";
+      marker      : constant String := "+=";
+      option_file : TIO.File_Type;
+      required    : Natural := Natural (all_ports (id).options.Length);
+      counter     : Natural := 0;
+      result      : Boolean := False;
+   begin
+      if not AD.Exists (target_path) then
+         return True;
+      end if;
+      TIO.Open (File => option_file,
+                Mode => TIO.In_File,
+                Name => target_path);
+      while not TIO.End_Of_File (option_file) loop
+         declare
+            Line    : String := TIO.Get_Line (option_file);
+            namekey : JT.Text;
+            valid   : Boolean := False;
+         begin
+            --  If "marker" starts at 17, it's OPTIONS_FILES_SET
+            --  if "marker" starts at 19, it's OPTIONS_FILES_UNSET
+            --  if neither, we don't care.
+
+            if Line (17 .. 18) = marker then
+               namekey := JT.SUS (Line (19 .. Line'Last));
+               valid   := True;
+            elsif Line (19 .. 20) = marker then
+               namekey := JT.SUS (Line (21 .. Line'Last));
+               valid   := True;
+            end if;
+            if valid then
+               counter := counter + 1;
+               if counter > required then
+                  --  The port used to have more options, abort!
+                  goto clean_exit;
+               end if;
+               if not all_ports (id).options.Contains (namekey) then
+                  --  cached option not found in port anymore, abort!
+                  goto clean_exit;
+               end if;
+            end if;
+         end;
+      end loop;
+      if counter < required then
+         --  The ports tree has more options than the cached options
+         goto clean_exit;
+      end if;
+      --  If we get this far, the cached options must match port options
+      return True;
+
+      <<clean_exit>>
+      TIO.Close (option_file);
+      return result;
+
+   end passed_options_cache_check;
+
+
+   ------------------------------------
+   --  limited_cached_options_check  --
+   ------------------------------------
+   function limited_cached_options_check return Boolean
+   is
+      procedure check_port (cursor : ranking_crate.Cursor);
+      fail_count : Natural := 0;
+      first_fail : queue_record;
+
+      procedure check_port (cursor : ranking_crate.Cursor)
+      is
+         QR : constant queue_record := ranking_crate.Element (cursor);
+         id : port_index := QR.ap_index;
+         prelude : constant String := "Cached options obsolete: ";
+      begin
+         if not passed_options_cache_check (id) then
+            if fail_count = 0 then
+               first_fail := QR;
+            end if;
+            fail_count := fail_count + 1;
+            TIO.Put_Line (prelude & get_catport (all_ports (id)));
+         end if;
+      end check_port;
+   begin
+      rank_queue.Iterate (Process => check_port'Access);
+      if fail_count > 0 then
+         TIO.Put (LAT.LF & "A preliminary scan has revealed the cached " &
+                 "options of");
+         if fail_count = 1 then
+            TIO.Put_Line (" one port are");
+         else
+            TIO.Put_Line (fail_count'Img & " ports are");
+         end if;
+         TIO.Put_Line ("obsolete.  Please update or removed the saved " &
+                         "options and try again.");
+         declare
+            portsdir : String := JT.USS (PM.configuration.dir_portsdir) &
+                                 LAT.Solidus;
+            catport  : String := get_catport (all_ports (first_fail.ap_index));
+         begin
+            TIO.Put_Line ("  e.g. make -C " & portsdir & catport &  " config");
+            TIO.Put_Line ("  e.g. make -C " & portsdir & catport & " rmconfig");
+         end;
+      end if;
+      return (fail_count = 0);
+   end limited_cached_options_check;
+
+
 end PortScan.Packages;

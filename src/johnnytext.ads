@@ -46,5 +46,8 @@ package JohnnyText is
    function part_1 (S : String; separator : String := "/") return String;
    function part_2 (S : String; separator : String := "/") return String;
 
+   --  Replace a single character with another single character (first found)
+   function replace (S : String; reject, shiny : Character) return String;
+
 
 end JohnnyText;

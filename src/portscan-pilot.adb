@@ -167,6 +167,10 @@ package body PortScan.Pilot is
          portlist.Iterate (Process => force_delete'Access);
       end if;
 
+      if not PKG.limited_cached_options_check then
+         --  Error messages emitted by function
+         return False;
+      end if;
 
       PKG.limited_sanity_check (JT.USS (PM.configuration.dir_repository));
       bld_counter := (OPS.queue_length, 0, 0, 0, 0);

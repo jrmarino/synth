@@ -39,6 +39,14 @@ package PortScan.Packages is
    --  Returns the size of the queue before it was pared down.
    function original_queue_size return Natural;
 
+   --  After the initial queue is created, and before the limited sanity
+   --  check, we go through each port and check if it has cached options.
+   --  If it does, then it's checked for validity.  If it has too many or
+   --  too few options, or an option's name doesn't match, the port is
+   --  printed to stdout.  The rest of the ports are checked, but at that
+   --  point the function has failed.
+   function limited_cached_options_check return Boolean;
+
 private
 
    stored_packages     : package_crate.Map;
@@ -72,9 +80,16 @@ private
    --  used by passed_abi_check()
    procedure establish_package_architecture;
 
+   --  Scan directory that contains the packages (*.txz) and stores the
+   --  file names in the container.
    procedure scan_repository (repository : String);
 
+   --  standard method to spawn commands in this package (and get output)
    function generic_system_command (command : String) return JT.Text;
 
+   --  Evaluates the stored options.  If none exists, return True
+   --  If Exists and all the options match exactly what has already been
+   --  scanned for the port (names, not values) then return True else False.
+   function passed_options_cache_check (id : port_id) return Boolean;
 
 end PortScan.Packages;

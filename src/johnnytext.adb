@@ -186,4 +186,21 @@ package body JohnnyText is
       return S (slash + 1 .. S'Last);
    end part_2;
 
+
+   ---------------
+   --  replace  --
+   ---------------
+   function replace (S : String; reject, shiny : Character) return String
+   is
+      rejectstr : constant String (1 .. 1) := (1 => reject);
+      focus     : constant Natural :=
+                           AS.Fixed.Index (Source => S, Pattern => rejectstr);
+      returnstr : String := S;
+   begin
+      if focus > 0 then
+        returnstr (focus) := shiny;
+      end if;
+      return returnstr;
+   end replace;
+
 end JohnnyText;
