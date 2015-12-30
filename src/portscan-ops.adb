@@ -59,7 +59,7 @@ package body PortScan.Ops is
                end if;
             end loop;
             if not color_support then
-               TIO.Put_Line (CYC.elapsed_now & " ==> [" &
+               TIO.Put_Line (CYC.elapsed_now & " => [" &
                                JT.zeropad (Integer (builder), 2) &
                                "]          Shutting down");
             end if;
@@ -168,7 +168,7 @@ package body PortScan.Ops is
                   all_idle := False;
                   if builder_states (slave) = done_success then
                      if not color_support then
-                        TIO.Put_Line (CYC.elapsed_now & " ==> [" &
+                        TIO.Put_Line (CYC.elapsed_now & " => [" &
                                         JT.zeropad (Integer (slave), 2) &
                                         "] " & CYC.elapsed_build (slave) &
                                         " Success " &
@@ -195,7 +195,7 @@ package body PortScan.Ops is
                                      port_name (instructions (slave)) &
                                      " (skipped" & cntskip'Img & ")");
                      if not color_support then
-                        TIO.Put_Line (CYC.elapsed_now & " ==> [" &
+                        TIO.Put_Line (CYC.elapsed_now & " => [" &
                                         JT.zeropad (Integer (slave), 2) &
                                         "] " & CYC.elapsed_build (slave) &
                                         " Failure " &
