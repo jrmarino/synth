@@ -595,12 +595,9 @@ package body PortScan.Packages is
             end if;
          end;
       end loop;
-      if counter < required then
-         --  The ports tree has more options than the cached options
-         goto clean_exit;
+      if counter = required then
+         result := True;
       end if;
-      --  If we get this far, the cached options must match port options
-      return True;
 
       <<clean_exit>>
       TIO.Close (option_file);
