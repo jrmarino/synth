@@ -108,6 +108,10 @@ begin
             end if;
          end if;
 
+         if PIL.synthexec_missing then
+            return;
+         end if;
+
          PIL.create_pidfile;
 
          ----------------------------------
@@ -221,6 +225,10 @@ begin
             if not PIL.old_mounts_successfully_removed then
                return;
             end if;
+         end if;
+
+         if PIL.synthexec_missing then
+            return;
          end if;
 
          PIL.create_pidfile;

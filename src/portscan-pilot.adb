@@ -843,4 +843,19 @@ package body PortScan.Pilot is
       return False;
    end old_mounts_successfully_removed;
 
+
+   -------------------------
+   --  synthexec_missing  --
+   -------------------------
+   function synthexec_missing return Boolean
+   is
+      synthexec : constant String := host_localbase & "/libexec/synthexec";
+   begin
+      if AD.Exists (synthexec) then
+         return False;
+      end if;
+      TIO.Put_Line (synthexec & " missing!" & bailing);
+      return True;
+   end synthexec_missing;
+
 end PortScan.Pilot;

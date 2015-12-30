@@ -76,6 +76,9 @@ package PortScan.Pilot is
    --  If not, it will emit messages so Synth can just eject directly.
    function old_mounts_successfully_removed return Boolean;
 
+   --  libexec/synthexec is required, make sure it's installed!
+   function synthexec_missing return Boolean;
+
    pilot_log : exception;
 
 private

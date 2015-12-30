@@ -29,39 +29,24 @@ package body PortScan.Buildcycle is
          initialize_log (id);
       end if;
       for phase in phases'Range loop
+         trackers (id).phase := phase;
          case phase is
-            when check_sanity  => R := exec_phase_generic (id, "check-sanity");
-            when pkg_depends   => R := exec_phase_depends (id, "pkg-depends");
-            when fetch_depends => R := exec_phase_depends (id, "fetch-depends");
-            when fetch         => R := exec_phase_generic (id, "fetch");
-            when checksum      => R := exec_phase_generic (id, "checksum");
-            when extract_depends => R := exec_phase_depends (id,
-                                                             "extract-depends");
-            when extract       => R := exec_phase_generic (id, "checksum");
-            when patch_depends => R := exec_phase_depends (id, "patch-depends");
-            when patch         => R := exec_phase_generic (id, "patch");
-            when build_depends => R := exec_phase_depends (id, "build-depends");
-            when lib_depends   => R := exec_phase_depends (id, "lib-depends");
-            when configure     => R := exec_phase_generic (id, "configure");
-            when build         => R := exec_phase_generic (id, "build");
-            when run_depends   => R := exec_phase_depends (id, "run-depends");
-            when stage         => R := exec_phase_generic (id, "stage");
-            when pkg_package   => R := exec_phase_generic (id, "package");
-            when install_mtree =>
+            when check_sanity | fetch | checksum | extract | patch |
+                 configure | build | stage | pkg_package =>
+               R := exec_phase_generic (id, phase2str (phase));
+
+            when pkg_depends | fetch_depends | extract_depends |
+                 patch_depends | build_depends | lib_depends | run_depends =>
+               R := exec_phase_depends (id, phase2str (phase));
+
+            when install_mtree | install | check_plist =>
                if testing then
-                  R := exec_phase_generic (id, "install-mtree");
+                  R := exec_phase_generic (id, phase2str (phase));
                end if;
-            when install =>
-               if testing then
-                  R := exec_phase_generic (id, "install");
-               end if;
+
             when deinstall =>
                if testing then
                   R := exec_phase_deinstall (id);
-               end if;
-            when check_plist =>
-               if testing then
-                  R := exec_phase_generic (id, "check-plist");
                end if;
          end case;
          exit when R = False;
@@ -792,8 +777,63 @@ package body PortScan.Buildcycle is
       TCAP : constant String := "TERMCAP= ";
       USER : constant String := "USER=root ";
       HOME : constant String := "HOME=/root ";
+      LANG : constant String := "LANG=C ";
    begin
-      return " /usr/bin/env " & USER & HOME & TERM & TCAP & PATH;
+      return " /usr/bin/env " & USER & HOME & LANG & TERM & TCAP & PATH;
    end environment_override;
+
+
+   ---------------------
+   --  set_log_lines  --
+   ---------------------
+   procedure set_log_lines (id : builders)
+   is
+      log_path : constant String := log_name (trackers (id).seq_id);
+      command  : constant String := "/usr/bin/wc -l " & log_path;
+      comres   : JT.Text;
+   begin
+      if not uselog then
+         trackers (id).loglines := 0;
+         return;
+      end if;
+      comres := JT.trim (generic_system_command (command));
+      declare
+         numtext : constant String :=
+           JT.part_1 (S => JT.USS (comres), separator => " ");
+      begin
+         trackers (id).loglines := Natural'Value (numtext);
+      end;
+   end set_log_lines;
+
+
+   -----------------
+   --  phase2str  --
+   -----------------
+   function phase2str (phase : phases) return String is
+   begin
+      case phase is
+         when check_sanity    => return "check-sanity";
+         when pkg_depends     => return "pkg-depends";
+         when fetch_depends   => return "fetch-depends";
+         when fetch           => return "fetch";
+         when checksum        => return "checksum";
+         when extract_depends => return "extract-depends";
+         when extract         => return "checksum";
+         when patch_depends   => return "patch-depends";
+         when patch           => return "patch";
+         when build_depends   => return "build-depends";
+         when lib_depends     => return "lib-depends";
+         when configure       => return "configure";
+         when build           => return "build";
+         when run_depends     => return "run-depends";
+         when stage           => return "stage";
+         when pkg_package     => return "package";
+         when install_mtree   => return "install-mtree";
+         when install         => return "install";
+         when deinstall       => return "deinstall";
+         when check_plist     => return "check-plist";
+      end case;
+   end phase2str;
+
 
 end PortScan.Buildcycle;

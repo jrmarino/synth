@@ -28,6 +28,12 @@ package PortScan.Buildcycle is
 
 private
 
+   type phases is (check_sanity, pkg_depends, fetch_depends, fetch, checksum,
+                   extract_depends, extract, patch_depends, patch,
+                   build_depends, lib_depends, configure, build, run_depends,
+                   stage, check_plist, pkg_package, install_mtree, install,
+                   deinstall);
+
    type trackrec is
       record
          seq_id     : port_id;
@@ -35,13 +41,10 @@ private
          tail_time  : CAL.Time;
          log_handle : aliased TIO.File_Type;
          dynlink    : string_crate.Vector;
+         phase      : phases;
+         loglines   : Natural;
       end record;
 
-   type phases is (check_sanity, pkg_depends, fetch_depends, fetch, checksum,
-                   extract_depends, extract, patch_depends, patch,
-                   build_depends, lib_depends, configure, build, run_depends,
-                   stage, check_plist, pkg_package, install_mtree, install,
-                   deinstall);
    type dim_trackers is array (builders) of trackrec;
 
    trackers  : dim_trackers;
@@ -81,8 +84,13 @@ private
    procedure log_linked_libraries (id : builders);
    function  elapsed_HH_MM_SS (start, stop : CAL.Time) return String;
    function  environment_override return String;
+   function  phase2str (phase : phases) return String;
 
    --  Install pkg-static in specific builder (Returns True on success)
    function install_pkg8 (id : builders) return Boolean;
+
+   --  records the current length of the build log.
+   procedure set_log_lines (id : builders);
+
 
 end PortScan.Buildcycle;
