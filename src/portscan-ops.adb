@@ -4,11 +4,13 @@
 with Ada.Numerics.Discrete_Random;
 with PortScan.Buildcycle;
 with Replicant;
+with Display;
 
 package body PortScan.Ops is
 
    package REP renames Replicant;
    package CYC renames PortScan.Buildcycle;
+   package DPY renames Display;
 
 
    -------------------------
@@ -21,10 +23,12 @@ package body PortScan.Ops is
       builder_states : dim_builder_state := (others => idle);
       cntcycle       : cycle_count       := cycle_count'First;
       run_complete   : Boolean           := False;
+      color_support  : Boolean           := False;
       available      : Positive          := Integer (num_builders);
       target         : port_id;
       all_idle       : Boolean;
       cntskip        : Natural;
+      sumdata        : DPY.summary_rec;
 
       task type build (builder : builders);
       task body build
@@ -125,6 +129,9 @@ package body PortScan.Ops is
       builder_64 : build (builder => 64);
 
    begin
+      if PM.configuration.avec_ncurses then
+         color_support := DPY.launch_monitor (num_builders);
+      end if;
       loop
          all_idle := True;
          for slave in 1 .. num_builders loop
@@ -191,23 +198,39 @@ package body PortScan.Ops is
             end case;
          end loop;
          exit when run_complete and all_idle;
-         TIO.Flush (logs (success));
-         TIO.Flush (logs (failure));
-         TIO.Flush (logs (skipped));
-         TIO.Flush (logs (total));
          if cntcycle = cycle_count'Last then
             cntcycle := cycle_count'First;
-            for b in builders'First .. num_builders loop
-               if builder_states (b) /= shutdown then
-                  CYC.set_log_lines (b);
-                  TIO.Put_Line (CYC.tempstatus (b));
-               end if;
-            end loop;
+            TIO.Flush (logs (success));
+            TIO.Flush (logs (failure));
+            TIO.Flush (logs (skipped));
+            TIO.Flush (logs (total));
+            if color_support then
+               sumdata.Initially := bld_counter (total);
+               sumdata.Built     := bld_counter (success);
+               sumdata.Failed    := bld_counter (failure);
+               sumdata.Ignored   := bld_counter (ignored);
+               sumdata.Skipped   := bld_counter (skipped);
+               sumdata.elapsed   := CYC.log_duration
+                                    (start => start_time,
+                                     stop => CAL.Clock) (11 .. 18);
+               DPY.summarize (sumdata);
+            else
+               for b in builders'First .. num_builders loop
+                  if builder_states (b) /= shutdown then
+                     CYC.set_log_lines (b);
+                     TIO.Put_Line (CYC.tempstatus (b));
+                  end if;
+               end loop;
+            end if;
          else
             cntcycle := cntcycle + 1;
          end if;
          delay 0.10;
       end loop;
+      if PM.configuration.avec_ncurses and then color_support
+      then
+         DPY.terminate_monitor;
+      end if;
    end parallel_bulk_run;
 
 
