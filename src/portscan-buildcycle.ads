@@ -15,6 +15,7 @@ package PortScan.Buildcycle is
    function timestamp (hack : CAL.Time) return String;
    function log_duration (start, stop : CAL.Time) return String;
    function elapsed_now return String;
+   function elapsed_build (id : builders) return String;
 
    --  The actual command to build a local repository (Returns True on success)
    function build_repository (id : builders) return Boolean;

@@ -870,8 +870,8 @@ package body PortScan.Buildcycle is
       cportend : Natural := 40 + catport'Length;
       numlines : constant String := format_loglines (trackers (id).loglines);
       linehead : constant Natural := 39 - numlines'Length;
-      duration : constant String (1 .. 8) := log_duration
-        (start => trackers (id).head_time, stop => CAL.Clock) (11 .. 18);
+      duration : constant String (1 .. 8) := elapsed_HH_MM_SS
+        (start => trackers (id).head_time, stop => CAL.Clock);
    begin
       --  123456789 123456789 123456789 123456789 1234
       --  SL  elapsed   phase              lines  origin
@@ -888,6 +888,16 @@ package body PortScan.Buildcycle is
       end if;
       return statline;
    end tempstatus;
+
+
+   ---------------------
+   --  elapsed_build  --
+   ---------------------
+   function elapsed_build (id : builders) return String is
+   begin
+      return elapsed_HH_MM_SS (start => trackers (id).head_time,
+                               stop => trackers (id).tail_time);
+   end elapsed_build;
 
 
 end PortScan.Buildcycle;

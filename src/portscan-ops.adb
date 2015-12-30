@@ -39,7 +39,6 @@ package body PortScan.Ops is
          build_result : Boolean;
       begin
          if builder <= num_builders then
-            TIO.Put_Line ("Starting Builder" & builder'Img);
             loop
                exit when builder_states (builder) = shutdown;
                if builder_states (builder) = tasked then
@@ -59,7 +58,11 @@ package body PortScan.Ops is
                   delay 0.1;
                end if;
             end loop;
-            TIO.Put_Line ("Builder" & builder'Img & " shutting down");
+            if not color_support then
+               TIO.Put_Line (CYC.elapsed_now & " ==> [" &
+                               JT.zeropad (Integer (builder), 2) &
+                               "]          Shutting down");
+            end if;
          end if;
       end build;
 
@@ -164,8 +167,13 @@ package body PortScan.Ops is
                when done_success | done_failure =>
                   all_idle := False;
                   if builder_states (slave) = done_success then
-                     TIO.Put_Line ("Built [" & slave'Img & "] " &
-                                     port_name (instructions (slave)));
+                     if not color_support then
+                        TIO.Put_Line (CYC.elapsed_now & " ==> [" &
+                                        JT.zeropad (Integer (slave), 2) &
+                                        "] " & CYC.elapsed_build (slave) &
+                                        " Success " &
+                                        port_name (instructions (slave)));
+                     end if;
                      cascade_successful_build (instructions (slave));
                      bld_counter (success) := bld_counter (success) + 1;
                      TIO.Put_Line (logs (success), CYC.elapsed_now & " " &
@@ -186,8 +194,13 @@ package body PortScan.Ops is
                      TIO.Put_Line (logs (failure), CYC.elapsed_now & " " &
                                      port_name (instructions (slave)) &
                                      " (skipped" & cntskip'Img & ")");
-                     TIO.Put_Line ("FAILED [" & slave'Img & "] " &
-                                     port_name (instructions (slave)));
+                     if not color_support then
+                        TIO.Put_Line (CYC.elapsed_now & " ==> [" &
+                                        JT.zeropad (Integer (slave), 2) &
+                                        "] " & CYC.elapsed_build (slave) &
+                                        " Failure " &
+                                        port_name (instructions (slave)));
+                     end if;
                   end if;
                   instructions (slave) := port_match_failed;
                   if run_complete then
@@ -214,13 +227,13 @@ package body PortScan.Ops is
                                     (start => start_time,
                                      stop => CAL.Clock) (11 .. 18);
                DPY.summarize (sumdata);
-            else
-               for b in builders'First .. num_builders loop
-                  if builder_states (b) /= shutdown then
-                     CYC.set_log_lines (b);
-                     TIO.Put_Line (CYC.tempstatus (b));
-                  end if;
-               end loop;
+--              else
+--                 for b in builders'First .. num_builders loop
+--                    if builder_states (b) /= shutdown then
+--                       CYC.set_log_lines (b);
+--                       TIO.Put_Line (CYC.tempstatus (b));
+--                    end if;
+--                 end loop;
             end if;
          else
             cntcycle := cntcycle + 1;
