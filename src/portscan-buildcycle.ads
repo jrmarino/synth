@@ -26,6 +26,12 @@ package PortScan.Buildcycle is
    --  Was private, but expose so Pilot can use it.
    function generic_system_command (command : String) return JT.Text;
 
+   --  temporary
+   function tempstatus (id : builders) return String;
+
+   --  records the current length of the build log.
+   procedure set_log_lines (id : builders);
+
 private
 
    type phases is (check_sanity, pkg_depends, fetch_depends, fetch, checksum,
@@ -85,12 +91,12 @@ private
    function  elapsed_HH_MM_SS (start, stop : CAL.Time) return String;
    function  environment_override return String;
    function  phase2str (phase : phases) return String;
+   function  format_loglines (numlines : Natural) return String;
 
    --  Install pkg-static in specific builder (Returns True on success)
    function install_pkg8 (id : builders) return Boolean;
 
-   --  records the current length of the build log.
-   procedure set_log_lines (id : builders);
+
 
 
 end PortScan.Buildcycle;

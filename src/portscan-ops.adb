@@ -16,8 +16,10 @@ package body PortScan.Ops is
    -------------------------
    procedure parallel_bulk_run (num_builders : builders; logs : dim_handlers)
    is
+      subtype cycle_count is Natural range 1 .. 9;
       instructions   : dim_instruction   := (others => port_match_failed);
       builder_states : dim_builder_state := (others => idle);
+      cntcycle       : cycle_count       := cycle_count'First;
       run_complete   : Boolean           := False;
       available      : Positive          := Integer (num_builders);
       target         : port_id;
@@ -193,6 +195,17 @@ package body PortScan.Ops is
          TIO.Flush (logs (failure));
          TIO.Flush (logs (skipped));
          TIO.Flush (logs (total));
+         if cntcycle = cycle_count'Last then
+            cntcycle := cycle_count'First;
+            for b in builders'First .. num_builders loop
+               if builder_states (b) /= shutdown then
+                  CYC.set_log_lines (b);
+                  TIO.Put_Line (CYC.tempstatus (b));
+               end if;
+            end loop;
+         else
+            cntcycle := cntcycle + 1;
+         end if;
          delay 0.10;
       end loop;
    end parallel_bulk_run;

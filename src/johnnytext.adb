@@ -203,4 +203,18 @@ package body JohnnyText is
       return returnstr;
    end replace;
 
+
+   ---------------
+   --  zeropad  --
+   ---------------
+   function zeropad (N : Natural; places : Positive) return String
+   is
+      template : String (1 .. places) := (others => '0');
+      myimage  : constant String := trim (N'Img);
+      startpos : constant Natural := 1 + places - myimage'Length;
+   begin
+      template (startpos .. places) := myimage;
+      return template;
+   end zeropad;
+
 end JohnnyText;

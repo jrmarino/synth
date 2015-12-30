@@ -836,4 +836,58 @@ package body PortScan.Buildcycle is
    end phase2str;
 
 
+   -----------------------
+   --  format_loglines  --
+   -----------------------
+   function format_loglines (numlines : Natural) return String
+   is
+   begin
+      if numlines < 10000000 then      --  10 million
+         return JT.int2str (numlines);
+      end if;
+      declare
+         kilo    : constant Natural := numlines / 1000;
+         kilotxt : constant String  := JT.int2str (kilo);
+      begin
+         if numlines < 100000000 then      --  100 million
+            return kilotxt (1 .. 2) & "." & kilotxt (3 .. 5) & 'M';
+         elsif numlines < 1000000000 then  --  1 billion
+            return kilotxt (1 .. 3) & "." & kilotxt (3 .. 4) & 'M';
+         else
+            return kilotxt (1 .. 4) & "." & kilotxt (3 .. 3) & 'M';
+         end if;
+      end;
+   end format_loglines;
+
+
+   function tempstatus (id : builders) return String
+   is
+      statline : String (1 .. 79) := (others => LAT.Space);
+      phasestr : constant String := phase2str (trackers (id).phase);
+      phaseend : constant Natural := 14 + phasestr'Length;
+      catport  : constant String :=
+        get_catport (all_ports (trackers (id).seq_id));
+      cportend : Natural := 40 + catport'Length;
+      numlines : constant String := format_loglines (trackers (id).loglines);
+      linehead : constant Natural := 39 - numlines'Length;
+      duration : constant String (1 .. 8) := log_duration
+        (start => trackers (id).head_time, stop => CAL.Clock) (11 .. 18);
+   begin
+      --  123456789 123456789 123456789 123456789 1234
+      --  SL  elapsed   phase              lines  origin
+      --  01  00:00:00  extract-depends  9999999  www/joe
+      statline (1 .. 2)  := JT.zeropad (Natural (id), 2);
+      statline (5 .. 12) := duration;
+      statline (15 .. phaseend) := phasestr;
+      statline (linehead .. 38) := numlines;
+      if cportend > 79 then
+         statline (41 .. 78) := catport (1 .. 38);
+         statline (79) := LAT.Asterisk;
+      else
+         statline (41 .. cportend) := catport;
+      end if;
+      return statline;
+   end tempstatus;
+
+
 end PortScan.Buildcycle;

@@ -49,5 +49,7 @@ package JohnnyText is
    --  Replace a single character with another single character (first found)
    function replace (S : String; reject, shiny : Character) return String;
 
+   --  Numeric image with left-padded zeros
+   function zeropad (N : Natural; places : Positive) return String;
 
 end JohnnyText;
