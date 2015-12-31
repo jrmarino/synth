@@ -18,6 +18,7 @@ package Display is
          Skipped   : Natural;
          elapsed   : String (1 .. 8);
          impulse   : Natural;
+         pkg_hour  : Natural;
          load      : Float;
          swap      : Float;
       end record;

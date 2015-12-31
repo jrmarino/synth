@@ -56,6 +56,7 @@ private
    function  rank_arrow (id : port_id) return ranking_crate.Cursor;
    function  get_swap_status return Float;
    function  get_instant_load return Float;
+   function  hourly_build_rate return Natural;
    procedure delete_rank (id : port_id);
 
 end PortScan.Ops;

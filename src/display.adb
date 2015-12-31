@@ -188,12 +188,14 @@ package body Display is
       L1F1 : constant String := pad (JT.int2str (data.Initially));
       L1F2 : constant String := pad (JT.int2str (data.Built));
       L1F3 : constant String := pad (JT.int2str (data.Ignored));
+      L1F4 : constant String := fmtpc (data.load, False);
+      L1F5 : constant String := pad (JT.int2str (data.pkg_hour));
+
       L2F1 : constant String := pad (JT.int2str (remaining));
       L2F2 : constant String := pad (JT.int2str (data.Failed));
       L2F3 : constant String := pad (JT.int2str (data.Skipped));
-      L2F5 : constant String := pad (JT.int2str (data.impulse), 4);
-      L1F4 : constant String := fmtpc (data.load, False);
       L2F4 : constant String := fmtpc (data.swap, True);
+      L2F5 : constant String := pad (JT.int2str (data.impulse), 4);
 
    begin
 
@@ -201,6 +203,7 @@ package body Display is
       colorado (L1F2, c_success,  20, 0);
       colorado (L1F3, c_ignored,  35, 0);
       colorado (L1F4, c_standard, 47, 0, True);
+      colorado (L1F5, c_standard, 63, 0, True);
 
       colorado (L2F1, c_standard,  6, 1);
       colorado (L2F2, c_failure,  20, 1);

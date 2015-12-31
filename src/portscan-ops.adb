@@ -228,6 +228,7 @@ package body PortScan.Ops is
                sumdata.elapsed   := CYC.elapsed_now;
                sumdata.swap      := get_swap_status;
                sumdata.load      := get_instant_load;
+               sumdata.pkg_hour  := hourly_build_rate;
                DPY.summarize (sumdata);
 --              else
 --                 for b in builders'First .. num_builders loop
@@ -629,5 +630,16 @@ package body PortScan.Ops is
       end;
    end get_instant_load;
 
+
+   -------------------------
+   --  hourly_build_rate  --
+   -------------------------
+   function hourly_build_rate return Natural
+   is
+      pkg_that_count : constant Natural := bld_counter (success) +
+                                           bld_counter (failure);
+   begin
+      return CYC.get_packages_per_hour (pkg_that_count);
+   end hourly_build_rate;
 
 end PortScan.Ops;

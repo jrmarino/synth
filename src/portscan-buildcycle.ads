@@ -27,6 +27,9 @@ package PortScan.Buildcycle is
    --  Was private, but expose so Pilot can use it.
    function generic_system_command (command : String) return JT.Text;
 
+   --  Simple time calculation
+   function  get_packages_per_hour (packages_done : Natural) return Natural;
+
    --  temporary
    function tempstatus (id : builders) return String;
 
