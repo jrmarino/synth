@@ -28,7 +28,9 @@ package PortScan.Buildcycle is
    function generic_system_command (command : String) return JT.Text;
 
    --  Simple time calculation
-   function  get_packages_per_hour (packages_done : Natural) return Natural;
+   function get_packages_per_hour (packages_done : Natural;
+                                   from_when : CAL.Time)
+                                   return Natural;
 
    --  temporary
    function tempstatus (id : builders) return String;

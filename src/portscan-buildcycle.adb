@@ -903,7 +903,9 @@ package body PortScan.Buildcycle is
    -----------------------------
    --  get_packages_per_hour  --
    -----------------------------
-   function get_packages_per_hour (packages_done : Natural) return Natural
+   function get_packages_per_hour (packages_done : Natural;
+                                   from_when : CAL.Time)
+                                   return Natural
    is
       diff_days : ACA.Day_Count;
       diff_secs : Duration;
@@ -917,7 +919,7 @@ package body PortScan.Buildcycle is
       end if;
       --  I have no idea why left/right have to be reversed from "Elapsed_Now"!
       ACA.Difference (Left    => CAL.Clock,
-                      Right   => start_time,
+                      Right   => from_when,
                       Days    => diff_days,
                       Seconds => diff_secs,
                       Leap_Seconds => leap_secs);

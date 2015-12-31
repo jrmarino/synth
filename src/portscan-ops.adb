@@ -229,6 +229,7 @@ package body PortScan.Ops is
                sumdata.swap      := get_swap_status;
                sumdata.load      := get_instant_load;
                sumdata.pkg_hour  := hourly_build_rate;
+               sumdata.impulse   := impulse_rate;
                DPY.summarize (sumdata);
 --              else
 --                 for b in builders'First .. num_builders loop
@@ -639,7 +640,40 @@ package body PortScan.Ops is
       pkg_that_count : constant Natural := bld_counter (success) +
                                            bld_counter (failure);
    begin
-      return CYC.get_packages_per_hour (pkg_that_count);
+      return CYC.get_packages_per_hour (pkg_that_count, start_time);
    end hourly_build_rate;
+
+
+   --------------------
+   --  impulse_rate  --
+   --------------------
+   function impulse_rate return Natural
+   is
+      pkg_that_count : constant Natural := bld_counter (success) +
+                                           bld_counter (failure);
+      pkg_diff : Natural;
+      result   : Natural;
+   begin
+      if impulse_counter = impulse_range'Last then
+         impulse_counter := impulse_range'First;
+      else
+         impulse_counter := impulse_counter + 1;
+      end if;
+      if impulse_data (impulse_counter).virgin then
+         impulse_data (impulse_counter).hack     := CAL.Clock;
+         impulse_data (impulse_counter).packages := pkg_that_count;
+         impulse_data (impulse_counter).virgin   := False;
+
+         return CYC.get_packages_per_hour (pkg_that_count, start_time);
+      end if;
+      pkg_diff := pkg_that_count - impulse_data (impulse_counter).packages;
+      result   := CYC.get_packages_per_hour
+                   (packages_done => pkg_diff,
+                    from_when     => impulse_data (impulse_counter).hack);
+      impulse_data (impulse_counter).hack     := CAL.Clock;
+      impulse_data (impulse_counter).packages := pkg_that_count;
+
+      return result;
+   end impulse_rate;
 
 end PortScan.Ops;

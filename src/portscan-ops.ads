@@ -45,10 +45,21 @@ package PortScan.Ops is
 
 private
 
+   subtype impulse_range is Integer range 1 .. 500;
+   type impulse_rec is
+      record
+         hack     : CAL.Time;
+         packages : Natural := 0;
+         virgin   : Boolean := True;
+      end record;
    type machine_state     is (idle, tasked, busy, done_failure, done_success,
                               shutdown);
    type dim_instruction   is array (builders) of port_id;
    type dim_builder_state is array (builders) of machine_state;
+   type dim_impulse       is array (impulse_range) of impulse_rec;
+
+   impulse_counter : impulse_range := impulse_range'Last;
+   impulse_data    : dim_impulse;
 
    function  nothing_left (num_builders : builders) return Boolean;
    function  shutdown_recommended (active_builders : Positive) return Boolean;
@@ -57,6 +68,7 @@ private
    function  get_swap_status return Float;
    function  get_instant_load return Float;
    function  hourly_build_rate return Natural;
+   function  impulse_rate return Natural;
    procedure delete_rank (id : port_id);
 
 end PortScan.Ops;

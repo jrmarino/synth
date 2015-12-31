@@ -64,7 +64,7 @@ package body Display is
    procedure launch_summary_zone
    is
       line1 : String := "Total 0       Built 0      Ignored 0      " &
-                        "Load  0.00  Pkg/hour 0     Elapsed";
+                        "Load  0.00  Pkg/hour 0   ";
       line2 : String := " Left 0      Failed 0      skipped 0      " &
                         "swap  0.0%   Impulse 0     00:00:00";
    begin
@@ -189,7 +189,7 @@ package body Display is
       L1F2 : constant String := pad (JT.int2str (data.Built));
       L1F3 : constant String := pad (JT.int2str (data.Ignored));
       L1F4 : constant String := fmtpc (data.load, False);
-      L1F5 : constant String := pad (JT.int2str (data.pkg_hour));
+      L1F5 : constant String := pad (JT.int2str (data.pkg_hour), 4);
 
       L2F1 : constant String := pad (JT.int2str (remaining));
       L2F2 : constant String := pad (JT.int2str (data.Failed));
