@@ -35,7 +35,13 @@ package Display is
 
 private
 
-   type builder_palette is array (builders) of TIC.Color_Pair;
+   type palette_rec is
+      record
+         color : TIC.Color_Pair;
+         attribute : TIC.Character_Attribute_Set;
+      end record;
+
+   type builder_palette is array (builders) of palette_rec;
 
    app_width     : TIC.Column_Count := 80;
    zone_summary  : TIC.Window;
@@ -50,12 +56,22 @@ private
    c_ignored     : TIC.Color_Pair;
    c_skipped     : TIC.Color_Pair;
    c_sumlabel    : TIC.Color_Pair;
-   c_builderbar  : TIC.Color_Pair;
+   c_dashes      : TIC.Color_Pair;
+   c_tableheader : TIC.Color_Pair;
    c_elapsed     : TIC.Color_Pair;
 
-   bright        : constant TIC.Character_Attribute_Set :=
-                            (Bold_Character   => True, others => False);
+   cursor_vis    : TIC.Cursor_Visibility := TIC.Invisible;
 
+   bright        : constant TIC.Character_Attribute_Set :=
+                            (others => False);
+   bright_bold   : constant TIC.Character_Attribute_Set :=
+                            (Bold_Character => True, others => False);
+   dimmed        : constant TIC.Character_Attribute_Set :=
+                            (Dim_Character => True, others => False);
+   dimmed_bold   : constant TIC.Character_Attribute_Set :=
+                            (Bold_Character => True,
+                             Dim_Character => True,
+                             others => False);
 
    procedure launch_summary_zone;
    procedure launch_builders_zone (num_builders : builders);
@@ -63,5 +79,6 @@ private
 
    function inc (X : TIC.Line_Position; by : Integer) return TIC.Line_Position;
 
+   procedure establish_colors;
 
 end Display;

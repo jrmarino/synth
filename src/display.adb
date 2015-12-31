@@ -20,24 +20,9 @@ package body Display is
       TIC.Set_Echo_Mode (False);
       TIC.Set_Raw_Mode (True);
       TIC.Set_Cbreak_Mode (True);
+      TIC.Set_Cursor_Visibility (Visibility => cursor_vis);
 
-      TIC.Start_Color;
-      TIC.Init_Pair (TIC.Color_Pair (1), TIC.White,  TIC.Black);
-      TIC.Init_Pair (TIC.Color_Pair (2), TIC.Green,  TIC.Black);
-      TIC.Init_Pair (TIC.Color_Pair (3), TIC.Red,    TIC.Black);
-      TIC.Init_Pair (TIC.Color_Pair (4), TIC.Yellow, TIC.Black);
-      TIC.Init_Pair (TIC.Color_Pair (5), TIC.Black,  TIC.Black);
-      TIC.Init_Pair (TIC.Color_Pair (6), TIC.Cyan,   TIC.Black);
-      TIC.Init_Pair (TIC.Color_Pair (7), TIC.White,  TIC.Blue);
-
-      c_standard    := TIC.Color_Pair (1);
-      c_success     := TIC.Color_Pair (2);
-      c_failure     := TIC.Color_Pair (3);
-      c_ignored     := TIC.Color_Pair (4);
-      c_skipped     := TIC.Color_Pair (5);
-      c_sumlabel    := TIC.Color_Pair (6);
-      c_builderbar  := TIC.Color_Pair (7);
-      c_elapsed     := TIC.Color_Pair (4);
+      establish_colors;
 
       launch_summary_zone;
       launch_builders_zone (num_builders);
@@ -74,7 +59,7 @@ package body Display is
                                   First_Column_Position => 0);
 
       TIC.Set_Character_Attributes (Win   => zone_summary,
-                                    Attr  => bright,
+                                    Attr  => bright_bold,
                                     Color => TIC.Color_Pair (c_sumlabel));
 
       TIC.Move_Cursor (Win => zone_summary, Line => 0, Column => 0);
@@ -91,13 +76,37 @@ package body Display is
    ----------------------------
    procedure launch_builders_zone (num_builders : builders)
    is
-      hghtint : constant Integer := 2 + Integer (num_builders);
+      hghtint : constant Integer := 4 + Integer (num_builders);
       height  : constant TIC.Line_Position := TIC.Line_Position (hghtint);
+      lastrow : constant TIC.Line_Position := inc (height, -1);
+      dashes  : constant String (1 .. 79) := (others => '=');
+      header  : String (1 .. 79) := (others => ' ');
+      headtxt : constant String :=
+                         " ID  Elapsed   Build Phase      Log Len  Origin";
    begin
+      header (1 .. headtxt'Length) := headtxt;
       zone_builders := TIC.Create (Number_Of_Lines       => height,
                                    Number_Of_Columns     => app_width,
                                    First_Line_Position   => 2,
                                    First_Column_Position => 0);
+
+      TIC.Set_Character_Attributes (Win   => zone_builders,
+                                    Attr  => bright,
+                                    Color => TIC.Color_Pair (c_dashes));
+      TIC.Move_Cursor (Win => zone_builders, Line => 0, Column => 0);
+      TIC.Add (Win => zone_builders, Str => dashes);
+      TIC.Move_Cursor (Win => zone_builders, Line => 2, Column => 0);
+      TIC.Add (Win => zone_builders, Str => dashes);
+      TIC.Move_Cursor (Win => zone_builders, Line => lastrow, Column => 0);
+      TIC.Add (Win => zone_builders, Str => dashes);
+
+      TIC.Set_Character_Attributes (Win   => zone_builders,
+                                    Attr  => dimmed_bold,
+                                    Color => TIC.Color_Pair (c_tableheader));
+      TIC.Move_Cursor (Win => zone_builders, Line => 1, Column => 0);
+      TIC.Add (Win => zone_builders, Str => header);
+
+      TIC.Refresh (Win => zone_builders);
    end launch_builders_zone;
 
 
@@ -106,7 +115,7 @@ package body Display is
    ---------------------------
    procedure launch_actions_zone (num_builders : builders)
    is
-      consumed   : constant Integer := Integer (num_builders) + 2 + 2;
+      consumed   : constant Integer := Integer (num_builders) + 4 + 2;
       difference : constant Integer := 0 - consumed;
       viewheight : constant TIC.Line_Position := inc (TIC.Lines, difference);
       viewpos    : constant TIC.Line_Position := TIC.Line_Position (consumed);
@@ -178,7 +187,7 @@ package body Display is
                                           Color => color);
          else
             TIC.Set_Character_Attributes (Win   => zone_summary,
-                                          Attr  => bright,
+                                          Attr  => bright_bold,
                                           Color => color);
          end if;
          TIC.Move_Cursor (Win => zone_summary, Line => row, Column => col);
@@ -215,5 +224,48 @@ package body Display is
       TIC.Refresh (Win => zone_summary);
    end summarize;
 
+
+   ------------------------
+   --  establish_colors  --
+   ------------------------
+   procedure establish_colors is
+   begin
+      TIC.Start_Color;
+      TIC.Init_Pair (TIC.Color_Pair (1), TIC.White,  TIC.Black);
+      TIC.Init_Pair (TIC.Color_Pair (2), TIC.Green,  TIC.Black);
+      TIC.Init_Pair (TIC.Color_Pair (3), TIC.Red,    TIC.Black);
+      TIC.Init_Pair (TIC.Color_Pair (4), TIC.Yellow, TIC.Black);
+      TIC.Init_Pair (TIC.Color_Pair (5), TIC.Black,  TIC.Black);
+      TIC.Init_Pair (TIC.Color_Pair (6), TIC.Cyan,   TIC.Black);
+      TIC.Init_Pair (TIC.Color_Pair (7), TIC.Blue,   TIC.Black);
+
+      c_standard    := TIC.Color_Pair (1);
+      c_success     := TIC.Color_Pair (2);
+      c_failure     := TIC.Color_Pair (3);
+      c_ignored     := TIC.Color_Pair (4);
+      c_skipped     := TIC.Color_Pair (5);
+      c_sumlabel    := TIC.Color_Pair (6);
+      c_dashes      := TIC.Color_Pair (7);
+      c_elapsed     := TIC.Color_Pair (4);
+      c_tableheader := TIC.Color_Pair (1);
+
+      --builder_palette  (1).color := TIC.Color_Pair (1);  --  white / Black
+--        builder_palette  (2) := TIC.Color_Pair ();  -- light green / Black
+--        builder_palette  (3) := TIC.Color_Pair ();
+--        builder_palette  (4) := TIC.Color_Pair ();
+--        builder_palette  (5) := TIC.Color_Pair ();
+--        builder_palette  (6) := TIC.Color_Pair ();
+--        builder_palette  (7) := TIC.Color_Pair ();
+--        builder_palette  (8) := TIC.Color_Pair ();
+--        builder_palette  (9) := TIC.Color_Pair ();
+--        builder_palette (10) := TIC.Color_Pair ();
+--        builder_palette (11) := TIC.Color_Pair ();
+--        builder_palette (12) := TIC.Color_Pair ();
+--        builder_palette (13) := TIC.Color_Pair ();
+--        builder_palette (14) := TIC.Color_Pair ();
+--        builder_palette (15) := TIC.Color_Pair ();
+--        builder_palette (16) := TIC.Color_Pair ();
+
+   end establish_colors;
 
 end Display;
