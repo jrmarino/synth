@@ -50,6 +50,7 @@ private
    c_skipped     : TIC.Color_Pair;
    c_sumlabel    : TIC.Color_Pair;
    c_builderbar  : TIC.Color_Pair;
+   c_elapsed     : TIC.Color_Pair;
 
    bright        : constant TIC.Character_Attribute_Set :=
                             (Bold_Character   => True, others => False);

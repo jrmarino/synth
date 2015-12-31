@@ -2,12 +2,14 @@
 --  Reference: ../License.txt
 
 with Ada.Numerics.Discrete_Random;
+with GNAT.String_Split;
 with PortScan.Buildcycle;
 with Replicant;
 with Display;
 
 package body PortScan.Ops is
 
+   package GSS renames GNAT.String_Split;
    package REP renames Replicant;
    package CYC renames PortScan.Buildcycle;
    package DPY renames Display;
@@ -224,6 +226,7 @@ package body PortScan.Ops is
                sumdata.Ignored   := bld_counter (ignored);
                sumdata.Skipped   := bld_counter (skipped);
                sumdata.elapsed   := CYC.elapsed_now;
+               sumdata.swap      := get_swap_status;
                DPY.summarize (sumdata);
 --              else
 --                 for b in builders'First .. num_builders loop
@@ -556,5 +559,55 @@ package body PortScan.Ops is
       end if;
       return get_catport (all_ports (id));
    end port_name;
+
+
+   -----------------------
+   --  get_swap_status  --
+   -----------------------
+   function get_swap_status return Float
+   is
+      command : String := "/usr/sbin/swapinfo -k";
+      comres  : JT.Text;
+      topline : JT.Text;
+      crlen1  : Natural;
+      crlen2  : Natural;
+
+      blocks_total : Natural := 0;
+      blocks_used  : Natural := 0;
+   begin
+      comres := CYC.generic_system_command (command);
+      --  Throw first line away, e.g "Device 1K-blocks Used  Avail ..."
+      JT.nextline (lineblock => comres, firstline => topline);
+      crlen1 := JT.SU.Length (comres);
+      loop
+         JT.nextline (lineblock => comres, firstline => topline);
+         crlen2 := JT.SU.Length (comres);
+         exit when crlen1 = crlen2;
+         crlen1 := crlen2;
+         declare
+            subs         : GSS.Slice_Set;
+            opts_found   : GSS.Slice_Number;
+            use type GSS.Slice_Number;
+         begin
+            GSS.Create (S          => subs,
+                        From       => JT.USS (topline),
+                        Separators => " ",
+                        Mode       => GSS.Multiple);
+            opts_found := GSS.Slice_Count (S => subs);
+            if opts_found >= 3 then
+               blocks_total := blocks_total +
+                               Natural'Value (GSS.Slice (subs, 2));
+               blocks_used  := blocks_used +
+                               Natural'Value (GSS.Slice (subs, 3));
+            end if;
+         end;
+      end loop;
+      if blocks_total = 0 then
+         return 100.0;
+      else
+         return 100.0 * Float (blocks_used) / Float (blocks_total);
+      end if;
+   end get_swap_status;
+
 
 end PortScan.Ops;

@@ -37,6 +37,7 @@ package body Display is
       c_skipped     := TIC.Color_Pair (5);
       c_sumlabel    := TIC.Color_Pair (6);
       c_builderbar  := TIC.Color_Pair (7);
+      c_elapsed     := TIC.Color_Pair (4);
 
       launch_summary_zone;
       launch_builders_zone (num_builders);
@@ -50,9 +51,9 @@ package body Display is
    -------------------------
    procedure terminate_monitor is
    begin
-      TIC.Delete (Win => zone_summary);
-      TIC.Delete (Win => zone_builders);
       TIC.Delete (Win => zone_actions);
+      TIC.Delete (Win => zone_builders);
+      TIC.Delete (Win => zone_summary);
       TIC.End_Windows;
    end terminate_monitor;
 
@@ -60,13 +61,28 @@ package body Display is
    ---------------------------
    --  launch_summary_zone  --
    ---------------------------
-   procedure launch_summary_zone is
+   procedure launch_summary_zone
+   is
+      line1 : String := "Total 0       Built 0      Ignored 0      " &
+                        "Load  0.00  Pkg/hour 0     Elapsed";
+      line2 : String := " Left 0      Failed 0      skipped 0      " &
+                        "swap  0.0%   Impulse 0     00:00:00";
    begin
-      zone_summary := TIC.Create (
-                      Number_Of_Lines       => 2,
-                      Number_Of_Columns     => app_width,
-                      First_Line_Position   => 0,
-                      First_Column_Position => 0);
+      zone_summary := TIC.Create (Number_Of_Lines       => 2,
+                                  Number_Of_Columns     => app_width,
+                                  First_Line_Position   => 0,
+                                  First_Column_Position => 0);
+
+      TIC.Set_Character_Attributes (Win   => zone_summary,
+                                    Attr  => bright,
+                                    Color => TIC.Color_Pair (c_sumlabel));
+
+      TIC.Move_Cursor (Win => zone_summary, Line => 0, Column => 0);
+      TIC.Add (Win => zone_summary, Str => line1);
+      TIC.Move_Cursor (Win => zone_summary, Line => 1, Column => 0);
+      TIC.Add (Win => zone_summary, Str => line2);
+
+      TIC.Refresh (Win => zone_summary);
    end launch_summary_zone;
 
 
@@ -120,10 +136,11 @@ package body Display is
    is
       function pad (S : String; amount : Positive := 5) return String;
       function fmtpc (f : Float; percent : Boolean) return String;
-      line1 : String := "Total 00000   Built 00000  Ignored 00000  " &
-                        "Load  0.00  Pkg/hour 0000  Elapsed";
-      line2 : String := " Left 00000  Failed 00000  skipped 00000  " &
-                        "swap  0.0%   Impulse 0000  00:00:00";
+      procedure colorado (S : String; color :  TIC.Color_Pair;
+                          col : TIC.Column_Position;
+                          row : TIC.Line_Position;
+                          dim : Boolean := False);
+
       remaining : constant Integer := data.Initially - data.Built -
         data.Failed - data.Ignored - data.Skipped;
 
@@ -131,9 +148,8 @@ package body Display is
       is
          result : String (1 .. amount) := (others => ' ');
          slen   : constant Natural := S'Length;
-         start  : constant Natural := 1 + amount - slen;
       begin
-         result (start .. amount) := S;
+         result (1 .. slen) := S;
          return result;
       end pad;
       function fmtpc (f : Float; percent : Boolean) return String
@@ -151,6 +167,23 @@ package body Display is
          end if;
          return result;
       end fmtpc;
+      procedure colorado (S : String; color :  TIC.Color_Pair;
+                          col : TIC.Column_Position;
+                          row : TIC.Line_Position;
+                          dim : Boolean := False) is
+      begin
+         if dim then
+            TIC.Set_Character_Attributes (Win   => zone_summary,
+                                          Attr  => TIC.Normal_Video,
+                                          Color => color);
+         else
+            TIC.Set_Character_Attributes (Win   => zone_summary,
+                                          Attr  => bright,
+                                          Color => color);
+         end if;
+         TIC.Move_Cursor (Win => zone_summary, Line => row, Column => col);
+         TIC.Add (Win => zone_summary, Str => S);
+      end colorado;
 
       L1F1 : constant String := pad (JT.int2str (data.Initially));
       L1F2 : constant String := pad (JT.int2str (data.Built));
@@ -163,25 +196,18 @@ package body Display is
       L2F4 : constant String := fmtpc (data.swap, True);
 
    begin
-      line1  (7 .. 11) := L1F1;
-      line1 (21 .. 25) := L1F2;
-      line1 (36 .. 40) := L1F3;
-      line2 (48 .. 52) := L1F4;
-      line2  (7 .. 11) := L2F1;
-      line2 (21 .. 25) := L2F2;
-      line2 (36 .. 40) := L2F3;
-      line2 (48 .. 52) := L2F4;
-      line2 (64 .. 67) := L2F5;
-      line2 (70 .. 77) := data.elapsed;
 
-      TIC.Set_Character_Attributes (Win   => zone_summary,
-                                    Attr  => TIC.Normal_Video,
-                                    Color => TIC.Color_Pair (c_standard));
+      colorado (L1F1, c_standard,  6, 0);
+      colorado (L1F2, c_success,  20, 0);
+      colorado (L1F3, c_ignored,  35, 0);
+      colorado (L1F4, c_standard, 47, 0, True);
 
-      TIC.Move_Cursor (Win => zone_summary, Line => 0, Column => 0);
-      TIC.Add (Win => zone_summary, Str => line1);
-      TIC.Move_Cursor (Win => zone_summary, Line => 1, Column => 0);
-      TIC.Add (Win => zone_summary, Str => line2);
+      colorado (L2F1, c_standard,  6, 1);
+      colorado (L2F2, c_failure,  20, 1);
+      colorado (L2F3, c_skipped,  35, 1);
+      colorado (L2F4, c_standard, 47, 1, True);
+      colorado (L2F5, c_standard, 63, 1, True);
+      colorado (data.elapsed, c_elapsed, 69, 1);
 
       TIC.Refresh (Win => zone_summary);
    end summarize;

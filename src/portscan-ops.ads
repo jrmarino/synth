@@ -55,5 +55,6 @@ private
    function still_ranked (id : port_id) return Boolean;
    function rank_arrow (id : port_id) return ranking_crate.Cursor;
    procedure delete_rank (id : port_id);
+   function  get_swap_status return Float;
 
 end PortScan.Ops;
