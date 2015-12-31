@@ -337,7 +337,12 @@ package body Actions is
             clear_screen;
             print_header;
             print_opt (opt);
-            TIO.Put (LAT.LF & "Set valid path for directory: ");
+            TIO.Put (LAT.LF & "Set valid path for directory");
+            if opt = 9 then
+               TIO.Put (" (or 'none' to disable ccache): ");
+            else
+               TIO.Put (": ");
+            end if;
             declare
                testpath : String := TIO.Get_Line;
             begin
@@ -355,6 +360,9 @@ package body Actions is
                   when others => raise menu_error
                        with "Illegal value : " & opt'Img;
                   end case;
+                  continue := True;
+               elsif opt = 9 then
+                  dupe.dir_ccache := JT.SUS (PM.no_ccache);
                   continue := True;
                end if;
             exception

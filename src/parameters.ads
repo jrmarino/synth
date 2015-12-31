@@ -11,6 +11,7 @@ package Parameters is
    package JT renames JohnnyText;
 
    live_system   : constant String := "Live System";
+   no_ccache     : constant String := "disabled";
    synth_confdir : constant String := host_localbase & "/etc/synth";
    type configuration_record is
       record
@@ -84,7 +85,6 @@ private
    std_options    : constant String := "/var/db/ports";
    std_sysbase    : constant String := "/";
    std_opsys      : constant String := "UnKnown";
-   no_ccache      : constant String := "disabled";
    master_section : constant String := "Global Configuration";
 
    Field_01 : constant String := "Directory_packages";
