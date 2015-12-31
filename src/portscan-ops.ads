@@ -50,11 +50,12 @@ private
    type dim_instruction   is array (builders) of port_id;
    type dim_builder_state is array (builders) of machine_state;
 
-   function nothing_left (num_builders : builders) return Boolean;
-   function shutdown_recommended (active_builders : Positive) return Boolean;
-   function still_ranked (id : port_id) return Boolean;
-   function rank_arrow (id : port_id) return ranking_crate.Cursor;
-   procedure delete_rank (id : port_id);
+   function  nothing_left (num_builders : builders) return Boolean;
+   function  shutdown_recommended (active_builders : Positive) return Boolean;
+   function  still_ranked (id : port_id) return Boolean;
+   function  rank_arrow (id : port_id) return ranking_crate.Cursor;
    function  get_swap_status return Float;
+   function  get_instant_load return Float;
+   procedure delete_rank (id : port_id);
 
 end PortScan.Ops;

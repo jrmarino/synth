@@ -227,6 +227,7 @@ package body PortScan.Ops is
                sumdata.Skipped   := bld_counter (skipped);
                sumdata.elapsed   := CYC.elapsed_now;
                sumdata.swap      := get_swap_status;
+               sumdata.load      := get_instant_load;
                DPY.summarize (sumdata);
 --              else
 --                 for b in builders'First .. num_builders loop
@@ -608,6 +609,25 @@ package body PortScan.Ops is
          return 100.0 * Float (blocks_used) / Float (blocks_total);
       end if;
    end get_swap_status;
+
+
+   ------------------------
+   --  get_instant_load  --
+   ------------------------
+   function get_instant_load return Float
+   is
+      command : String := "/sbin/sysctl vm.loadavg";
+      comres  : JT.Text;
+   begin
+      comres := CYC.generic_system_command (command);
+      declare
+         stripped : constant String := JT.SU.Slice
+           (Source => comres, Low => 15, High => JT.SU.Length (comres));
+         instant  : constant String := JT.part_1 (stripped, " ");
+      begin
+         return Float'Value (instant);
+      end;
+   end get_instant_load;
 
 
 end PortScan.Ops;
