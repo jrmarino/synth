@@ -248,7 +248,7 @@ package body PortScan.Pilot is
          stop_logging (success);
          stop_logging (failure);
          stop_logging (skipped);
-         TIO.Put_Line ("The task is complete.  Final tally:");
+         TIO.Put_Line (LAT.LF & "The task is complete.  Final tally:");
          TIO.Put_Line ("Initial queue size:" & bld_counter (total)'Img);
          TIO.Put_Line ("    packages built:" & bld_counter (success)'Img);
          TIO.Put_Line ("           ignored:" & bld_counter (ignored)'Img);

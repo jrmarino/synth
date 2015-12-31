@@ -860,34 +860,48 @@ package body PortScan.Buildcycle is
    end format_loglines;
 
 
-   function tempstatus (id : builders) return String
+   ----------------------
+   --  builder_status  --
+   ----------------------
+   function builder_status (id : builders; shutdown : Boolean := False)
+                            return Display.builder_rec
    is
-      statline : String (1 .. 79) := (others => LAT.Space);
+      result   : Display.builder_rec;
       phasestr : constant String := phase2str (trackers (id).phase);
-      phaseend : constant Natural := 14 + phasestr'Length;
       catport  : constant String :=
-        get_catport (all_ports (trackers (id).seq_id));
-      cportend : Natural := 40 + catport'Length;
+                 get_catport (all_ports (trackers (id).seq_id));
       numlines : constant String := format_loglines (trackers (id).loglines);
-      linehead : constant Natural := 39 - numlines'Length;
+      linehead : constant Natural := 8 - numlines'Length;
       duration : constant String (1 .. 8) := elapsed_HH_MM_SS
-        (start => trackers (id).head_time, stop => CAL.Clock);
+                 (start => trackers (id).head_time, stop => CAL.Clock);
    begin
       --  123456789 123456789 123456789 123456789 1234
-      --  SL  elapsed   phase              lines  origin
-      --  01  00:00:00  extract-depends  9999999  www/joe
-      statline (1 .. 2)  := JT.zeropad (Natural (id), 2);
-      statline (5 .. 12) := duration;
-      statline (15 .. phaseend) := phasestr;
-      statline (linehead .. 38) := numlines;
-      if cportend > 79 then
-         statline (41 .. 78) := catport (1 .. 38);
-         statline (79) := LAT.Asterisk;
-      else
-         statline (41 .. cportend) := catport;
+      --   SL  elapsed   phase              lines  origin
+      --   01  00:00:00  extract-depends  9999999  www/joe
+
+      result.id      := id;
+      result.LLines  := (others => ' ');
+      result.phase   := (others => ' ');
+      result.origin  := (others => ' ');
+
+      result.slavid  := JT.zeropad (Natural (id), 2);
+      if shutdown then
+         result.Elapsed := "Shutdown";
+         return result;
       end if;
-      return statline;
-   end tempstatus;
+
+      result.Elapsed := duration;
+      result.LLines  (linehead .. 7) := numlines;
+      result.phase   (1 .. phasestr'Length) := phasestr;
+
+      if catport'Length > 37 then
+         result.origin (1 .. 36) := catport (1 .. 36);
+         result.origin (37) := LAT.Asterisk;
+      else
+         result.origin (1 .. catport'Length)  := catport;
+      end if;
+      return result;
+   end builder_status;
 
 
    ---------------------

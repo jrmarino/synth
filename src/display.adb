@@ -82,7 +82,7 @@ package body Display is
       dashes  : constant String (1 .. 79) := (others => '=');
       header  : String (1 .. 79) := (others => ' ');
       headtxt : constant String :=
-                         " ID  Elapsed   Build Phase      Log Len  Origin";
+                         " ID  Elapsed   Build Phase      L.Lines  Origin";
    begin
       header (1 .. headtxt'Length) := headtxt;
       zone_builders := TIC.Create (Number_Of_Lines       => height,
@@ -179,17 +179,16 @@ package body Display is
       procedure colorado (S : String; color :  TIC.Color_Pair;
                           col : TIC.Column_Position;
                           row : TIC.Line_Position;
-                          dim : Boolean := False) is
+                          dim : Boolean := False)
+      is
+         attribute : TIC.Character_Attribute_Set := bright_bold;
       begin
          if dim then
-            TIC.Set_Character_Attributes (Win   => zone_summary,
-                                          Attr  => TIC.Normal_Video,
-                                          Color => color);
-         else
-            TIC.Set_Character_Attributes (Win   => zone_summary,
-                                          Attr  => bright_bold,
-                                          Color => color);
+            attribute := TIC.Normal_Video;
          end if;
+         TIC.Set_Character_Attributes (Win   => zone_summary,
+                                       Attr  => attribute,
+                                       Color => color);
          TIC.Move_Cursor (Win => zone_summary, Line => row, Column => col);
          TIC.Add (Win => zone_summary, Str => S);
       end colorado;
@@ -223,6 +222,44 @@ package body Display is
 
       TIC.Refresh (Win => zone_summary);
    end summarize;
+
+
+   -----------------------
+   --  update_builder   --
+   -----------------------
+   procedure update_builder (BR : builder_rec)
+   is
+      procedure colorado (S : String; color :  TIC.Color_Pair;
+                          col : TIC.Column_Position;
+                          row : TIC.Line_Position;
+                          dim : Boolean := False);
+      row : TIC.Line_Position := inc (TIC.Line_Position (BR.id), 2);
+
+      procedure colorado (S : String; color :  TIC.Color_Pair;
+                          col : TIC.Column_Position;
+                          row : TIC.Line_Position;
+                          dim : Boolean := False)
+      is
+         attribute : TIC.Character_Attribute_Set := bright_bold;
+      begin
+         if dim then
+            attribute := TIC.Normal_Video;
+         end if;
+         TIC.Set_Character_Attributes (Win   => zone_builders,
+                                       Attr  => attribute,
+                                       Color => color);
+         TIC.Move_Cursor (Win => zone_builders, Line => row, Column => col);
+         TIC.Add (Win => zone_builders, Str => S);
+      end colorado;
+   begin
+      colorado (BR.slavid,  c_standard,  1, row, True);
+      colorado (BR.Elapsed, c_standard,  5, row, True);
+      colorado (BR.phase,   c_standard, 15, row, True);
+      colorado (BR.LLines,  c_standard, 32, row, True);
+      colorado (BR.origin,  c_standard, 41, row, True);
+
+      TIC.Refresh (Win => zone_builders);
+   end update_builder;
 
 
    ------------------------

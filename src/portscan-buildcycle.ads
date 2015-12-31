@@ -2,6 +2,7 @@
 --  Reference: ../License.txt
 
 with JohnnyText;
+with Display;
 
 package PortScan.Buildcycle is
 
@@ -36,8 +37,9 @@ package PortScan.Buildcycle is
    --  Expose for pilot
    function install_pkg8 (id : builders) return Boolean;
 
-   --  temporary
-   function tempstatus (id : builders) return String;
+   --  Compile status of builder for the curses display
+   function builder_status (id : builders; shutdown : Boolean := False)
+                            return Display.builder_rec;
 
    --  records the current length of the build log.
    procedure set_log_lines (id : builders);

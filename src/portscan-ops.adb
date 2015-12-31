@@ -243,13 +243,15 @@ package body PortScan.Ops is
                sumdata.pkg_hour  := hourly_build_rate;
                sumdata.impulse   := impulse_rate;
                DPY.summarize (sumdata);
---              else
---                 for b in builders'First .. num_builders loop
---                    if builder_states (b) /= shutdown then
---                       CYC.set_log_lines (b);
---                       TIO.Put_Line (CYC.tempstatus (b));
---                    end if;
---                 end loop;
+
+               for b in builders'First .. num_builders loop
+                  if builder_states (b) = shutdown then
+                     DPY.update_builder (CYC.builder_status (b, True));
+                  else
+                     CYC.set_log_lines (b);
+                     DPY.update_builder (CYC.builder_status (b));
+                  end if;
+               end loop;
             end if;
          else
             cntcycle := cntcycle + 1;

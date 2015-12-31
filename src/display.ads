@@ -23,6 +23,17 @@ package Display is
          swap      : Float;
       end record;
 
+   type builder_rec is
+      record
+         id        : builders;
+         shutdown  : Boolean;
+         slavid    : String (1 .. 2);
+         Elapsed   : String (1 .. 8);
+         LLines    : String (1 .. 7);
+         phase     : String (1 .. 15);
+         origin    : String (1 .. 37);
+      end record;
+
    --  Initialize the curses screen.
    --  Returns False if no color support (curses not used at all)
    function launch_monitor (num_builders : builders) return Boolean;
@@ -32,6 +43,9 @@ package Display is
 
    --  prints the summary header
    procedure summarize (data : summary_rec);
+
+   --  Updates the status of a builder (contained in builder_rec)
+   procedure update_builder (BR : builder_rec);
 
 private
 
