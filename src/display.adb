@@ -81,8 +81,8 @@ package body Display is
       lastrow : constant TIC.Line_Position := inc (height, -1);
       dashes  : constant String (1 .. 79) := (others => '=');
       header  : String (1 .. 79) := (others => ' ');
-      headtxt : constant String :=
-                         " ID  Elapsed   Build Phase      L.Lines  Origin";
+      headtxt : constant String := " ID  Elapsed   Build Phase      " &
+        "Origin                                   Lines";
    begin
       header (1 .. headtxt'Length) := headtxt;
       zone_builders := TIC.Create (Number_Of_Lines       => height,
@@ -254,9 +254,9 @@ package body Display is
    begin
       colorado (BR.slavid,  c_standard,  1, row, True);
       colorado (BR.Elapsed, c_standard,  5, row, True);
-      colorado (BR.phase,   c_standard, 15, row, True);
-      colorado (BR.LLines,  c_standard, 32, row, True);
-      colorado (BR.origin,  c_standard, 41, row, True);
+      colorado (BR.phase,   c_bldphase, 15, row, True);
+      colorado (BR.origin,  c_origin,   32, row, False);
+      colorado (BR.LLines,  c_standard, 71, row, True);
 
       TIC.Refresh (Win => zone_builders);
    end update_builder;
@@ -285,6 +285,8 @@ package body Display is
       c_dashes      := TIC.Color_Pair (7);
       c_elapsed     := TIC.Color_Pair (4);
       c_tableheader := TIC.Color_Pair (1);
+      c_origin      := TIC.Color_Pair (6);
+      c_bldphase    := TIC.Color_Pair (4);
 
       --builder_palette  (1).color := TIC.Color_Pair (1);  --  white / Black
 --        builder_palette  (2) := TIC.Color_Pair ();  -- light green / Black

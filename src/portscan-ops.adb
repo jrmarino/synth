@@ -246,7 +246,9 @@ package body PortScan.Ops is
 
                for b in builders'First .. num_builders loop
                   if builder_states (b) = shutdown then
-                     DPY.update_builder (CYC.builder_status (b, True));
+                     DPY.update_builder (CYC.builder_status (b, True, False));
+                  elsif builder_states (b) = idle then
+                     DPY.update_builder (CYC.builder_status (b, False, True));
                   else
                      CYC.set_log_lines (b);
                      DPY.update_builder (CYC.builder_status (b));

@@ -27,6 +27,7 @@ package Display is
       record
          id        : builders;
          shutdown  : Boolean;
+         idle      : Boolean;
          slavid    : String (1 .. 2);
          Elapsed   : String (1 .. 8);
          LLines    : String (1 .. 7);
@@ -73,6 +74,8 @@ private
    c_dashes      : TIC.Color_Pair;
    c_tableheader : TIC.Color_Pair;
    c_elapsed     : TIC.Color_Pair;
+   c_origin      : TIC.Color_Pair;
+   c_bldphase    : TIC.Color_Pair;
 
    cursor_vis    : TIC.Cursor_Visibility := TIC.Invisible;
 

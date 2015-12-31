@@ -38,7 +38,9 @@ package PortScan.Buildcycle is
    function install_pkg8 (id : builders) return Boolean;
 
    --  Compile status of builder for the curses display
-   function builder_status (id : builders; shutdown : Boolean := False)
+   function builder_status (id : builders;
+                            shutdown : Boolean := False;
+                            idle     : Boolean := False)
                             return Display.builder_rec;
 
    --  records the current length of the build log.

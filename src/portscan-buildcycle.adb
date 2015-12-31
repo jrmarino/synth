@@ -863,7 +863,9 @@ package body PortScan.Buildcycle is
    ----------------------
    --  builder_status  --
    ----------------------
-   function builder_status (id : builders; shutdown : Boolean := False)
+   function builder_status (id : builders;
+                            shutdown : Boolean := False;
+                            idle     : Boolean := False)
                             return Display.builder_rec
    is
       result   : Display.builder_rec;
@@ -879,14 +881,21 @@ package body PortScan.Buildcycle is
       --   SL  elapsed   phase              lines  origin
       --   01  00:00:00  extract-depends  9999999  www/joe
 
-      result.id      := id;
-      result.LLines  := (others => ' ');
-      result.phase   := (others => ' ');
-      result.origin  := (others => ' ');
+      result.id       := id;
+      result.LLines   := (others => ' ');
+      result.phase    := (others => ' ');
+      result.origin   := (others => ' ');
+      result.shutdown := False;
+      result.idle     := False;
 
       result.slavid  := JT.zeropad (Natural (id), 2);
       if shutdown then
+         --  Overrides "idle" if both Shutdown and Idle are True
          result.Elapsed := "Shutdown";
+         return result;
+      end if;
+      if idle then
+         result.Elapsed := "Idle    ";
          return result;
       end if;
 
