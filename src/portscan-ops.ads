@@ -43,6 +43,10 @@ package PortScan.Ops is
    --  parallel building.
    procedure lock_package (id : port_id);
 
+   --  Kicks off curses or sets color support off.  Do it before
+   --  calling parallel_bulk_run.
+   procedure initialize_display (num_builders : builders);
+
 private
 
    subtype impulse_range is Integer range 1 .. 500;
@@ -60,6 +64,7 @@ private
 
    impulse_counter : impulse_range := impulse_range'Last;
    impulse_data    : dim_impulse;
+   curses_support  : Boolean;
 
    function  nothing_left (num_builders : builders) return Boolean;
    function  shutdown_recommended (active_builders : Positive) return Boolean;

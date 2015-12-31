@@ -32,6 +32,10 @@ package PortScan.Buildcycle is
                                    from_when : CAL.Time)
                                    return Natural;
 
+   --  Install pkg-static in specific builder (Returns True on success)
+   --  Expose for pilot
+   function install_pkg8 (id : builders) return Boolean;
+
    --  temporary
    function tempstatus (id : builders) return String;
 
@@ -98,11 +102,5 @@ private
    function  environment_override return String;
    function  phase2str (phase : phases) return String;
    function  format_loglines (numlines : Natural) return String;
-
-   --  Install pkg-static in specific builder (Returns True on success)
-   function install_pkg8 (id : builders) return Boolean;
-
-
-
 
 end PortScan.Buildcycle;

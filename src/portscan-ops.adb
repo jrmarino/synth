@@ -15,6 +15,17 @@ package body PortScan.Ops is
    package DPY renames Display;
 
 
+   --------------------------
+   --  initialize_display  --
+   --------------------------
+   procedure initialize_display (num_builders : builders) is
+   begin
+      if PM.configuration.avec_ncurses then
+         curses_support := DPY.launch_monitor (num_builders);
+      end if;
+   end initialize_display;
+
+
    -------------------------
    --  parallel_bulk_run  --
    -------------------------
@@ -25,7 +36,6 @@ package body PortScan.Ops is
       builder_states : dim_builder_state := (others => idle);
       cntcycle       : cycle_count       := cycle_count'First;
       run_complete   : Boolean           := False;
-      color_support  : Boolean           := False;
       available      : Positive          := Integer (num_builders);
       target         : port_id;
       all_idle       : Boolean;
@@ -41,6 +51,11 @@ package body PortScan.Ops is
          build_result : Boolean;
       begin
          if builder <= num_builders then
+            if not curses_support then
+               TIO.Put_Line (CYC.elapsed_now & " => [" &
+                               JT.zeropad (Integer (builder), 2) &
+                               "] Builder launched");
+            end if;
             loop
                exit when builder_states (builder) = shutdown;
                if builder_states (builder) = tasked then
@@ -60,7 +75,7 @@ package body PortScan.Ops is
                   delay 0.1;
                end if;
             end loop;
-            if not color_support then
+            if not curses_support then
                TIO.Put_Line (CYC.elapsed_now & " => [" &
                                JT.zeropad (Integer (builder), 2) &
                                "]          Shutting down");
@@ -134,9 +149,6 @@ package body PortScan.Ops is
       builder_64 : build (builder => 64);
 
    begin
-      if PM.configuration.avec_ncurses then
-         color_support := DPY.launch_monitor (num_builders);
-      end if;
       loop
          all_idle := True;
          for slave in 1 .. num_builders loop
@@ -169,7 +181,7 @@ package body PortScan.Ops is
                when done_success | done_failure =>
                   all_idle := False;
                   if builder_states (slave) = done_success then
-                     if not color_support then
+                     if not curses_support then
                         TIO.Put_Line (CYC.elapsed_now & " => [" &
                                         JT.zeropad (Integer (slave), 2) &
                                         "] " & CYC.elapsed_build (slave) &
@@ -196,7 +208,7 @@ package body PortScan.Ops is
                      TIO.Put_Line (logs (failure), CYC.elapsed_now & " " &
                                      port_name (instructions (slave)) &
                                      " (skipped" & cntskip'Img & ")");
-                     if not color_support then
+                     if not curses_support then
                         TIO.Put_Line (CYC.elapsed_now & " => [" &
                                         JT.zeropad (Integer (slave), 2) &
                                         "] " & CYC.elapsed_build (slave) &
@@ -219,7 +231,7 @@ package body PortScan.Ops is
             TIO.Flush (logs (failure));
             TIO.Flush (logs (skipped));
             TIO.Flush (logs (total));
-            if color_support then
+            if curses_support then
                sumdata.Initially := bld_counter (total);
                sumdata.Built     := bld_counter (success);
                sumdata.Failed    := bld_counter (failure);
@@ -244,7 +256,7 @@ package body PortScan.Ops is
          end if;
          delay 0.10;
       end loop;
-      if PM.configuration.avec_ncurses and then color_support
+      if PM.configuration.avec_ncurses and then curses_support
       then
          DPY.terminate_monitor;
       end if;

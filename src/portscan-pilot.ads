@@ -11,7 +11,7 @@ package PortScan.Pilot is
    --  (command line or inside file) are verified and arguments are correct.
    function store_origins return Boolean;
 
-   --  Prebuilds pkg(8) in SL01 builder if necessary.
+   --  Prebuilds pkg(8) in scan builder if necessary.
    --  Returns True unless a failure was encountered.
    function build_pkg8_as_necessary return Boolean;
 

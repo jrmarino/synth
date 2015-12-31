@@ -39,8 +39,7 @@ package PortScan is
    --  Starting with a single port, recurse to determine a limited but complete
    --  dependency tree.  Repeated calls will augment already existing data.
    --  Return True on success
-   function scan_single_port (repository, portsdir, catport : String)
-                              return Boolean;
+   function scan_single_port (repository, catport : String) return Boolean;
 
    --  This procedure causes the reverse dependencies to be calculated, and
    --  then the extended (recursive) reverse dependencies.  The former is
@@ -59,7 +58,9 @@ package PortScan is
 
 private
 
-   max_ports        : constant := 28000;
+   max_ports  : constant := 28000;
+   scan_slave : constant builders := 9;
+   ss_base    : constant String := "/SL09";
 
    type port_id   is range -1 .. max_ports - 1;
    subtype port_index is port_id range 0 .. port_id'Last;
@@ -165,8 +166,7 @@ private
 
    procedure iterate_reverse_deps;
    procedure iterate_drill_down;
-   procedure populate_port_data (portsdir : String;
-                                 target   : port_index);
+   procedure populate_port_data (target : port_index);
    procedure drill_down (next_target     : port_index;
                          original_target : port_index);
 
@@ -174,7 +174,7 @@ private
    procedure prescan_ports_tree (portsdir : String);
    procedure grep_Makefile (portsdir, category : String);
    procedure walk_all_subdirectories (portsdir, category : String);
-   procedure parallel_deep_scan (portsdir : String; success : out Boolean);
+   procedure parallel_deep_scan (success : out Boolean);
    procedure wipe_make_queue;
 
    --  some helper routines

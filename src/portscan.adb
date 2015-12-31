@@ -23,8 +23,10 @@ package body PortScan is
    is
       good_scan  : Boolean;
    begin
+      --  tree must be already mounted in the scan slave.
+      --  However, prescan works on the real ports tree, not the mount.
       prescan_ports_tree (portsdir);
-      parallel_deep_scan (portsdir => portsdir, success => good_scan);
+      parallel_deep_scan (success => good_scan);
       wipe_make_queue;
 
       return good_scan;
@@ -34,9 +36,12 @@ package body PortScan is
    ------------------------
    --  scan_single_port  --
    ------------------------
-   function scan_single_port (repository, portsdir, catport : String)
+   function scan_single_port (repository, catport : String)
                               return Boolean
    is
+      xports : constant String := JT.USS (PM.configuration.dir_buildbase) &
+                                  ss_base & "/xports";
+
       procedure dig (cursor : block_crate.Cursor);
       target    : port_index;
       aborted   : Boolean := False;
@@ -48,7 +53,7 @@ package body PortScan is
       begin
          if not aborted then
             if not all_ports (new_target).scanned then
-               populate_port_data (portsdir, new_target);
+               populate_port_data (new_target);
                all_ports (new_target).blocked_by.Iterate (dig'Access);
             end if;
          end if;
@@ -74,11 +79,11 @@ package body PortScan is
             TIO.Put_Line (EX.Exception_Message (issue));
       end dig;
    begin
-      if not AD.Exists (portsdir & "/" & catport & "/Makefile") then
+      if not AD.Exists (xports & "/" & catport & "/Makefile") then
          return False;
       end if;
       if not prescanned then
-         prescan_ports_tree (portsdir);
+         prescan_ports_tree (xports);
          wipe_make_queue;
       end if;
       if ports_keys.Contains (Key => uscatport) then
@@ -86,7 +91,7 @@ package body PortScan is
       else
          return False;
       end if;
-      populate_port_data (portsdir, target);
+      populate_port_data (target);
       all_ports (target).blocked_by.Iterate (dig'Access);
       return not aborted;
 
@@ -172,7 +177,7 @@ package body PortScan is
    --------------------------
    --  parallel_deep_scan  --
    --------------------------
-   procedure parallel_deep_scan (portsdir : String; success : out Boolean)
+   procedure parallel_deep_scan (success : out Boolean)
    is
       finished : array (scanners) of Boolean := (others => False);
       combined_wait : Boolean := True;
@@ -187,7 +192,7 @@ package body PortScan is
             target_port : port_index := subqueue.Element (cursor);
          begin
             if not aborted then
-               populate_port_data (portsdir, target_port);
+               populate_port_data (target_port);
                mq_progress (lot) := mq_progress (lot) + 1;
             end if;
          exception
@@ -375,14 +380,15 @@ package body PortScan is
    --------------------------
    --  populate_port_data  --
    --------------------------
-   procedure populate_port_data (portsdir : String;
-                                 target   : port_index)
+   procedure populate_port_data (target : port_index)
    is
+      xports   : constant String := "/xports";
       catport  : String := get_catport (all_ports (target));
-      fullport : constant String := portsdir & "/" & catport;
-      command  : constant String := "/usr/bin/make -C " & fullport &
-                 " PORTSDIR=" & portsdir &
-                 " PACKAGE_BUILDING=yes" & get_ccache &
+      fullport : constant String := xports & "/" & catport;
+      chroot   : constant String := "/usr/sbin/chroot " &
+                 JT.USS (PM.configuration.dir_buildbase) & ss_base;
+      command  : constant String := chroot & " /usr/bin/make -C " & fullport &
+                 " PORTSDIR=" & xports & " PACKAGE_BUILDING=yes" & get_ccache &
                  " -VPKGVERSION -VPKGFILE:T -VMAKE_JOBS_NUMBER -VIGNORE" &
                  " -VFETCH_DEPENDS -VEXTRACT_DEPENDS -VPATCH_DEPENDS" &
                  " -VBUILD_DEPENDS -VLIB_DEPENDS -VRUN_DEPENDS" &
@@ -405,7 +411,7 @@ package body PortScan is
          deps_found : GSS.Slice_Number;
          trimline   : constant JT.Text := JT.trim (line);
          zero_deps  : constant GSS.Slice_Number := GSS.Slice_Number (0);
-         dirlen     : constant Natural := portsdir'Length;
+         dirlen     : constant Natural := xports'Length;
 
          use type GSS.Slice_Number;
       begin
@@ -437,7 +443,7 @@ package body PortScan is
                     " (" & catport & ")";
                end if;
                if fulldep'Length > colon1 + dirlen + 5 and then
-                 fulldep (colon1 .. colon1 + dirlen) = portsdir & "/"
+                 fulldep (colon1 .. colon1 + dirlen) = xports & "/"
                then
                   deprec := ports_keys.Find (Key => scrub_phase
                        (fulldep (colon + dirlen + 2 .. fulldep'Last)));

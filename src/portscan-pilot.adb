@@ -60,44 +60,49 @@ package body PortScan.Pilot is
       pkg_good  : Boolean;
       good_scan : Boolean;
       selection : PortScan.port_id;
+      result    : Boolean := True;
    begin
       REP.initialize;
+      REP.launch_slave (id => PortScan.scan_slave);
       good_scan := PortScan.scan_single_port
-        (portsdir   => JT.USS (PM.configuration.dir_portsdir),
-         catport    => pkgng,
+        (catport    => pkgng,
          repository => JT.USS (PM.configuration.dir_repository));
 
       if good_scan then
          PortScan.set_build_priority;
       else
          TIO.Put_Line ("Unexpected pkg(8) scan failure!");
-         Replicant.finalize;
-         return False;
+         result := False;
+         goto clean_exit;
       end if;
 
       PKG.limited_sanity_check (JT.USS (PM.configuration.dir_repository));
 
       if PKG.queue_is_empty then
-         return True;
+         goto clean_exit;
       end if;
 
       CYC.initialize (test_mode => False);
       selection := OPS.top_buildable_port;
       TIO.Put ("Stand by, building pkg(8) first ... ");
 
-      REP.launch_slave (id => 1);
-      pkg_good := CYC.build_package (id => 1, sequence_id => selection);
-      REP.destroy_slave (id => 1);
+      pkg_good := CYC.build_package (id => PortScan.scan_slave,
+                                     sequence_id => selection);
       if not pkg_good then
          TIO.Put_Line ("Failed!!" & bailing);
-         REP.finalize;
-         return False;
+         result := False;
+         goto clean_exit;
       end if;
 
       PortScan.reset_ports_tree;
       TIO.Put_Line ("done!");
+
+      <<clean_exit>>
+      REP.destroy_slave (id => PortScan.scan_slave);
       REP.finalize;
-      return True;
+      reset_ports_tree;
+      prescan_ports_tree (JT.USS (PM.configuration.dir_portsdir));
+      return result;
 
    end build_pkg8_as_necessary;
 
@@ -122,8 +127,7 @@ package body PortScan.Pilot is
             return;
          end if;
          successful := PortScan.scan_single_port
-           (portsdir   => JT.USS (PM.configuration.dir_portsdir),
-            catport    => origin,
+           (catport    => origin,
             repository => JT.USS (PM.configuration.dir_repository));
          if not successful then
             TIO.Put_Line ("Scan of " & origin & " failed!" & bailing);
@@ -131,10 +135,20 @@ package body PortScan.Pilot is
       end scan;
 
    begin
+      REP.initialize;
+      REP.launch_slave (id => PortScan.scan_slave);
+      if not CYC.install_pkg8 (PortScan.scan_slave) then
+         successful := False;
+         goto clean_exit;
+      end if;
       portlist.Iterate (Process => scan'Access);
       if successful then
          PortScan.set_build_priority;
       end if;
+
+      <<clean_exit>>
+      REP.destroy_slave (id => PortScan.scan_slave);
+      REP.finalize;
       return successful;
    end scan_stack_of_single_ports;
 
@@ -215,7 +229,9 @@ package body PortScan.Pilot is
    ------------------------
    --  perform_bulk_run  --
    ------------------------
-   procedure perform_bulk_run (testmode : Boolean) is
+   procedure perform_bulk_run (testmode : Boolean)
+   is
+      num_builders : constant builders := PM.configuration.num_builders;
    begin
       if PKG.queue_is_empty then
          TIO.Put_Line ("After inspection, it has been determined that there " &
@@ -224,8 +240,8 @@ package body PortScan.Pilot is
       else
          REP.initialize;
          CYC.initialize (testmode);
-         OPS.parallel_bulk_run (num_builders => PM.configuration.num_builders,
-                                logs => Flog);
+         OPS.initialize_display (num_builders);
+         OPS.parallel_bulk_run (num_builders, Flog);
          REP.finalize;
          stop_time := CAL.Clock;
          stop_logging (total);
@@ -334,9 +350,9 @@ package body PortScan.Pilot is
          AD.Delete_File (xz_pkgsite);
       end if;
       REP.initialize;
-      REP.launch_slave (1);
-      build_res := CYC.build_repository (1);
-      REP.destroy_slave (1);
+      REP.launch_slave (PortScan.scan_slave);
+      build_res := CYC.build_repository (PortScan.scan_slave);
+      REP.destroy_slave (PortScan.scan_slave);
       REP.finalize;
       if build_res then
          TIO.Put_Line ("Local repository successfully rebuilt");
