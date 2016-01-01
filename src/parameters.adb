@@ -95,7 +95,11 @@ package body Parameters is
                            jobs_per_builder => def_jlimit);
 
       res.dir_packages   := extract_string (profile, Field_01, LS_Packages);
-      res.dir_portsdir   := extract_string (profile, Field_03, std_ports_loc);
+      if AD.Exists (std_dports_loc) then
+         res.dir_portsdir := extract_string (profile, Field_03, std_dports_loc);
+      else
+         res.dir_portsdir := extract_string (profile, Field_03, std_ports_loc);
+      end if;
       res.dir_repository := res.dir_packages;
       JT.SU.Append (res.dir_repository, "/All");
 

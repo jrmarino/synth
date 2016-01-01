@@ -72,7 +72,10 @@ private
 
    --  Each section is identical, but represents a profile
    --  Selection 1 is the live system, a.k.a "[Live System]"
-   --  LS_Distfiles  : String := "/usr/ports/distfiles";  (Queried)
+   --  If /usr/dports exists, that will be the default ports tree directory,
+   --  otherwise /usr/ports is.
+   --  The OpSys and distfiles are queried so "std_opsys" and "std_distfiles"
+   --  values are really not used at all.
    --  LS_Builders   : Integer  (Queried, see cpu-based presets)
    --  LS_Jobs_limit : Integer  (Queried, see cpu-based presets)
 
@@ -81,6 +84,7 @@ private
    LS_Buildbase   : constant String := "/usr/obj/synth-live";
    conf_location  : constant String := synth_confdir & "/synth.ini";
    std_ports_loc  : constant String := "/usr/ports";
+   std_dports_loc : constant String := "/usr/dports";
    std_distfiles  : constant String := "/usr/ports/distfiles";
    std_options    : constant String := "/var/db/ports";
    std_sysbase    : constant String := "/";
