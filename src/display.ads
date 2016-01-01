@@ -35,6 +35,17 @@ package Display is
          origin    : String (1 .. 37);
       end record;
 
+   type history_rec is
+      record
+         id          : builders;
+         slavid      : String (1 .. 2);
+         run_elapsed : String (1 .. 8);
+         action      : String (1 .. 8);
+         pkg_elapsed : String (1 .. 8);
+         origin      : String (1 .. 43);
+         established : Boolean := False;
+      end record;
+
    --  Initialize the curses screen.
    --  Returns False if no color support (curses not used at all)
    function launch_monitor (num_builders : builders) return Boolean;
@@ -51,6 +62,12 @@ package Display is
    --  After all the update_builder calls, call refresh to implement
    procedure refresh_builder_window;
 
+   --  After all the history inserts, call refresh to implement
+   procedure refresh_history_window;
+
+   --  Insert history as builder finishes (shutdown, success, failure);
+   procedure insert_history (HR : history_rec);
+
 private
 
    type palette_rec is
@@ -60,8 +77,14 @@ private
       end record;
 
    type builder_palette is array (builders) of palette_rec;
+   type cyclic_range is range 1 .. 50;
+   type dim_history is array (cyclic_range) of history_rec;
+
+   history       : dim_history;
+   history_arrow : cyclic_range := cyclic_range'Last;
 
    app_width     : TIC.Column_Count := 80;
+   historyheight : TIC.Line_Position;
    zone_summary  : TIC.Window;
    zone_builders : TIC.Window;
    zone_actions  : TIC.Window;
@@ -79,6 +102,7 @@ private
    c_elapsed     : TIC.Color_Pair;
    c_origin      : TIC.Color_Pair;
    c_bldphase    : TIC.Color_Pair;
+   c_shutdown    : TIC.Color_Pair;
 
    cursor_vis    : TIC.Cursor_Visibility := TIC.Invisible;
 

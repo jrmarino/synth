@@ -1,7 +1,11 @@
 --  This file is covered by the Internet Software Consortium (ISC) License
 --  Reference: ../License.txt
 
+with Display;
+
 package PortScan.Ops is
+
+   package DPY renames Display;
 
    function port_name (id : port_id) return String;
    function next_ignored_port return port_id;
@@ -74,6 +78,8 @@ private
    function  get_instant_load return Float;
    function  hourly_build_rate return Natural;
    function  impulse_rate return Natural;
+   function  assemble_HR (slave : builders; pid : port_id; action : String)
+                          return DPY.history_rec;
    procedure delete_rank (id : port_id);
 
 end PortScan.Ops;

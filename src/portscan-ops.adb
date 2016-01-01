@@ -5,14 +5,12 @@ with Ada.Numerics.Discrete_Random;
 with GNAT.String_Split;
 with PortScan.Buildcycle;
 with Replicant;
-with Display;
 
 package body PortScan.Ops is
 
    package GSS renames GNAT.String_Split;
    package REP renames Replicant;
    package CYC renames PortScan.Buildcycle;
-   package DPY renames Display;
 
 
    --------------------------
@@ -181,7 +179,11 @@ package body PortScan.Ops is
                when done_success | done_failure =>
                   all_idle := False;
                   if builder_states (slave) = done_success then
-                     if not curses_support then
+                     if curses_support then
+                        DPY.insert_history
+                          (assemble_HR (slave, instructions (slave),
+                           "success "));
+                     else
                         TIO.Put_Line (CYC.elapsed_now & " => [" &
                                         JT.zeropad (Integer (slave), 2) &
                                         "] " & CYC.elapsed_build (slave) &
@@ -208,7 +210,11 @@ package body PortScan.Ops is
                      TIO.Put_Line (logs (failure), CYC.elapsed_now & " " &
                                      port_name (instructions (slave)) &
                                      " (skipped" & cntskip'Img & ")");
-                     if not curses_support then
+                     if curses_support then
+                        DPY.insert_history
+                          (assemble_HR (slave, instructions (slave),
+                           "failure "));
+                     else
                         TIO.Put_Line (CYC.elapsed_now & " => [" &
                                         JT.zeropad (Integer (slave), 2) &
                                         "] " & CYC.elapsed_build (slave) &
@@ -219,6 +225,7 @@ package body PortScan.Ops is
                   instructions (slave) := port_match_failed;
                   if run_complete then
                      builder_states (slave) := shutdown;
+                     DPY.insert_history (assemble_HR (slave, 0, "shutdown"));
                   else
                      builder_states (slave) := idle;
                   end if;
@@ -255,6 +262,7 @@ package body PortScan.Ops is
                   end if;
                end loop;
                DPY.refresh_builder_window;
+               DPY.refresh_history_window;
             end if;
          else
             cntcycle := cntcycle + 1;
@@ -298,6 +306,7 @@ package body PortScan.Ops is
                             port_name (purged));
             TIO.Put_Line (logs (skipped), port_name (purged) &
                             " by " & culprit);
+            DPY.insert_history (assemble_HR (1, purged, "skipped "));
          end if;
       end loop;
       unlist_port (id);
@@ -559,6 +568,7 @@ package body PortScan.Ops is
          QR := ranking_crate.Element (Position => cursor);
          if all_ports (QR.ap_index).ignored then
             result := QR.ap_index;
+            DPY.insert_history (assemble_HR (1, QR.ap_index, "ignored "));
             exit;
          end if;
          cursor := ranking_crate.Next (Position => cursor);
@@ -696,5 +706,36 @@ package body PortScan.Ops is
 
       return result;
    end impulse_rate;
+
+
+   -------------------
+   --  assemble_HR  --
+   -------------------
+   function assemble_HR (slave : builders; pid : port_id; action : String)
+                         return DPY.history_rec
+   is
+      HR : DPY.history_rec;
+      catport : String := port_name (pid);
+   begin
+      HR.id := slave;
+      HR.slavid      := JT.zeropad (Integer (slave), 2);
+      HR.established := True;
+      HR.action      := action;
+      HR.origin      := (others => ' ');
+      HR.run_elapsed := CYC.elapsed_now;
+      if action = "shutdown " then
+         HR.pkg_elapsed := "00:00:00";
+      else
+         HR.pkg_elapsed := CYC.elapsed_build (slave);
+         if catport'Length > 43 then
+            HR.origin (1 .. 42) := catport (1 .. 42);
+            HR.origin (43) := LAT.Asterisk;
+         else
+            HR.origin (1 .. catport'Length) := catport;
+         end if;
+      end if;
+      return HR;
+   end assemble_HR;
+
 
 end PortScan.Ops;

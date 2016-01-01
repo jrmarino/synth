@@ -117,10 +117,10 @@ package body Display is
    is
       consumed   : constant Integer := Integer (num_builders) + 4 + 2;
       difference : constant Integer := 0 - consumed;
-      viewheight : constant TIC.Line_Position := inc (TIC.Lines, difference);
       viewpos    : constant TIC.Line_Position := TIC.Line_Position (consumed);
    begin
-      zone_actions := TIC.Create (Number_Of_Lines       => viewheight,
+      historyheight := inc (TIC.Lines, difference);
+      zone_actions := TIC.Create (Number_Of_Lines       => historyheight,
                                   Number_Of_Columns     => app_width,
                                   First_Line_Position   => viewpos,
                                   First_Column_Position => 0);
@@ -278,6 +278,129 @@ package body Display is
    end refresh_builder_window;
 
 
+   ----------------------
+   --  insert_history  --
+   ----------------------
+   procedure insert_history (HR : history_rec) is
+   begin
+      if history_arrow = cyclic_range'Last then
+         history_arrow := cyclic_range'First;
+      else
+         history_arrow := history_arrow + 1;
+      end if;
+      history (history_arrow) := HR;
+   end insert_history;
+
+
+   ------------------------------
+   --  refresh_history_window  --
+   ------------------------------
+   procedure refresh_history_window
+   is
+      procedure clear_row (row : TIC.Line_Position);
+      procedure colorado (S : String; color :  TIC.Color_Pair;
+                          col : TIC.Column_Position;
+                          row : TIC.Line_Position;
+                          dim : Boolean := False);
+      function col_action (action : String) return TIC.Color_Pair;
+      procedure print_id (id : builders; sid : String; row : TIC.Line_Position;
+                          action : String);
+      procedure clear_row (row : TIC.Line_Position)
+      is
+         blank : String (1 .. 79) := (others => ' ');
+      begin
+         TIC.Set_Character_Attributes (Win   => zone_actions,
+                                       Attr  => TIC.Normal_Video,
+                                       Color => c_standard);
+         TIC.Move_Cursor (Win => zone_actions, Line => row, Column => 0);
+         TIC.Add (Win => zone_actions, Str => blank);
+      end clear_row;
+      procedure colorado (S : String; color :  TIC.Color_Pair;
+                          col : TIC.Column_Position;
+                          row : TIC.Line_Position;
+                          dim : Boolean := False)
+      is
+         attribute : TIC.Character_Attribute_Set := bright_bold;
+      begin
+         if dim then
+            attribute := dimmed;
+         end if;
+         TIC.Set_Character_Attributes (Win   => zone_actions,
+                                       Attr  => attribute,
+                                       Color => color);
+         TIC.Move_Cursor (Win => zone_actions, Line => row, Column => col);
+         TIC.Add (Win => zone_actions, Str => S);
+      end colorado;
+      function col_action (action : String) return TIC.Color_Pair is
+      begin
+         if action = "shutdown" then
+            return c_shutdown;
+         elsif action = "success " then
+            return c_success;
+         elsif action = "failure " then
+            return c_failure;
+         elsif action = "skipped " then
+            return c_skipped;
+         elsif action = "ignored " then
+            return c_ignored;
+         else
+            return c_standard;
+         end if;
+      end col_action;
+      procedure print_id (id : builders; sid : String; row : TIC.Line_Position;
+                          action : String)
+      is
+      begin
+         TIC.Set_Character_Attributes (Win   => zone_actions,
+                                       Attr  => dimmed,
+                                       Color => c_standard);
+         TIC.Move_Cursor (Win => zone_actions, Line => row, Column => 13);
+         TIC.Add (Win => zone_actions, Str => "[--]");
+         if action /= "skipped " and then action /= "ignored "
+         then
+            TIC.Set_Character_Attributes (Win   => zone_actions,
+                                          Attr  => c_slave (id).attribute,
+                                          Color => c_slave (id).palette);
+            TIC.Move_Cursor (Win => zone_actions, Line => row, Column => 14);
+            TIC.Add (Win => zone_actions, Str => sid);
+         end if;
+      end print_id;
+
+      arrow  : cyclic_range := history_arrow;
+      maxrow : TIC.Line_Position;
+      use type TIC.Line_Position;
+   begin
+      if historyheight >= TIC.Line_Position (cyclic_range'Last) then
+         maxrow := TIC.Line_Position (cyclic_range'Last) - 1;
+      else
+         maxrow := historyheight - 1;
+      end if;
+      for row in TIC.Line_Position (0) .. maxrow loop
+
+         if history (arrow).established then
+              colorado (history (arrow).run_elapsed & " =>",
+                        c_standard, 1, row, True);
+            print_id (id     => history (arrow).id,
+                      sid    => history (arrow).slavid,
+                      row    => row,
+                      action => history (arrow).action);
+            colorado (history (arrow).action,
+                      col_action (history (arrow).action), 18, row);
+            colorado (history (arrow).pkg_elapsed, c_standard, 27, row, True);
+            colorado (history (arrow).origin, c_origin, 36, row);
+         else
+            clear_row (row);
+         end if;
+         if arrow = cyclic_range'First then
+            arrow := cyclic_range'Last;
+         else
+            arrow := arrow - 1;
+         end if;
+      end loop;
+      TIC.Refresh (Win => zone_actions);
+   end refresh_history_window;
+
+
    ------------------------
    --  establish_colors  --
    ------------------------
@@ -305,6 +428,7 @@ package body Display is
       c_tableheader := TIC.Color_Pair (1);
       c_origin      := TIC.Color_Pair (6);
       c_bldphase    := TIC.Color_Pair (4);
+      c_shutdown    := TIC.Color_Pair (8);
 
       c_slave  (1).palette   := TIC.Color_Pair (1);  --  white / Black
       c_slave  (1).attribute := bright;
