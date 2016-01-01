@@ -315,10 +315,10 @@ package body Display is
       c_slave  (3).palette   := TIC.Color_Pair (4);  --  yellow / Black
       c_slave  (3).attribute := bright;
 
-      c_slave  (4).palette   := TIC.Color_Pair (3);  --  light red / Black
+      c_slave  (4).palette   := TIC.Color_Pair (8);  --  light magenta / Black
       c_slave  (4).attribute := bright;
 
-      c_slave  (5).palette   := TIC.Color_Pair (8);  --  light magenta / Black
+      c_slave  (5).palette   := TIC.Color_Pair (3);  --  light red / Black
       c_slave  (5).attribute := bright;
 
       c_slave  (6).palette   := TIC.Color_Pair (7);  --  light blue / Black
@@ -339,10 +339,10 @@ package body Display is
       c_slave (11).palette   := TIC.Color_Pair (4);  --  brown / Black
       c_slave (11).attribute := dimmed;
 
-      c_slave (12).palette   := TIC.Color_Pair (3);  --  dark red / Black
+      c_slave (12).palette   := TIC.Color_Pair (8);  --  dark magenta / Black
       c_slave (12).attribute := dimmed;
 
-      c_slave (13).palette   := TIC.Color_Pair (8);  --  dark magenta / Black
+      c_slave (13).palette   := TIC.Color_Pair (3);  --  dark red / Black
       c_slave (13).attribute := dimmed;
 
       c_slave (14).palette   := TIC.Color_Pair (7);  --  dark blue / Black
