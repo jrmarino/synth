@@ -627,6 +627,8 @@ package body PortScan.Ops is
       else
          return 100.0 * Float (blocks_used) / Float (blocks_total);
       end if;
+   exception
+      when others => return 0.0;
    end get_swap_status;
 
 
@@ -646,6 +648,8 @@ package body PortScan.Ops is
       begin
          return Float'Value (instant);
       end;
+   exception
+      when others => return 0.0;
    end get_instant_load;
 
 

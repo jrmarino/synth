@@ -803,6 +803,8 @@ package body PortScan.Buildcycle is
       begin
          trackers (id).loglines := Natural'Value (numtext);
       end;
+   exception
+      when others => null;  -- just skip this cycle
    end set_log_lines;
 
 

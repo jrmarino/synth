@@ -55,7 +55,7 @@ private
 
    type palette_rec is
       record
-         color : TIC.Color_Pair;
+         palette   : TIC.Color_Pair;
          attribute : TIC.Character_Attribute_Set;
       end record;
 
@@ -68,7 +68,7 @@ private
    viewheight    : TIC.Line_Count;
 
    c_standard    : TIC.Color_Pair;
-   c_builder     : builder_palette;
+   c_slave       : builder_palette;
    c_success     : TIC.Color_Pair;
    c_failure     : TIC.Color_Pair;
    c_ignored     : TIC.Color_Pair;
