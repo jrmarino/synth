@@ -871,46 +871,50 @@ package body PortScan.Buildcycle is
                             return Display.builder_rec
    is
       result   : Display.builder_rec;
-      phasestr : constant String := phase2str (trackers (id).phase);
-      catport  : constant String :=
-                 get_catport (all_ports (trackers (id).seq_id));
-      numlines : constant String := format_loglines (trackers (id).loglines);
-      linehead : constant Natural := 8 - numlines'Length;
-      duration : constant String (1 .. 8) := elapsed_HH_MM_SS
-                 (start => trackers (id).head_time, stop => CAL.Clock);
    begin
       --  123456789 123456789 123456789 123456789 1234
       --   SL  elapsed   phase              lines  origin
       --   01  00:00:00  extract-depends  9999999  www/joe
 
       result.id       := id;
+      result.slavid   := JT.zeropad (Natural (id), 2);
       result.LLines   := (others => ' ');
       result.phase    := (others => ' ');
       result.origin   := (others => ' ');
       result.shutdown := False;
       result.idle     := False;
 
-      result.slavid  := JT.zeropad (Natural (id), 2);
       if shutdown then
          --  Overrides "idle" if both Shutdown and Idle are True
-         result.Elapsed := "Shutdown";
+         result.Elapsed  := "Shutdown";
+         result.shutdown := True;
          return result;
       end if;
       if idle then
          result.Elapsed := "Idle    ";
+         result.idle    := True;
          return result;
       end if;
 
-      result.Elapsed := duration;
-      result.LLines  (linehead .. 7) := numlines;
-      result.phase   (1 .. phasestr'Length) := phasestr;
+      declare
+         phasestr : constant String := phase2str (trackers (id).phase);
+         catport  : constant String :=
+           get_catport (all_ports (trackers (id).seq_id));
+         numlines : constant String := format_loglines (trackers (id).loglines);
+         linehead : constant Natural := 8 - numlines'Length;
+      begin
+         result.Elapsed := elapsed_HH_MM_SS (start => trackers (id).head_time,
+                                             stop  => CAL.Clock);
+         result.LLines (linehead .. 7) := numlines;
+         result.phase  (1 .. phasestr'Length) := phasestr;
 
-      if catport'Length > 37 then
-         result.origin (1 .. 36) := catport (1 .. 36);
-         result.origin (37) := LAT.Asterisk;
-      else
-         result.origin (1 .. catport'Length)  := catport;
-      end if;
+         if catport'Length > 37 then
+            result.origin (1 .. 36) := catport (1 .. 36);
+            result.origin (37) := LAT.Asterisk;
+         else
+            result.origin (1 .. catport'Length) := catport;
+         end if;
+      end;
       return result;
    end builder_status;
 

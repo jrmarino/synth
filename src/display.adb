@@ -233,9 +233,17 @@ package body Display is
                           col : TIC.Column_Position;
                           row : TIC.Line_Position;
                           dim : Boolean := False);
+      procedure print_id;
       row : TIC.Line_Position := inc (TIC.Line_Position (BR.id), 2);
-      slc : TIC.Color_Pair := c_slave (BR.id).palette;
 
+      procedure print_id is
+      begin
+         TIC.Set_Character_Attributes (Win   => zone_builders,
+                                       Attr  => c_slave (BR.id).attribute,
+                                       Color => c_slave (BR.id).palette);
+         TIC.Move_Cursor (Win => zone_builders, Line => row, Column => 1);
+         TIC.Add (Win => zone_builders, Str => BR.slavid);
+      end print_id;
       procedure colorado (S : String; color :  TIC.Color_Pair;
                           col : TIC.Column_Position;
                           row : TIC.Line_Position;
@@ -253,7 +261,7 @@ package body Display is
          TIC.Add (Win => zone_builders, Str => S);
       end colorado;
    begin
-      colorado (BR.slavid,  slc,         1, row, True);
+      print_id;
       colorado (BR.Elapsed, c_standard,  5, row, True);
       colorado (BR.phase,   c_bldphase, 15, row, True);
       colorado (BR.origin,  c_origin,   32, row, False);
@@ -304,16 +312,16 @@ package body Display is
       c_slave  (2).palette   := TIC.Color_Pair (2);  --  light green / Black
       c_slave  (2).attribute := bright;
 
-      c_slave  (3).palette   := TIC.Color_Pair (8);  --  light magenta / Black
+      c_slave  (3).palette   := TIC.Color_Pair (4);  --  yellow / Black
       c_slave  (3).attribute := bright;
 
-      c_slave  (4).palette   := TIC.Color_Pair (4);  --  yellow / Black
+      c_slave  (4).palette   := TIC.Color_Pair (3);  --  light red / Black
       c_slave  (4).attribute := bright;
 
-      c_slave  (5).palette   := TIC.Color_Pair (7);  --  light blue / Black
+      c_slave  (5).palette   := TIC.Color_Pair (8);  --  light magenta / Black
       c_slave  (5).attribute := bright;
 
-      c_slave  (6).palette   := TIC.Color_Pair (3);  --  light red / Black
+      c_slave  (6).palette   := TIC.Color_Pair (7);  --  light blue / Black
       c_slave  (6).attribute := bright;
 
       c_slave  (7).palette   := TIC.Color_Pair (6);  --  light cyan / Black
@@ -328,16 +336,16 @@ package body Display is
       c_slave (10).palette   := TIC.Color_Pair (2);  --  light green / Black
       c_slave (10).attribute := dimmed;
 
-      c_slave (11).palette   := TIC.Color_Pair (8);  --  dark magenta / Black
+      c_slave (11).palette   := TIC.Color_Pair (4);  --  brown / Black
       c_slave (11).attribute := dimmed;
 
-      c_slave (12).palette   := TIC.Color_Pair (4);  --  brown / Black
+      c_slave (12).palette   := TIC.Color_Pair (3);  --  dark red / Black
       c_slave (12).attribute := dimmed;
 
-      c_slave (13).palette   := TIC.Color_Pair (7);  --  dark blue / Black
+      c_slave (13).palette   := TIC.Color_Pair (8);  --  dark magenta / Black
       c_slave (13).attribute := dimmed;
 
-      c_slave (14).palette   := TIC.Color_Pair (3);  --  dark red / Black
+      c_slave (14).palette   := TIC.Color_Pair (7);  --  dark blue / Black
       c_slave (14).attribute := dimmed;
 
       c_slave (15).palette   := TIC.Color_Pair (6);  --  dark cyan / Black
@@ -346,9 +354,12 @@ package body Display is
       c_slave (16).palette   := TIC.Color_Pair (9);  --  white / dark blue
       c_slave (16).attribute := dimmed;
 
-      for bld in builders (17) .. builders'Last loop
+      for bld in builders (17) .. builders (32)  loop
          c_slave (bld) := c_slave (bld - 16);
-         c_slave (bld).attribute.Bold_Character := True;
+         c_slave (bld - 16).attribute.Bold_Character := True;
+      end loop;
+      for bld in builders (33) .. builders (64)  loop
+         c_slave (bld) := c_slave (bld - 32);
       end loop;
 
    end establish_colors;
