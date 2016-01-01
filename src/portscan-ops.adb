@@ -254,6 +254,7 @@ package body PortScan.Ops is
                      DPY.update_builder (CYC.builder_status (b));
                   end if;
                end loop;
+               DPY.refresh_builder_window;
             end if;
          else
             cntcycle := cntcycle + 1;

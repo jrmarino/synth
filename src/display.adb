@@ -257,9 +257,16 @@ package body Display is
       colorado (BR.phase,   c_bldphase, 15, row, True);
       colorado (BR.origin,  c_origin,   32, row, False);
       colorado (BR.LLines,  c_standard, 71, row, True);
-
-      TIC.Refresh (Win => zone_builders);
    end update_builder;
+
+
+   ------------------------------
+   --  refresh_builder_window  --
+   ------------------------------
+   procedure refresh_builder_window is
+   begin
+      TIC.Refresh (Win => zone_builders);
+   end refresh_builder_window;
 
 
    ------------------------

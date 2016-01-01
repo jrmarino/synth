@@ -48,6 +48,9 @@ package Display is
    --  Updates the status of a builder (contained in builder_rec)
    procedure update_builder (BR : builder_rec);
 
+   --  After all the update_builder calls, call refresh to implement
+   procedure refresh_builder_window;
+
 private
 
    type palette_rec is
