@@ -51,6 +51,11 @@ package PortScan.Ops is
    --  calling parallel_bulk_run.
    procedure initialize_display (num_builders : builders);
 
+   --  Call before executing parallel run.  It checks the present of build
+   --  hooks at the synth_conf location and caches the results.
+   --  It also fires off the first hook (run_start)
+   procedure initialize_hooks;
+
 private
 
    subtype impulse_range is Integer range 1 .. 500;
@@ -60,15 +65,23 @@ private
          packages : Natural := 0;
          virgin   : Boolean := True;
       end record;
+   type hook_type         is (pkgbuild, run_start, run_end);
    type machine_state     is (idle, tasked, busy, done_failure, done_success,
                               shutdown);
    type dim_instruction   is array (builders) of port_id;
    type dim_builder_state is array (builders) of machine_state;
    type dim_impulse       is array (impulse_range) of impulse_rec;
+   type dim_hooks         is array (hook_type) of Boolean;
+   type dim_hooksloc      is array (hook_type) of JT.Text;
 
    impulse_counter : impulse_range := impulse_range'Last;
    impulse_data    : dim_impulse;
    curses_support  : Boolean;
+   active_hook     : dim_hooks := (False, False, False);
+   hook_location   : constant dim_hooksloc :=
+                     (JT.SUS (PM.synth_confdir & "/hook_pkgbuild"),
+                      JT.SUS (PM.synth_confdir & "/hook_run_start"),
+                      JT.SUS (PM.synth_confdir & "/hook_run_end"));
 
    function  nothing_left (num_builders : builders) return Boolean;
    function  shutdown_recommended (active_builders : Positive) return Boolean;
@@ -80,6 +93,8 @@ private
    function  impulse_rate return Natural;
    function  assemble_HR (slave : builders; pid : port_id; action : String)
                           return DPY.history_rec;
+   function  file_is_executable (filename : String) return Boolean;
    procedure delete_rank (id : port_id);
+   procedure run_hook (hook : hook_type; envvar_list : String);
 
 end PortScan.Ops;

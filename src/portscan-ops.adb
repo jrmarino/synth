@@ -273,6 +273,10 @@ package body PortScan.Ops is
       then
          DPY.terminate_monitor;
       end if;
+      run_hook (run_end, "PORTS_BUILT=" & JT.int2str (bld_counter (success)) &
+                  " PORTS_FAILED=" & JT.int2str (bld_counter (failure)) &
+                  " PORTS_IGNORED=" & JT.int2str (bld_counter (ignored)) &
+                  " PORTS_SKIPPED=" & JT.int2str (bld_counter (skipped)));
    end parallel_bulk_run;
 
 
@@ -736,6 +740,69 @@ package body PortScan.Ops is
       end if;
       return HR;
    end assemble_HR;
+
+
+   --------------------------
+   --  file_is_executable  --
+   --------------------------
+   function file_is_executable (filename : String) return Boolean
+   is
+      command : String := "/usr/bin/file -b " &
+        "-e ascii -e encoding -e tar -e compress " & filename;
+      comres  : JT.Text;
+   begin
+      comres := CYC.generic_system_command (command);
+      return JT.contains (comres, "executable");
+   end file_is_executable;
+
+
+   ------------------------
+   --  initialize_hooks  --
+   ------------------------
+   procedure initialize_hooks is
+   begin
+      for hook in hook_type'Range loop
+         declare
+            script : constant String := JT.USS (hook_location (hook));
+         begin
+            active_hook (hook) := AD.Exists (script) and then
+              file_is_executable (script);
+         end;
+      end loop;
+      run_hook (run_start, "PORTS_QUEUED=" & JT.int2str (queue_length) & " ");
+   end initialize_hooks;
+
+
+   ----------------
+   --  run_hook  --
+   ----------------
+   procedure run_hook (hook : hook_type; envvar_list : String)
+   is
+      function nvpair (name : String; value : JT.Text) return String;
+      function nvpair (name : String; value : JT.Text) return String is
+      begin
+         return name & LAT.Equals_Sign & LAT.Quotation &
+           JT.USS (value) & LAT.Quotation & LAT.Space;
+      end nvpair;
+      common_env : constant String :=
+        nvpair ("PROFILE", PM.configuration.profile) &
+        nvpair ("DIR_PACKAGES", PM.configuration.dir_packages) &
+        nvpair ("DIR_REPOSITORY", PM.configuration.dir_repository) &
+        nvpair ("DIR_PORTS", PM.configuration.dir_portsdir) &
+        nvpair ("DIR_OPTIONS", PM.configuration.dir_options) &
+        nvpair ("DIR_DISTFILES", PM.configuration.dir_distfiles) &
+        nvpair ("DIR_LOGS", PM.configuration.dir_logs) &
+        nvpair ("DIR_BUILDBASE", PM.configuration.dir_buildbase);
+      command : constant String := "/usr/bin/env " & common_env &
+        envvar_list & " " & JT.USS (hook_location (hook));
+   begin
+      if not active_hook (hook) then
+         return;
+      end if;
+      if CYC.external_command (command) then
+         null;
+      end if;
+   end run_hook;
 
 
 end PortScan.Ops;

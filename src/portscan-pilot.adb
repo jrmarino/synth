@@ -240,6 +240,7 @@ package body PortScan.Pilot is
       else
          REP.initialize;
          CYC.initialize (testmode);
+         OPS.initialize_hooks;
          OPS.initialize_display (num_builders);
          OPS.parallel_bulk_run (num_builders, Flog);
          REP.finalize;
