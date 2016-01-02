@@ -190,6 +190,9 @@ package body PortScan.Ops is
                                         " Success " &
                                         port_name (instructions (slave)));
                      end if;
+                     run_hook (pkg_success, "RESULT=success ORIGIN=" &
+                                 port_name (instructions (slave)) & " PKGNAME="
+                               & package_name (instructions (slave)) & " ");
                      cascade_successful_build (instructions (slave));
                      bld_counter (success) := bld_counter (success) + 1;
                      TIO.Put_Line (logs (success), CYC.elapsed_now & " " &
@@ -221,6 +224,9 @@ package body PortScan.Ops is
                                         " Failure " &
                                         port_name (instructions (slave)));
                      end if;
+                     run_hook (pkg_failure, "RESULT=failure ORIGIN=" &
+                                 port_name (instructions (slave)) & " PKGNAME="
+                               & package_name (instructions (slave)) & " ");
                   end if;
                   instructions (slave) := port_match_failed;
                   if run_complete then
@@ -311,6 +317,8 @@ package body PortScan.Ops is
             TIO.Put_Line (logs (skipped), port_name (purged) &
                             " by " & culprit);
             DPY.insert_history (assemble_HR (1, purged, "skipped "));
+            run_hook (pkg_skipped, "RESULT=skipped ORIGIN=" & port_name (purged)
+                      & " PKGNAME=" & package_name (purged) & " ");
          end if;
       end loop;
       unlist_port (id);
@@ -573,6 +581,9 @@ package body PortScan.Ops is
          if all_ports (QR.ap_index).ignored then
             result := QR.ap_index;
             DPY.insert_history (assemble_HR (1, QR.ap_index, "ignored "));
+            run_hook (pkg_ignored, "RESULT=ignored ORIGIN=" &
+                        port_name (QR.ap_index) & " PKGNAME="
+                      & package_name (QR.ap_index) & " ");
             exit;
          end if;
          cursor := ranking_crate.Next (Position => cursor);
@@ -803,6 +814,20 @@ package body PortScan.Ops is
          null;
       end if;
    end run_hook;
+
+
+   --------------------
+   --  package_name  --
+   --------------------
+   function package_name (id : port_id) return String is
+   begin
+      if id = port_match_failed or else
+        id > last_port
+      then
+         return "Invalid port ID";
+      end if;
+      return JT.USS (all_ports (id).package_name);
+   end package_name;
 
 
 end PortScan.Ops;

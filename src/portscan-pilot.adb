@@ -186,6 +186,7 @@ package body PortScan.Pilot is
          return False;
       end if;
 
+      OPS.initialize_hooks;
       PKG.limited_sanity_check (JT.USS (PM.configuration.dir_repository));
       bld_counter := (OPS.queue_length, 0, 0, 0, 0);
 
@@ -240,7 +241,6 @@ package body PortScan.Pilot is
       else
          REP.initialize;
          CYC.initialize (testmode);
-         OPS.initialize_hooks;
          OPS.initialize_display (num_builders);
          OPS.parallel_bulk_run (num_builders, Flog);
          REP.finalize;

@@ -51,7 +51,7 @@ package PortScan.Ops is
    --  calling parallel_bulk_run.
    procedure initialize_display (num_builders : builders);
 
-   --  Call before executing parallel run.  It checks the present of build
+   --  Call before executing sanity check.  It checks the present of build
    --  hooks at the synth_conf location and caches the results.
    --  It also fires off the first hook (run_start)
    procedure initialize_hooks;
@@ -65,7 +65,8 @@ private
          packages : Natural := 0;
          virgin   : Boolean := True;
       end record;
-   type hook_type         is (pkgbuild, run_start, run_end);
+   type hook_type         is (run_start, run_end, pkg_success, pkg_failure,
+                             pkg_skipped, pkg_ignored);
    type machine_state     is (idle, tasked, busy, done_failure, done_success,
                               shutdown);
    type dim_instruction   is array (builders) of port_id;
@@ -77,16 +78,20 @@ private
    impulse_counter : impulse_range := impulse_range'Last;
    impulse_data    : dim_impulse;
    curses_support  : Boolean;
-   active_hook     : dim_hooks := (False, False, False);
+   active_hook     : dim_hooks := (False, False, False, False, False, False);
    hook_location   : constant dim_hooksloc :=
-                     (JT.SUS (PM.synth_confdir & "/hook_pkgbuild"),
-                      JT.SUS (PM.synth_confdir & "/hook_run_start"),
-                      JT.SUS (PM.synth_confdir & "/hook_run_end"));
+                     (JT.SUS (PM.synth_confdir & "/hook_run_start"),
+                      JT.SUS (PM.synth_confdir & "/hook_run_end"),
+                      JT.SUS (PM.synth_confdir & "/hook_pkg_success"),
+                      JT.SUS (PM.synth_confdir & "/hook_pkg_failure"),
+                      JT.SUS (PM.synth_confdir & "/hook_pkg_skipped"),
+                      JT.SUS (PM.synth_confdir & "/hook_pkg_ignored"));
 
    function  nothing_left (num_builders : builders) return Boolean;
    function  shutdown_recommended (active_builders : Positive) return Boolean;
    function  still_ranked (id : port_id) return Boolean;
    function  rank_arrow (id : port_id) return ranking_crate.Cursor;
+   function  package_name (id : port_id) return String;
    function  get_swap_status return Float;
    function  get_instant_load return Float;
    function  hourly_build_rate return Natural;
