@@ -758,12 +758,29 @@ package body PortScan.Ops is
    --------------------------
    function file_is_executable (filename : String) return Boolean
    is
-      command : String := "/usr/bin/file -b " &
+      command : constant String := "/usr/bin/file -b " &
         "-e ascii -e encoding -e tar -e compress " & filename;
       comres  : JT.Text;
+      crlast  : Natural;
    begin
       comres := CYC.generic_system_command (command);
-      return JT.contains (comres, "executable");
+      crlast := JT.SU.Length (comres) - 1;
+      if crlast > 18 and then JT.SU.Slice (comres, 1, 16) = "symbolic link to"
+      then
+         declare
+            target   : constant String := JT.SU.Slice (comres, 18, crlast);
+            fixedtgt : constant String (1 .. target'Length) := target;
+         begin
+            if fixedtgt (1) = '/' then
+               return file_is_executable (fixedtgt);
+            else
+               return file_is_executable
+                 (AD.Containing_Directory (filename) & "/" & fixedtgt);
+            end if;
+         end;
+      else
+         return JT.contains (comres, "executable");
+      end if;
    end file_is_executable;
 
 
