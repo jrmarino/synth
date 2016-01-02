@@ -264,6 +264,9 @@ package body PortScan.Buildcycle is
       command : constant String := "/usr/bin/uname -mrv";
    begin
       uname_mrv := generic_system_command (command);
+   exception
+      when others =>
+         uname_mrv := JT.SUS (discerr);
    end set_uname_mrv;
 
 
@@ -293,6 +296,9 @@ package body PortScan.Buildcycle is
       command : constant String := chroot & root & environment_override;
    begin
       return JT.USS (generic_system_command (command));
+   exception
+      when others =>
+         return discerr;
    end get_environment;
 
 
@@ -308,6 +314,9 @@ package body PortScan.Buildcycle is
         " showconfig";
    begin
       return JT.USS (generic_system_command (command));
+   exception
+      when others =>
+         return discerr;
    end get_options_configuration;
 
 
@@ -374,6 +383,9 @@ package body PortScan.Buildcycle is
         " -VPLIST_SUB -VSUB_LIST";
    begin
       return generic_system_command (command);
+   exception
+      when others =>
+         return JT.SUS (discerr);
    end get_port_variables;
 
 
@@ -671,6 +683,9 @@ package body PortScan.Buildcycle is
    begin
       comres := generic_system_command (command);
       return JT.contains (comres, "dynamically linked");
+   exception
+      when others =>
+         return False;
    end dynamically_linked;
 
 
@@ -746,7 +761,8 @@ package body PortScan.Buildcycle is
          end if;
       end loop;
       trackers (id).dynlink.Iterate (log_dump'Access);
-
+   exception
+      when others => null;
    end log_linked_libraries;
 
 

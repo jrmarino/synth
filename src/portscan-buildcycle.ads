@@ -74,6 +74,8 @@ private
    chroot    : constant String := "/usr/sbin/chroot ";
    uselog    : constant Boolean := True;
 
+   discerr   : constant String := "Discovery error";
+
    procedure initialize_log (id : builders);
    procedure finalize_log   (id : builders);
 
