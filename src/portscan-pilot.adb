@@ -315,6 +315,30 @@ package body PortScan.Pilot is
    end verify_desire_to_install_packages;
 
 
+   -----------------------------
+   --  fully_scan_ports_tree  --
+   -----------------------------
+   function fully_scan_ports_tree return Boolean
+   is
+      goodresult : Boolean;
+   begin
+      PortScan.reset_ports_tree;
+      REP.initialize;
+      REP.launch_slave (PortScan.scan_slave);
+      goodresult := PortScan.scan_entire_ports_tree
+        (JT.USS (PM.configuration.dir_portsdir));
+      REP.destroy_slave (PortScan.scan_slave);
+      REP.finalize;
+      if goodresult then
+         PortScan.set_build_priority;
+         return True;
+      else
+         TIO.Put_Line ("Failed to scan ports tree " & bailing);
+         return False;
+      end if;
+   end fully_scan_ports_tree;
+
+
    ---------------------------------
    --  rebuild_local_respository  --
    ---------------------------------
@@ -329,13 +353,7 @@ package body PortScan.Pilot is
       build_res  : Boolean;
    begin
       if use_full_scan then
-         PortScan.reset_ports_tree;
-         if PortScan.scan_entire_ports_tree
-           (JT.USS (PM.configuration.dir_portsdir))
-         then
-            PortScan.set_build_priority;
-         else
-            TIO.Put_Line ("Failed to scan ports tree " & bailing);
+         if not fully_scan_ports_tree then
             return False;
          end if;
       end if;

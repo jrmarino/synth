@@ -79,6 +79,9 @@ package PortScan.Pilot is
    --  libexec/synthexec is required, make sure it's installed!
    function synthexec_missing return Boolean;
 
+   --  Scan entire ports tree
+   function fully_scan_ports_tree return Boolean;
+
    pilot_log : exception;
 
 private

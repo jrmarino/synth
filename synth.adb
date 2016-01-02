@@ -252,9 +252,15 @@ begin
             when purge =>
                PIL.purge_distfiles;
             when everything =>
-               TIO.Put_Line ("EVERYTHING to be implemented ...");
-               --  run PKG.clean_repository instead of limited sanity check
-               --  don't run it again before repos building
+               if PIL.build_pkg8_as_necessary and then
+                 PIL.fully_scan_ports_tree and then
+                 PIL.sanity_check_then_prefail
+               then
+                  PIL.perform_bulk_run (testmode => False);
+                  if PIL.rebuild_local_respository (use_full_scan => False) then
+                     null;
+                  end if;
+               end if;
          end case;
       end if;
    end;
