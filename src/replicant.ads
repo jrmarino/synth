@@ -137,6 +137,9 @@ private
    --  copy host's /etc/mtree files to slave
    procedure copy_mtree_files (path_to_mtree : String);
 
+   --  create minimal /etc/services
+   procedure create_etc_services (path_to_etc : String);
+
    --  mount the devices
    procedure mount_devices (path_to_dev : String);
 

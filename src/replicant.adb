@@ -1,6 +1,7 @@
 --  This file is covered by the Internet Software Consortium (ISC) License
 --  Reference: ../License.txt
 
+with Ada.Characters.Latin_1;
 with Ada.Containers.Vectors;
 with Ada.Directories;
 with Ada.Exceptions;
@@ -19,6 +20,7 @@ package body Replicant is
    package EX  renames Ada.Exceptions;
    package OSL renames GNAT.OS_Lib;
    package STR renames Util.Streams;
+   package LAT renames Ada.Characters.Latin_1;
 
 
    -------------------
@@ -532,6 +534,29 @@ package body Replicant is
    end copy_resolv_conf;
 
 
+   ---------------------------
+   --  create_etc_services  --
+   ---------------------------
+   procedure create_etc_services (path_to_etc : String)
+   is
+      svcfile : TIO.File_Type;
+   begin
+      TIO.Create (File => svcfile,
+                  Mode => TIO.Out_File,
+                  Name => path_to_etc & "/services");
+      TIO.Put_Line (svcfile,
+                      "ftp    21/tcp" & LAT.LF &
+                      "ftp    21/udp" & LAT.LF &
+                      "ssh    22/tcp" & LAT.LF &
+                      "ssh    22/udp" & LAT.LF &
+                      "http   80/tcp" & LAT.LF &
+                      "http   80/udp" & LAT.LF &
+                      "https 443/tcp" & LAT.LF &
+                      "https 443/udp" & LAT.LF);
+      TIO.Close (svcfile);
+   end create_etc_services;
+
+
    ------------------------
    --  execute_ldconfig  --
    ------------------------
@@ -619,6 +644,7 @@ package body Replicant is
       create_make_conf    (location (slave_base, etc));
       create_passwd       (location (slave_base, etc));
       create_group        (location (slave_base, etc));
+      create_etc_services (location (slave_base, etc));
 
       execute_ldconfig (id);
 
