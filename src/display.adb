@@ -202,10 +202,15 @@ package body Display is
       L2F1 : constant String := pad (JT.int2str (remaining));
       L2F2 : constant String := pad (JT.int2str (data.Failed));
       L2F3 : constant String := pad (JT.int2str (data.Skipped));
-      L2F4 : constant String := fmtpc (data.swap, True);
+      L2F4 : String (1 .. 5);
       L2F5 : constant String := pad (JT.int2str (data.impulse), 4);
 
    begin
+      if data.swap >= 100.0 then
+         L2F4 := " 100%";
+      else
+         L2F4 := fmtpc (data.swap, True);
+      end if;
 
       colorado (L1F1, c_standard,  6, 0);
       colorado (L1F2, c_success,  20, 0);
