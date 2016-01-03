@@ -106,16 +106,12 @@ private
 
    cursor_vis    : TIC.Cursor_Visibility := TIC.Invisible;
 
-   bright        : constant TIC.Character_Attribute_Set :=
+   normal        : constant TIC.Character_Attribute_Set :=
                             (others => False);
-   bright_bold   : constant TIC.Character_Attribute_Set :=
+   bright        : constant TIC.Character_Attribute_Set :=
                             (Bold_Character => True, others => False);
    dimmed        : constant TIC.Character_Attribute_Set :=
                             (Dim_Character => True, others => False);
-   dimmed_bold   : constant TIC.Character_Attribute_Set :=
-                            (Bold_Character => True,
-                             Dim_Character => True,
-                             others => False);
 
    procedure launch_summary_zone;
    procedure launch_builders_zone (num_builders : builders);

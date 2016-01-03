@@ -59,7 +59,7 @@ package body Display is
                                   First_Column_Position => 0);
 
       TIC.Set_Character_Attributes (Win   => zone_summary,
-                                    Attr  => bright_bold,
+                                    Attr  => bright,
                                     Color => TIC.Color_Pair (c_sumlabel));
 
       TIC.Move_Cursor (Win => zone_summary, Line => 0, Column => 0);
@@ -101,7 +101,7 @@ package body Display is
       TIC.Add (Win => zone_builders, Str => dashes);
 
       TIC.Set_Character_Attributes (Win   => zone_builders,
-                                    Attr  => dimmed_bold,
+                                    Attr  => normal,
                                     Color => TIC.Color_Pair (c_tableheader));
       TIC.Move_Cursor (Win => zone_builders, Line => 1, Column => 0);
       TIC.Add (Win => zone_builders, Str => header);
@@ -181,10 +181,10 @@ package body Display is
                           row : TIC.Line_Position;
                           dim : Boolean := False)
       is
-         attribute : TIC.Character_Attribute_Set := bright_bold;
+         attribute : TIC.Character_Attribute_Set := bright;
       begin
          if dim then
-            attribute := dimmed;
+            attribute := normal;
          end if;
          TIC.Set_Character_Attributes (Win   => zone_summary,
                                        Attr  => attribute,
@@ -249,10 +249,10 @@ package body Display is
                           row : TIC.Line_Position;
                           dim : Boolean := False)
       is
-         attribute : TIC.Character_Attribute_Set := bright_bold;
+         attribute : TIC.Character_Attribute_Set := bright;
       begin
          if dim then
-            attribute := dimmed;
+            attribute := normal;
          end if;
          TIC.Set_Character_Attributes (Win   => zone_builders,
                                        Attr  => attribute,
@@ -320,10 +320,10 @@ package body Display is
                           row : TIC.Line_Position;
                           dim : Boolean := False)
       is
-         attribute : TIC.Character_Attribute_Set := bright_bold;
+         attribute : TIC.Character_Attribute_Set := bright;
       begin
          if dim then
-            attribute := dimmed;
+            attribute := normal;
          end if;
          TIC.Set_Character_Attributes (Win   => zone_actions,
                                        Attr  => attribute,
@@ -352,7 +352,7 @@ package body Display is
       is
       begin
          TIC.Set_Character_Attributes (Win   => zone_actions,
-                                       Attr  => dimmed,
+                                       Attr  => normal,
                                        Color => c_standard);
          TIC.Move_Cursor (Win => zone_actions, Line => row, Column => 13);
          TIC.Add (Win => zone_actions, Str => "[--]");
@@ -455,32 +455,32 @@ package body Display is
       c_slave  (8).attribute := bright;
 
       c_slave  (9).palette   := TIC.Color_Pair (1);  --  light grey / Black
-      c_slave  (9).attribute := dimmed;
+      c_slave  (9).attribute := normal;
 
       c_slave (10).palette   := TIC.Color_Pair (2);  --  light green / Black
-      c_slave (10).attribute := dimmed;
+      c_slave (10).attribute := normal;
 
       c_slave (11).palette   := TIC.Color_Pair (4);  --  brown / Black
-      c_slave (11).attribute := dimmed;
+      c_slave (11).attribute := normal;
 
       c_slave (12).palette   := TIC.Color_Pair (8);  --  dark magenta / Black
-      c_slave (12).attribute := dimmed;
+      c_slave (12).attribute := normal;
 
       c_slave (13).palette   := TIC.Color_Pair (3);  --  dark red / Black
-      c_slave (13).attribute := dimmed;
+      c_slave (13).attribute := normal;
 
       c_slave (14).palette   := TIC.Color_Pair (7);  --  dark blue / Black
-      c_slave (14).attribute := dimmed;
+      c_slave (14).attribute := normal;
 
       c_slave (15).palette   := TIC.Color_Pair (6);  --  dark cyan / Black
-      c_slave (15).attribute := dimmed;
+      c_slave (15).attribute := normal;
 
       c_slave (16).palette   := TIC.Color_Pair (9);  --  white / dark blue
-      c_slave (16).attribute := dimmed;
+      c_slave (16).attribute := normal;
 
       for bld in builders (17) .. builders (32)  loop
          c_slave (bld) := c_slave (bld - 16);
-         c_slave (bld - 16).attribute.Bold_Character := True;
+         c_slave (bld).attribute.Under_Line := True;
       end loop;
       for bld in builders (33) .. builders (64)  loop
          c_slave (bld) := c_slave (bld - 32);

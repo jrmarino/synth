@@ -843,7 +843,11 @@ package body PortScan.Ops is
       then
          return "Invalid port ID";
       end if;
-      return JT.USS (all_ports (id).package_name);
+      declare
+         fullname : constant String := JT.USS (all_ports (id).package_name);
+      begin
+         return fullname (1 .. fullname'Length - 4);
+      end;
    end package_name;
 
 
