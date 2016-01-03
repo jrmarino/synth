@@ -132,7 +132,7 @@ package body Actions is
       dashes : constant String (1 .. 79) := (others => LAT.Equals_Sign);
       indent : constant String (1 ..  3) := (others => LAT.Space);
       subtype ofield is String (1 .. 30);
-      type option is range 1 .. 14;
+      type option is range 1 .. 13;
       type desc_type is array (option) of ofield;
       descriptions : desc_type :=
          (
@@ -140,17 +140,16 @@ package body Actions is
           "[A] Ports directory           ",
           "[B] Packages directory        ",
           "[C] Distfiles directory       ",
-          "[D] Repository directory      ",
-          "[E] Port options directory    ",
-          "[F] Build logs directory      ",
-          "[G] Build base directory      ",
-          "[H] System root directory     ",
-          "[I] Compiler cache directory  ",
-          "[J] Num. concurrent builders  ",
-          "[K] Max. jobs per builder     ",
-          "[L] Use tmpfs for work area   ",
-          "[M] Use tmpfs for /usr/local  ",
-          "[N] Display using ncurses     ");
+          "[D] Port options directory    ",
+          "[E] Build logs directory      ",
+          "[F] Build base directory      ",
+          "[G] System root directory     ",
+          "[H] Compiler cache directory  ",
+          "[I] Num. concurrent builders  ",
+          "[J] Max. jobs per builder     ",
+          "[K] Use tmpfs for work area   ",
+          "[L] Use tmpfs for /usr/local  ",
+          "[M] Display using ncurses     ");
 
       optX1A : constant String := "[>]   Switch/create profiles " &
                                          "(changes discarded)";
@@ -188,35 +187,33 @@ package body Actions is
                       orig := PM.configuration.dir_packages;
             when 3 => next := dupe.dir_distfiles;
                       orig := PM.configuration.dir_distfiles;
-            when 4 => next := dupe.dir_repository;
-                      orig := PM.configuration.dir_repository;
-            when 5 => next := dupe.dir_options;
+            when 4 => next := dupe.dir_options;
                       orig := PM.configuration.dir_options;
-            when 6 => next := dupe.dir_logs;
+            when 5 => next := dupe.dir_logs;
                       orig := PM.configuration.dir_logs;
-            when 7 => next := dupe.dir_buildbase;
+            when 6 => next := dupe.dir_buildbase;
                       orig := PM.configuration.dir_buildbase;
-            when 8 => next := dupe.dir_system;
+            when 7 => next := dupe.dir_system;
                       orig := PM.configuration.dir_system;
-            when 9 => next := dupe.dir_ccache;
+            when 8 => next := dupe.dir_ccache;
                       orig := PM.configuration.dir_ccache;
-            when 10 => nextnat := dupe.num_builders;
-                       orignat := PM.configuration.num_builders;
-            when 11 => nextnat := dupe.jobs_limit;
+            when 9 => nextnat := dupe.num_builders;
+                      orignat := PM.configuration.num_builders;
+            when 10 => nextnat := dupe.jobs_limit;
                        orignat := PM.configuration.jobs_limit;
-            when 12 => nextbool := dupe.tmpfs_workdir;
+            when 11 => nextbool := dupe.tmpfs_workdir;
                        origbool := PM.configuration.tmpfs_workdir;
-            when 13 => nextbool := dupe.tmpfs_localbase;
+            when 12 => nextbool := dupe.tmpfs_localbase;
                        origbool := PM.configuration.tmpfs_localbase;
-            when 14 => nextbool := dupe.avec_ncurses;
+            when 13 => nextbool := dupe.avec_ncurses;
                        origbool := PM.configuration.avec_ncurses;
          end case;
          case opt is
-            when 1 .. 9   => equivalent := JT.equivalent (orig, next);
+            when 1 .. 8   => equivalent := JT.equivalent (orig, next);
                              show := next;
-            when 10 .. 11 => equivalent := (orignat = nextnat);
+            when 9 .. 10  => equivalent := (orignat = nextnat);
                              show := JT.int2text (Integer (nextnat));
-            when 12 .. 14 => equivalent := (origbool = nextbool);
+            when 11 .. 13 => equivalent := (origbool = nextbool);
                              show := JT.bool2text (nextbool);
          end case;
          if equivalent then
@@ -273,9 +270,9 @@ package body Actions is
             end case;
          end loop;
          case opt is
-            when 12 => dupe.tmpfs_workdir := new_value;
-            when 13 => dupe.tmpfs_localbase := new_value;
-            when 14 => dupe.avec_ncurses := new_value;
+            when 11 => dupe.tmpfs_workdir := new_value;
+            when 12 => dupe.tmpfs_localbase := new_value;
+            when 13 => dupe.avec_ncurses := new_value;
             when others => raise menu_error
                  with "Illegal value : " & opt'Img;
          end case;
@@ -305,7 +302,7 @@ package body Actions is
             print_header;
             print_opt (opt);
             case opt is
-            when 10 .. 11 => max_value := Integer (builders'Last);
+            when 9 .. 10 => max_value := Integer (builders'Last);
             when others => raise menu_error
                  with "Illegal value : " & opt'Img;
             end case;
@@ -318,8 +315,8 @@ package body Actions is
                continue := False;
             else
                case opt is
-                  when 10 => dupe.num_builders := builders (given_value);
-                  when 11 => dupe.jobs_limit := builders (given_value);
+                  when  9 => dupe.num_builders := builders (given_value);
+                  when 10 => dupe.jobs_limit := builders (given_value);
                   when others => null;
                end case;
                exit;
@@ -338,7 +335,7 @@ package body Actions is
             print_header;
             print_opt (opt);
             TIO.Put (LAT.LF & "Set valid path for directory");
-            if opt = 9 then
+            if opt = 8 then
                TIO.Put (" (or 'none' to disable ccache): ");
             else
                TIO.Put (": ");
@@ -350,18 +347,18 @@ package body Actions is
                   case opt is
                   when 1 => dupe.dir_portsdir   := JT.SUS (testpath);
                   when 2 => dupe.dir_packages   := JT.SUS (testpath);
+                            dupe.dir_repository := JT.SUS (testpath & "/All");
                   when 3 => dupe.dir_distfiles  := JT.SUS (testpath);
-                  when 4 => dupe.dir_repository := JT.SUS (testpath);
-                  when 5 => dupe.dir_options    := JT.SUS (testpath);
-                  when 6 => dupe.dir_logs       := JT.SUS (testpath);
-                  when 7 => dupe.dir_buildbase  := JT.SUS (testpath);
-                  when 8 => dupe.dir_system     := JT.SUS (testpath);
-                  when 9 => dupe.dir_ccache     := JT.SUS (testpath);
+                  when 4 => dupe.dir_options    := JT.SUS (testpath);
+                  when 5 => dupe.dir_logs       := JT.SUS (testpath);
+                  when 6 => dupe.dir_buildbase  := JT.SUS (testpath);
+                  when 7 => dupe.dir_system     := JT.SUS (testpath);
+                  when 8 => dupe.dir_ccache     := JT.SUS (testpath);
                   when others => raise menu_error
                        with "Illegal value : " & opt'Img;
                   end case;
                   continue := True;
-               elsif opt = 9 then
+               elsif opt = 8 then
                   dupe.dir_ccache := JT.SUS (PM.no_ccache);
                   continue := True;
                end if;
@@ -482,22 +479,22 @@ package body Actions is
             TIO.Get_Immediate (answer);
             ascii := Character'Pos (answer);
             case answer is
-               when 'A' .. 'I' =>
+               when 'A' .. 'H' =>
                   change_directory_option (option (ascii - 64));
                   exit;
-               when 'a' .. 'i' =>
+               when 'a' .. 'h' =>
                   change_directory_option (option (ascii - 96));
                   exit;
-               when 'J' .. 'K' =>
+               when 'I' .. 'J' =>
                   change_positive_option (option (ascii - 64));
                   exit;
-               when 'j' .. 'k' =>
+               when 'i' .. 'j' =>
                   change_positive_option (option (ascii - 96));
                   exit;
-               when 'L' .. 'N' =>
+               when 'K' .. 'M' =>
                   change_boolean_option (option (ascii - 64));
                   exit;
-               when 'l' .. 'n' =>
+               when 'k' .. 'm' =>
                   change_boolean_option (option (ascii - 96));
                   exit;
                when '>' =>
