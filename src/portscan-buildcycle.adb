@@ -175,6 +175,8 @@ package body PortScan.Buildcycle is
                       Leap_Seconds => leap_secs);
       totalsecs := diff_secs + (Duration (diff_days) * 3600 * 24);
       return ACF.Image (Elapsed_Time => diff_secs);
+   exception
+         when others => return "00:00:00";
    end elapsed_HH_MM_SS;
 
 
@@ -976,6 +978,8 @@ package body PortScan.Buildcycle is
       result := packages_done * 3600;
       result := result / Natural (totalsecs);
       return result;
+   exception
+      when others => return 0;
    end get_packages_per_hour;
 
 

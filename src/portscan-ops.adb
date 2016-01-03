@@ -720,6 +720,8 @@ package body PortScan.Ops is
       impulse_data (impulse_counter).packages := pkg_that_count;
 
       return result;
+   exception
+      when others => return 0;
    end impulse_rate;
 
 
