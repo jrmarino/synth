@@ -62,7 +62,7 @@ private
          log_handle : aliased TIO.File_Type;
          dynlink    : string_crate.Vector;
          phase      : phases;
-         loglines   : Natural;
+         loglines   : Natural := 0;
       end record;
 
    type dim_trackers is array (builders) of trackrec;

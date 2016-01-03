@@ -25,6 +25,7 @@ package body PortScan.Buildcycle is
       R : Boolean;
    begin
       trackers (id).seq_id := sequence_id;
+      trackers (id).loglines := 0;
       if uselog then
          initialize_log (id);
       end if;
