@@ -44,6 +44,11 @@ package Parameters is
    --  returns "True" on success
    function load_configuration (num_cores : cpu_range) return Boolean;
 
+   --  Maybe a previously valid directory path has been removed.  This
+   --  function returns true when all the paths still work.
+   --  The configuration must be loaded before it's run, of course.
+   function all_paths_valid return Boolean;
+
    procedure write_configuration (profile : String := live_system);
    procedure write_blank_section (section : String);
    function sections_list return JT.Text;
