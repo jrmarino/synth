@@ -196,7 +196,7 @@ package body Display is
       L1F1 : constant String := pad (JT.int2str (data.Initially));
       L1F2 : constant String := pad (JT.int2str (data.Built));
       L1F3 : constant String := pad (JT.int2str (data.Ignored));
-      L1F4 : constant String := fmtpc (data.load, False);
+      L1F4 : String (1 .. 5);
       L1F5 : constant String := pad (JT.int2str (data.pkg_hour), 4);
 
       L2F1 : constant String := pad (JT.int2str (remaining));
@@ -210,6 +210,11 @@ package body Display is
          L2F4 := " 100%";
       else
          L2F4 := fmtpc (data.swap, True);
+      end if;
+      if data.load >= 100.0 then
+         L1F4 := pad (JT.int2str (Integer (data.load)));
+      else
+         L1F4 := fmtpc (data.load, False);
       end if;
 
       colorado (L1F1, c_standard,  6, 0);
