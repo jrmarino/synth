@@ -51,21 +51,6 @@ private
    calc_alt_abi_noarch : JT.Text;
    original_queue_len  : AC.Count_Type;
 
-   type txz_record is
-      record
-         id            : port_id := port_match_failed;
-         deletion_due  : Boolean := False;
-         depquery      : JT.Text := JT.blank;
-      end record;
-
-   package txz_crate is new AC.Hashed_Maps
-     (Key_Type        => JT.Text,
-      Element_Type    => txz_record,
-      Hash            => port_hash,
-      Equivalent_Keys => JT.equivalent);
-
-   virtual_packages : txz_crate.Map;
-
    --  This function returns "True" if the scanned options exactly match
    --  the options in the already-built package.  Usually it's already known
    --  that a package exists before the function is called, but an existence
@@ -110,5 +95,10 @@ private
    --  The result of the dependency query giving "id" port_id
    function result_of_dependency_query (repository : String; id : port_id)
                                         return JT.Text;
+
+   --  Using the same make_queue as was used to scan the ports, use tasks
+   --  (up to 32) to do the initial scanning of the ports, including getting
+   --  the pkg dependency query.
+   procedure parallel_package_scan (repository : String);
 
 end PortScan.Packages;

@@ -60,9 +60,7 @@ package body PortScan.Packages is
    -----------------------------------
    --  passed_initial_package_scan  --
    -----------------------------------
-   procedure passed_initial_package_scan (repository : String; id : port_id)
-   is
-      TR : txz_record;
+   procedure passed_initial_package_scan (repository : String; id : port_id) is
    begin
       if id = port_match_failed then
          return;
@@ -73,28 +71,26 @@ package body PortScan.Packages is
       declare
          pkgname  : constant String := JT.USS (all_ports (id).package_name);
          fullpath : constant String := repository & "/" & pkgname;
-
       begin
-         if not AD.Exists (fullpath) then
+         if AD.Exists (fullpath) then
+            all_ports (id).pkg_present := True;
+         else
             return;
          end if;
-         TR.id := id;
          if not passed_option_check (repository, id, True) then
             TIO.Put_Line (pkgname & " failed option check.");
-            TR.deletion_due := True;
-            goto insert_record;
+            all_ports (id).deletion_due := True;
+            return;
          end if;
          if not passed_abi_check (repository, id, True) then
             TIO.Put_Line (pkgname & " failed architecture (ABI) check.");
-            TR.deletion_due := True;
-            goto insert_record;
+            all_ports (id).deletion_due := True;
+            return;
          end if;
       end;
-      TR.depquery := result_of_dependency_query (repository, id);
+      all_ports (id).pkg_dep_query :=
+        result_of_dependency_query (repository, id);
 
-      <<insert_record>>
-      virtual_packages.Insert (Key => all_ports (id).package_name,
-                               New_Item => TR);
    end passed_initial_package_scan;
 
 
@@ -103,46 +99,34 @@ package body PortScan.Packages is
    ----------------------------
    procedure limited_sanity_check (repository : String)
    is
-      procedure prune_packages (cursor : txz_crate.Cursor);
-      procedure check_package (cursor : txz_crate.Cursor);
-      procedure first_review (cursor : ranking_crate.Cursor);
+      procedure prune_packages (cursor : ranking_crate.Cursor);
+      procedure check_package (cursor : ranking_crate.Cursor);
       procedure prune_queue (cursor : subqueue.Cursor);
-      procedure mark_for_deletion (key : JT.Text; TR : in out txz_record);
 
       already_built : subqueue.Vector;
       clean_pass    : Boolean := False;
 
-      procedure mark_for_deletion (key : JT.Text; TR : in out txz_record) is
-      begin
-         TR.deletion_due := True;
-      end mark_for_deletion;
-
-      procedure first_review (cursor : ranking_crate.Cursor)
+      procedure check_package (cursor : ranking_crate.Cursor)
       is
-         QR : constant queue_record := ranking_crate.Element (cursor);
+         target  : port_id := ranking_crate.Element (cursor).ap_index;
+         pkgname : String  := JT.USS (all_ports (target).package_name);
       begin
-         passed_initial_package_scan (repository, QR.ap_index);
-      end first_review;
-
-      procedure check_package (cursor : txz_crate.Cursor)
-      is
-         TR : constant txz_record := txz_crate.Element (cursor);
-         pkgname : constant String := JT.USS (txz_crate.Key (cursor));
-      begin
-         if TR.deletion_due then
+         if not all_ports (target).pkg_present or else
+           all_ports (target).deletion_due
+         then
             return;
          end if;
 
-         if not passed_dependency_check (TR.depquery, TR.id) then
+         if not passed_dependency_check
+           (query_result => all_ports (target).pkg_dep_query, id => target)
+         then
             TIO.Put_Line (pkgname & " failed dependency check.");
-            virtual_packages.Update_Element
-              (Position => cursor, Process => mark_for_deletion'Access);
+            all_ports (target).deletion_due := True;
             clean_pass := False;
          else
-            already_built.Append (New_Item => TR.id);
+            already_built.Append (New_Item => target);
          end if;
       end check_package;
-
       procedure prune_queue (cursor : subqueue.Cursor)
       is
          id : constant port_index := subqueue.Element (cursor);
@@ -150,10 +134,11 @@ package body PortScan.Packages is
          OPS.cascade_successful_build (id);
       end prune_queue;
 
-      procedure prune_packages (cursor : txz_crate.Cursor)
+      procedure prune_packages (cursor : ranking_crate.Cursor)
       is
-         delete_it : Boolean := txz_crate.Element (cursor).deletion_due;
-         pkgname   : constant String := JT.USS (txz_crate.Key (cursor));
+         target    : port_id := ranking_crate.Element (cursor).ap_index;
+         delete_it : Boolean := all_ports (target).deletion_due;
+         pkgname   : String  := JT.USS (all_ports (target).package_name);
          fullpath  : constant String := repository & "/" & pkgname;
       begin
          if delete_it then
@@ -165,16 +150,15 @@ package body PortScan.Packages is
    begin
       establish_package_architecture;
       original_queue_len := rank_queue.Length;
-      rank_queue.Iterate (first_review'Access);
+      parallel_package_scan (repository);
 
       while not clean_pass loop
          clean_pass := True;
          already_built.Clear;
-         virtual_packages.Iterate (check_package'Access);
+         rank_queue.Iterate (check_package'Access);
       end loop;
-      virtual_packages.Iterate (prune_packages'Access);
+      rank_queue.Iterate (prune_packages'Access);
       already_built.Iterate (prune_queue'Access);
-      virtual_packages.Clear;
    end limited_sanity_check;
 
 
@@ -409,8 +393,8 @@ package body PortScan.Packages is
                   --  version that the ports tree will now produce
                   return False;
                end if;
-               if not virtual_packages.Contains (target_pkg) or else
-                 virtual_packages.Element (target_pkg).deletion_due
+               if not all_ports (target_id).pkg_present or else
+                 all_ports (target_id).deletion_due
                then
                   --  Even if all the versions are matching, we still need
                   --  the package to be in repository.
@@ -685,5 +669,73 @@ package body PortScan.Packages is
       return (fail_count = 0);
    end limited_cached_options_check;
 
+
+   -----------------------------
+   --  parallel_package_scan  --
+   -----------------------------
+   procedure parallel_package_scan (repository : String)
+   is
+      task type scan (lot : scanners);
+      finished : array (scanners) of Boolean := (others => False);
+      combined_wait : Boolean := True;
+
+      task body scan
+      is
+         procedure populate (cursor : subqueue.Cursor);
+         procedure populate (cursor : subqueue.Cursor)
+         is
+            target_port : port_index := subqueue.Element (cursor);
+         begin
+            passed_initial_package_scan (repository, target_port);
+         end populate;
+      begin
+         make_queue (lot).Iterate (populate'Access);
+         finished (lot) := True;
+      end scan;
+
+      scan_01 : scan (lot => 1);
+      scan_02 : scan (lot => 2);
+      scan_03 : scan (lot => 3);
+      scan_04 : scan (lot => 4);
+      scan_05 : scan (lot => 5);
+      scan_06 : scan (lot => 6);
+      scan_07 : scan (lot => 7);
+      scan_08 : scan (lot => 8);
+      scan_09 : scan (lot => 9);
+      scan_10 : scan (lot => 10);
+      scan_11 : scan (lot => 11);
+      scan_12 : scan (lot => 12);
+      scan_13 : scan (lot => 13);
+      scan_14 : scan (lot => 14);
+      scan_15 : scan (lot => 15);
+      scan_16 : scan (lot => 16);
+      scan_17 : scan (lot => 17);
+      scan_18 : scan (lot => 18);
+      scan_19 : scan (lot => 19);
+      scan_20 : scan (lot => 20);
+      scan_21 : scan (lot => 21);
+      scan_22 : scan (lot => 22);
+      scan_23 : scan (lot => 23);
+      scan_24 : scan (lot => 24);
+      scan_25 : scan (lot => 25);
+      scan_26 : scan (lot => 26);
+      scan_27 : scan (lot => 27);
+      scan_28 : scan (lot => 28);
+      scan_29 : scan (lot => 29);
+      scan_30 : scan (lot => 30);
+      scan_31 : scan (lot => 31);
+      scan_32 : scan (lot => 32);
+   begin
+      while combined_wait loop
+         delay 1.0;
+         combined_wait := False;
+         for j in scanners'Range loop
+            if not finished (j) then
+               combined_wait := True;
+               exit;
+            end if;
+         end loop;
+      end loop;
+   end parallel_package_scan;
 
 end PortScan.Packages;

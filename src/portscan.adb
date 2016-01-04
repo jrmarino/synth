@@ -27,7 +27,6 @@ package body PortScan is
       --  However, prescan works on the real ports tree, not the mount.
       prescan_ports_tree (portsdir);
       parallel_deep_scan (success => good_scan);
-      wipe_make_queue;
 
       return good_scan;
    end scan_entire_ports_tree;
@@ -84,7 +83,6 @@ package body PortScan is
       end if;
       if not prescanned then
          prescan_ports_tree (xports);
-         wipe_make_queue;
       end if;
       if ports_keys.Contains (Key => uscatport) then
          target := ports_keys.Element (Key => uscatport);
@@ -124,11 +122,14 @@ package body PortScan is
          PR.ignore_reason := JT.blank;
          PR.port_version  := JT.blank;
          PR.package_name  := JT.blank;
+         PR.pkg_dep_query := JT.blank;
          PR.ignored       := False;
          PR.scanned       := False;
          PR.rev_scanned   := False;
          PR.unlist_failed := False;
          PR.work_locked   := False;
+         PR.pkg_present   := False;
+         PR.deletion_due  := False;
          PR.reverse_score := 0;
          PR.librun.Clear;
          PR.blocks.Clear;

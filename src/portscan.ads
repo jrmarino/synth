@@ -2,7 +2,7 @@
 --  Reference: ../License.txt
 
 --  GCC 6.0 only (skip Container_Checks until identified need arises)
-pragma Suppress (Tampering_Check);
+--  pragma Suppress (Tampering_Check);
 
 with Ada.Text_IO;
 with Ada.Calendar;
@@ -134,11 +134,14 @@ private
          ignore_reason : JT.Text              := JT.blank;
          port_version  : JT.Text              := JT.blank;
          package_name  : JT.Text              := JT.blank;
+         pkg_dep_query : JT.Text              := JT.blank;
          ignored       : Boolean              := False;
          scanned       : Boolean              := False;
          rev_scanned   : Boolean              := False;
          unlist_failed : Boolean              := False;
          work_locked   : Boolean              := False;
+         pkg_present   : Boolean              := False;
+         deletion_due  : Boolean              := False;
          reverse_score : port_index           := 0;
          librun        : block_crate.Map;
          blocked_by    : block_crate.Map;
