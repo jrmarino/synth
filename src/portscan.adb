@@ -25,7 +25,9 @@ package body PortScan is
    begin
       --  tree must be already mounted in the scan slave.
       --  However, prescan works on the real ports tree, not the mount.
-      prescan_ports_tree (portsdir);
+      if not prescanned then
+         prescan_ports_tree (portsdir);
+      end if;
       parallel_deep_scan (success => good_scan);
 
       return good_scan;
