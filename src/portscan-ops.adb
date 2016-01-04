@@ -204,8 +204,7 @@ package body PortScan.Ops is
                      bld_counter (success) := bld_counter (success) + 1;
                      TIO.Put_Line (logs (success), CYC.elapsed_now & " " &
                                      port_name (instructions (slave)));
-                     TIO.Put_Line (logs (total), CYC.elapsed_now & " [" &
-                                     JT.zeropad (Integer (slave), 2) & "] " &
+                     TIO.Put_Line (logs (total), CYC.elapsed_now & " " &
                                      port_name (instructions (slave)) &
                                      " success");
                   else
