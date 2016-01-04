@@ -51,6 +51,9 @@ private
    calc_alt_abi_noarch : JT.Text;
    original_queue_len  : AC.Count_Type;
 
+   --  Debugging purposes only, leave "False" for production
+   debug_dep_check : constant Boolean := False;
+
    --  This function returns "True" if the scanned options exactly match
    --  the options in the already-built package.  Usually it's already known
    --  that a package exists before the function is called, but an existence

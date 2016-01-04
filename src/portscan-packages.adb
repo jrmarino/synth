@@ -385,17 +385,29 @@ package body PortScan.Packages is
                if target_id = port_match_failed then
                   --  package has a dependency that has been removed from
                   --  the ports tree
+                  if debug_dep_check then
+                     TIO.Put_Line (JT.USS (origin) &
+                                  " has been removed from the ports tree");
+                  end if;
                   return False;
                end if;
                counter := counter + 1;
                if counter > required then
                   --  package has more dependencies than we are looking for
+                  if debug_dep_check then
+                     TIO.Put_Line (JT.USS (target_pkg) & " has more " &
+                        "dependencies than " & JT.USS (origin) & " requires");
+                  end if;
                   return False;
                end if;
                if deppkg /= JT.USS (target_pkg)
                then
                   --  The version that the package requires differs from the
                   --  version that the ports tree will now produce
+                  if debug_dep_check then
+                     TIO.Put_Line (JT.USS (target_pkg) & " is an older " &
+                        "version, we need " & deppkg);
+                  end if;
                   return False;
                end if;
                if not all_ports (target_id).pkg_present or else
@@ -403,6 +415,10 @@ package body PortScan.Packages is
                then
                   --  Even if all the versions are matching, we still need
                   --  the package to be in repository.
+                  if debug_dep_check then
+                     TIO.Put_Line (JT.USS (target_pkg) & " doesn't exist or " &
+                        " has been slated for deletion");
+                  end if;
                   return False;
                end if;
             end;
@@ -410,6 +426,11 @@ package body PortScan.Packages is
          if counter < required then
             --  The ports tree requires more dependencies than the existing
             --  package does
+            if debug_dep_check then
+               TIO.Put_Line ("Package has less dependencies than the port " &
+                               "requires (" & JT.int2str (required) & ")");
+               TIO.Put_Line ("Query: " & JT.USS (query_result));
+            end if;
             return False;
          end if;
 
