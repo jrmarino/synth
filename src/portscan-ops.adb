@@ -676,14 +676,17 @@ package body PortScan.Ops is
    is
       command : String := "/sbin/sysctl vm.loadavg";
       comres  : JT.Text;
+
    begin
       comres := CYC.generic_system_command (command);
       declare
          stripped : constant String := JT.SU.Slice
-           (Source => comres, Low => 15, High => JT.SU.Length (comres));
+           (Source => comres, Low => 15, High => 25);
          instant  : constant String := JT.part_1 (stripped, " ");
       begin
          return Float'Value (instant);
+      exception
+         when others => return 0.0;
       end;
    exception
       when others => return 0.0;
