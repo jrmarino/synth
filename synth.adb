@@ -259,7 +259,8 @@ begin
             when configure =>
                ACT.launch_configure_menu (PortScan.cores_available);
             when status =>
-               TIO.Put_Line ("single STATUS to be implemented ...");
+               PIL.upgrade_system_everything (skip_installation => True,
+                                              dry_run           => True);
             when up_system =>
                if PIL.write_pkg_repos_configuration_file then
                   PIL.upgrade_system_everything;

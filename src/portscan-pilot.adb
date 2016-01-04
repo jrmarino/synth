@@ -678,7 +678,8 @@ package body PortScan.Pilot is
    ---------------------------------
    --  upgrade_system_everything  --
    ---------------------------------
-   procedure upgrade_system_everything (skip_installation : Boolean := False)
+   procedure upgrade_system_everything (skip_installation : Boolean := False;
+                                        dry_run : Boolean := False)
    is
       pkgbin  : constant String := host_localbase & "/sbin/pkg";
       command : constant String := pkgbin & " upgrade --yes --repository Synth";
@@ -710,9 +711,14 @@ package body PortScan.Pilot is
       end;
       if build_pkg8_as_necessary and then
         scan_stack_of_single_ports and then
-        sanity_check_then_prefail
+        sanity_check_then_prefail (delete_first => False, dry_run => dry_run)
       then
-         perform_bulk_run (testmode => False);
+         if dry_run then
+            display_results_of_dry_run;
+            return;
+         else
+            perform_bulk_run (testmode => False);
+         end if;
       else
          TIO.Put_Line (sorry);
          return;
@@ -917,7 +923,8 @@ package body PortScan.Pilot is
    begin
       TIO.Put_Line ("These are the ports that would be built:");
       rank_queue.Iterate (print'Access);
-      TIO.Put_Line ("Total:" & rank_queue.Length'Img);
+      TIO.Put_Line ("Total packages that would be built:" &
+                      rank_queue.Length'Img);
    end display_results_of_dry_run;
 
 
