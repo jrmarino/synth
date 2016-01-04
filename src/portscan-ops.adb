@@ -747,6 +747,7 @@ package body PortScan.Ops is
       HOLast   : constant Natural := DPY.history_origin'Last;
       catport  : String := port_name (pid);
       zeros    : constant DPY.history_elapsed := "00:00:00";
+      hyphens  : constant DPY.history_elapsed := "--:--:--";
    begin
       HR.id := slave;
       HR.slavid      := JT.zeropad (Integer (slave), 2);
@@ -756,6 +757,8 @@ package body PortScan.Ops is
       HR.run_elapsed := CYC.elapsed_now;
       if action = "shutdown " then
          HR.pkg_elapsed := zeros;
+      elsif action = "skipped " or else action = "ignored " then
+         HR.pkg_elapsed := hyphens;
       else
          HR.pkg_elapsed := CYC.elapsed_build (slave);
          if catport'Last > HOLast then
