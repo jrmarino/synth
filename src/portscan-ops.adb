@@ -1,6 +1,7 @@
 --  This file is covered by the Internet Software Consortium (ISC) License
 --  Reference: ../License.txt
 
+with Ada.Exceptions;
 with Ada.Numerics.Discrete_Random;
 with GNAT.String_Split;
 with PortScan.Buildcycle;
@@ -8,6 +9,7 @@ with Replicant;
 
 package body PortScan.Ops is
 
+   package EX  renames Ada.Exceptions;
    package GSS renames GNAT.String_Split;
    package REP renames Replicant;
    package CYC renames PortScan.Buildcycle;
@@ -150,7 +152,9 @@ package body PortScan.Ops is
       loop
          all_idle := True;
          for slave in 1 .. num_builders loop
-            case builder_states (slave) is
+            declare
+            begin
+               case builder_states (slave) is
                when busy | tasked =>
                   all_idle := False;
                when shutdown =>
@@ -237,7 +241,12 @@ package body PortScan.Ops is
                   else
                      builder_states (slave) := idle;
                   end if;
-            end case;
+               end case;
+            exception
+               when earthquake : others => TIO.Put_Line
+                    (logs (total), CYC.elapsed_now & " UNHANDLED EXCEPTION: " &
+                       EX.Exception_Information (earthquake));
+            end;
          end loop;
          exit when run_complete and all_idle;
          if cntcycle = cycle_count'Last then
