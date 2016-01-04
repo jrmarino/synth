@@ -150,6 +150,9 @@ package body PortScan.Packages is
    begin
       establish_package_architecture;
       original_queue_len := rank_queue.Length;
+      for m in scanners'Range loop
+         mq_progress (m) := 0;
+      end loop;
       parallel_package_scan (repository);
 
       while not clean_pass loop
@@ -678,6 +681,7 @@ package body PortScan.Packages is
       task type scan (lot : scanners);
       finished : array (scanners) of Boolean := (others => False);
       combined_wait : Boolean := True;
+      label_shown   : Boolean := False;
 
       task body scan
       is
@@ -687,6 +691,7 @@ package body PortScan.Packages is
             target_port : port_index := subqueue.Element (cursor);
          begin
             passed_initial_package_scan (repository, target_port);
+            mq_progress (lot) := mq_progress (lot) + 1;
          end populate;
       begin
          make_queue (lot).Iterate (populate'Access);
@@ -735,6 +740,13 @@ package body PortScan.Packages is
                exit;
             end if;
          end loop;
+         if combined_wait then
+            if not label_shown then
+               label_shown := True;
+               TIO.Put_Line ("Scanning existing packages.");
+            end if;
+            TIO.Put (scan_progress);
+         end if;
       end loop;
    end parallel_package_scan;
 
