@@ -17,11 +17,6 @@ package PortScan.Packages is
    --  clean_repository().  These old packages will not interfere at this step.
    procedure limited_sanity_check (repository : String);
 
-   --  A public component of limited_sanity_check that can be used to check
-   --  individual packages (it's not queue based)
-   procedure limited_package_check (repository : String; id : port_id;
-                                    pkg_exists, pkg_removed : out Boolean);
-
    --  Iterate through the final build queue to remove any packages that
    --  match the current package names (currently unused)
    procedure remove_queue_packages (repository : String);
@@ -56,6 +51,21 @@ private
    calc_alt_abi_noarch : JT.Text;
    original_queue_len  : AC.Count_Type;
 
+   type txz_record is
+      record
+         id            : port_id := port_match_failed;
+         deletion_due  : Boolean := False;
+         depquery      : JT.Text := JT.blank;
+      end record;
+
+   package txz_crate is new AC.Hashed_Maps
+     (Key_Type        => JT.Text,
+      Element_Type    => txz_record,
+      Hash            => port_hash,
+      Equivalent_Keys => JT.equivalent);
+
+   virtual_packages : txz_crate.Map;
+
    --  This function returns "True" if the scanned options exactly match
    --  the options in the already-built package.  Usually it's already known
    --  that a package exists before the function is called, but an existence
@@ -66,8 +76,7 @@ private
 
    --  This function returns "True" if the scanned dependencies match exactly
    --  what the current ports tree has.
-   function passed_dependency_check (repository : String; id : port_id;
-                                     skip_exist_check : Boolean := False)
+   function passed_dependency_check (query_result : JT.Text; id : port_id)
                                      return Boolean;
 
    --  This function returns "True" if the scanned package has the expected
@@ -91,5 +100,15 @@ private
    --  If Exists and all the options match exactly what has already been
    --  scanned for the port (names, not values) then return True else False.
    function passed_options_cache_check (id : port_id) return Boolean;
+
+   --  For each package in the query, check the ABI and options (this is the
+   --  only time they are checked).  If those pass, query the dependencies,
+   --  store the result, and check them.  Set the "deletion" flag as needed.
+   --  The dependency check is NOT performed yet.
+   procedure passed_initial_package_scan (repository : String; id : port_id);
+
+   --  The result of the dependency query giving "id" port_id
+   function result_of_dependency_query (repository : String; id : port_id)
+                                        return JT.Text;
 
 end PortScan.Packages;

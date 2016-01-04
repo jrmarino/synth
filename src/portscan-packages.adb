@@ -57,52 +57,45 @@ package body PortScan.Packages is
    end remove_queue_packages;
 
 
-   ------------------------------
-   --  limited_package_check   --
-   ------------------------------
-   procedure limited_package_check (repository : String; id : port_id;
-                                    pkg_exists, pkg_removed : out Boolean)
+   -----------------------------------
+   --  passed_initial_package_scan  --
+   -----------------------------------
+   procedure passed_initial_package_scan (repository : String; id : port_id)
    is
+      TR : txz_record;
    begin
-      pkg_exists  := False;
-      pkg_removed := False;
       if id = port_match_failed then
          return;
       end if;
+      if not all_ports (id).scanned then
+         return;
+      end  if;
       declare
-         fullpath : constant String := repository & "/" &
-           JT.USS (all_ports (id).package_name);
-         good : Boolean;
+         pkgname  : constant String := JT.USS (all_ports (id).package_name);
+         fullpath : constant String := repository & "/" & pkgname;
+
       begin
          if not AD.Exists (fullpath) then
             return;
          end if;
-         good := passed_option_check (repository, id, True);
-         if not good then
-            TIO.Put_Line (get_catport (all_ports (id)) &
-                            " failed option check, removing ...");
-            goto remove_package;
+         TR.id := id;
+         if not passed_option_check (repository, id, True) then
+            TIO.Put_Line (pkgname & " failed option check.");
+            TR.deletion_due := True;
+            goto insert_record;
          end if;
-         good := passed_dependency_check (repository, id, True);
-         if not good then
-            TIO.Put_Line (get_catport (all_ports (id)) &
-                            " failed dependency check, removing ...");
-            goto remove_package;
+         if not passed_abi_check (repository, id, True) then
+            TIO.Put_Line (pkgname & " failed architecture (ABI) check.");
+            TR.deletion_due := True;
+            goto insert_record;
          end if;
-         good := passed_abi_check (repository, id, True);
-         if not good then
-            TIO.Put_Line (get_catport (all_ports (id)) &
-                            " failed architecture (ABI) check, removing ...");
-            goto remove_package;
-         end if;
-         pkg_exists := True;
-         return;
-
-         <<remove_package>>
-         pkg_removed := True;
-         AD.Delete_File (fullpath);
       end;
-   end limited_package_check;
+      TR.depquery := result_of_dependency_query (repository, id);
+
+      <<insert_record>>
+      virtual_packages.Insert (Key => all_ports (id).package_name,
+                               New_Item => TR);
+   end passed_initial_package_scan;
 
 
    ----------------------------
@@ -110,26 +103,43 @@ package body PortScan.Packages is
    ----------------------------
    procedure limited_sanity_check (repository : String)
    is
-      procedure check_package (cursor : ranking_crate.Cursor);
+      procedure prune_packages (cursor : txz_crate.Cursor);
+      procedure check_package (cursor : txz_crate.Cursor);
+      procedure first_review (cursor : ranking_crate.Cursor);
       procedure prune_queue (cursor : subqueue.Cursor);
+      procedure mark_for_deletion (key : JT.Text; TR : in out txz_record);
+
       already_built : subqueue.Vector;
       clean_pass    : Boolean := False;
 
-      procedure check_package (cursor : ranking_crate.Cursor)
+      procedure mark_for_deletion (key : JT.Text; TR : in out txz_record) is
+      begin
+         TR.deletion_due := True;
+      end mark_for_deletion;
+
+      procedure first_review (cursor : ranking_crate.Cursor)
       is
          QR : constant queue_record := ranking_crate.Element (cursor);
-         package_in_place : Boolean;
-         package_removed  : Boolean;
       begin
-         limited_package_check (repository  => repository,
-                                id          => QR.ap_index,
-                                pkg_exists  => package_in_place,
-                                pkg_removed => package_removed);
-         if package_removed then
-            clean_pass := False;
+         passed_initial_package_scan (repository, QR.ap_index);
+      end first_review;
+
+      procedure check_package (cursor : txz_crate.Cursor)
+      is
+         TR : constant txz_record := txz_crate.Element (cursor);
+         pkgname : constant String := JT.USS (txz_crate.Key (cursor));
+      begin
+         if TR.deletion_due then
+            return;
          end if;
-         if package_in_place then
-            already_built.Append (New_Item => QR.ap_index);
+
+         if not passed_dependency_check (TR.depquery, TR.id) then
+            TIO.Put_Line (pkgname & " failed dependency check.");
+            virtual_packages.Update_Element
+              (Position => cursor, Process => mark_for_deletion'Access);
+            clean_pass := False;
+         else
+            already_built.Append (New_Item => TR.id);
          end if;
       end check_package;
 
@@ -139,15 +149,32 @@ package body PortScan.Packages is
       begin
          OPS.cascade_successful_build (id);
       end prune_queue;
+
+      procedure prune_packages (cursor : txz_crate.Cursor)
+      is
+         delete_it : Boolean := txz_crate.Element (cursor).deletion_due;
+         pkgname   : constant String := JT.USS (txz_crate.Key (cursor));
+         fullpath  : constant String := repository & "/" & pkgname;
+      begin
+         if delete_it then
+            AD.Delete_File (fullpath);
+         end if;
+      exception
+         when others => null;
+      end prune_packages;
    begin
       establish_package_architecture;
       original_queue_len := rank_queue.Length;
+      rank_queue.Iterate (first_review'Access);
+
       while not clean_pass loop
          clean_pass := True;
          already_built.Clear;
-         rank_queue.Iterate (check_package'Access);
+         virtual_packages.Iterate (check_package'Access);
       end loop;
+      virtual_packages.Iterate (prune_packages'Access);
       already_built.Iterate (prune_queue'Access);
+      virtual_packages.Clear;
    end limited_sanity_check;
 
 
@@ -319,33 +346,35 @@ package body PortScan.Packages is
    end passed_option_check;
 
 
+   ----------------------------------
+   --  result_of_dependency_query  --
+   ----------------------------------
+   function result_of_dependency_query (repository : String; id : port_id)
+                                        return JT.Text
+   is
+      fullpath : constant String := repository & "/" &
+                 JT.USS (all_ports (id).package_name);
+      command  : constant String := "pkg query -F " & fullpath & " %do:%dn-%dv";
+   begin
+      return generic_system_command (command);
+   exception
+      when others => return JT.blank;
+   end result_of_dependency_query;
+
+
    -------------------------------
    --  passed_dependency_check  --
    -------------------------------
-   function passed_dependency_check (repository : String; id : port_id;
-                                     skip_exist_check : Boolean := False)
-                                     return Boolean
-   is
+   function passed_dependency_check (query_result : JT.Text; id : port_id)
+                                     return Boolean is
    begin
-      if id = port_match_failed or else not all_ports (id).scanned then
-         return False;
-      end if;
       declare
-         fullpath : constant String := repository & "/" &
-           JT.USS (all_ports (id).package_name);
-         command  : constant String := "pkg query -F " & fullpath &
-                                       " %do:%dn-%dv";
-         content  : JT.Text;
+         content  : JT.Text := query_result;
          topline  : JT.Text;
          colon    : Natural;
          required : Natural := Natural (all_ports (id).librun.Length);
          counter  : Natural := 0;
       begin
-         if not skip_exist_check and then not AD.Exists (Name => fullpath)
-         then
-            return False;
-         end if;
-         content := generic_system_command (command);
          loop
             JT.nextline (lineblock => content, firstline => topline);
             exit when JT.IsBlank (topline);
@@ -362,6 +391,7 @@ package body PortScan.Packages is
                                                         Low    => 1,
                                                         High   => colon - 1));
                target_id : port_index := ports_keys.Element (Key => origin);
+               target_pkg : JT.Text := all_ports (target_id).package_name;
             begin
                if target_id = port_match_failed then
                   --  package has a dependency that has been removed from
@@ -373,14 +403,14 @@ package body PortScan.Packages is
                   --  package has more dependencies than we are looking for
                   return False;
                end if;
-               if deppkg /= JT.USS (all_ports (target_id).package_name)
+               if deppkg /= JT.USS (target_pkg)
                then
                   --  The version that the package requires differs from the
                   --  version that the ports tree will now produce
                   return False;
                end if;
-               if not AD.Exists (repository & "/" & JT.USS
-                                 (all_ports (target_id).package_name))
+               if not virtual_packages.Contains (target_pkg) or else
+                 virtual_packages.Element (target_pkg).deletion_due
                then
                   --  Even if all the versions are matching, we still need
                   --  the package to be in repository.
@@ -398,6 +428,8 @@ package body PortScan.Packages is
          --  port tree requires exactly.  This package passed sanity check.
          return True;
       end;
+   exception
+      when others => return False;
    end passed_dependency_check;
 
 
