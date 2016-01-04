@@ -143,8 +143,9 @@ package body Display is
    -----------------
    procedure summarize (data : summary_rec)
    is
+      subtype fivelong is String (1 .. 5);
       function pad (S : String; amount : Positive := 5) return String;
-      function fmtpc (f : Float; percent : Boolean) return String;
+      function fmtpc (f : Float; percent : Boolean) return fivelong;
       procedure colorado (S : String; color :  TIC.Color_Pair;
                           col : TIC.Column_Position;
                           row : TIC.Line_Position;
@@ -158,19 +159,28 @@ package body Display is
          result : String (1 .. amount) := (others => ' ');
          slen   : constant Natural := S'Length;
       begin
-         result (1 .. slen) := S;
+         if slen <= amount then
+            result (1 .. slen) := S;
+         else
+            result := S (S'First .. S'First + amount - 1);
+         end if;
          return result;
       end pad;
-      function fmtpc (f : Float; percent : Boolean) return String
+      function fmtpc (f : Float; percent : Boolean) return fivelong
       is
          type loadtype is delta 0.01 digits 3;
-         result : String (1 .. 5) := (others => ' ');
+         result : fivelong := (others => ' ');
          raw1   : constant loadtype := loadtype (f);
          raw2   : constant String := raw1'Img;
          rlen   : constant Natural := raw2'Length;
-         start  : constant Natural := 6 - rlen;
+         start  : Natural;
       begin
-         result (start .. 5) := raw2;
+         if rlen <= 5 then
+            start := 6 - rlen;
+            result (start .. 5) := raw2;
+         else
+            result := raw2 (1 .. 5);
+         end if;
          if percent then
             result (5) := '%';
          end if;
@@ -196,13 +206,13 @@ package body Display is
       L1F1 : constant String := pad (JT.int2str (data.Initially));
       L1F2 : constant String := pad (JT.int2str (data.Built));
       L1F3 : constant String := pad (JT.int2str (data.Ignored));
-      L1F4 : String (1 .. 5);
+      L1F4 : fivelong;
       L1F5 : constant String := pad (JT.int2str (data.pkg_hour), 4);
 
       L2F1 : constant String := pad (JT.int2str (remaining));
       L2F2 : constant String := pad (JT.int2str (data.Failed));
       L2F3 : constant String := pad (JT.int2str (data.Skipped));
-      L2F4 : String (1 .. 5);
+      L2F4 : fivelong;
       L2F5 : constant String := pad (JT.int2str (data.impulse), 4);
 
    begin
