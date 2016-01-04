@@ -178,7 +178,8 @@ package body PortScan.Ops is
                         lock_package (target);
                         instructions (slave) := target;
                         builder_states (slave) := tasked;
-                        TIO.Put_Line (logs (total), CYC.elapsed_now & " " &
+                        TIO.Put_Line (logs (total), CYC.elapsed_now & " [" &
+                                     JT.zeropad (Integer (slave), 2) & "] => " &
                                         port_name (instructions (slave)));
                      end if;
                   end if;
@@ -203,7 +204,8 @@ package body PortScan.Ops is
                      bld_counter (success) := bld_counter (success) + 1;
                      TIO.Put_Line (logs (success), CYC.elapsed_now & " " &
                                      port_name (instructions (slave)));
-                     TIO.Put_Line (logs (total), CYC.elapsed_now & " " &
+                     TIO.Put_Line (logs (total), CYC.elapsed_now & " [" &
+                                     JT.zeropad (Integer (slave), 2) & "] " &
                                      port_name (instructions (slave)) &
                                      " success");
                   else
@@ -743,8 +745,9 @@ package body PortScan.Ops is
                          return DPY.history_rec
    is
       HR : DPY.history_rec;
-      HOLast  : constant Natural := DPY.history_origin'Last;
-      catport : String := port_name (pid);
+      HOLast   : constant Natural := DPY.history_origin'Last;
+      catport  : String := port_name (pid);
+      zeros    : constant DPY.history_elapsed := "00:00:00";
    begin
       HR.id := slave;
       HR.slavid      := JT.zeropad (Integer (slave), 2);
@@ -753,7 +756,7 @@ package body PortScan.Ops is
       HR.origin      := (others => ' ');
       HR.run_elapsed := CYC.elapsed_now;
       if action = "shutdown " then
-         HR.pkg_elapsed := "00:00:00";
+         HR.pkg_elapsed := zeros;
       else
          HR.pkg_elapsed := CYC.elapsed_build (slave);
          if catport'Last > HOLast then

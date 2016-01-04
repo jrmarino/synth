@@ -166,7 +166,11 @@ package body PortScan.Buildcycle is
       diff_days : ACA.Day_Count;
       diff_secs : Duration;
       leap_secs : ACA.Leap_Seconds_Count;
-      totalsecs : Duration;
+      secs_per_hour : constant Integer := 3600;
+      total_hours   : Integer;
+      total_minutes : Integer;
+      work_hours    : Integer;
+      work_seconds  : Integer;
       use type ACA.Day_Count;
    begin
       ACA.Difference (Left    => stop,
@@ -174,10 +178,52 @@ package body PortScan.Buildcycle is
                       Days    => diff_days,
                       Seconds => diff_secs,
                       Leap_Seconds => leap_secs);
-      totalsecs := diff_secs + (Duration (diff_days) * 3600 * 24);
-      return ACF.Image (Elapsed_Time => diff_secs);
-   exception
-         when others => return "00:00:00";
+      --  Seems the ACF image is shit, so let's roll our own.  If more than
+      --  100 hours, change format to "HHH:MM.M"
+
+      work_seconds := Integer (diff_secs);
+      total_hours  := work_seconds / secs_per_hour;
+      total_hours  := total_hours + Integer (diff_days) * 24;
+
+      if total_hours < 24 then
+         if work_seconds < 0 then
+            return "--:--:--";
+         else
+            work_seconds := work_seconds - (total_hours * secs_per_hour);
+            total_minutes := work_seconds / 60;
+            work_seconds := work_seconds - (total_minutes * 60);
+            return
+              JT.zeropad (total_hours, 2) & LAT.Colon &
+              JT.zeropad (total_minutes, 2) & LAT.Colon &
+              JT.zeropad (work_seconds, 2);
+         end if;
+      elsif total_hours < 100 then
+         if work_seconds < 0 then
+            return JT.zeropad (total_hours, 2) & ":00:00";
+         else
+            work_hours := work_seconds / secs_per_hour;
+            work_seconds := work_seconds - (work_hours * secs_per_hour);
+            total_minutes := work_seconds / 60;
+            work_seconds := work_seconds - (total_minutes * 60);
+            return
+              JT.zeropad (total_hours, 2) & LAT.Colon &
+              JT.zeropad (total_minutes, 2) & LAT.Colon &
+              JT.zeropad (work_seconds, 2);
+         end if;
+      else
+         if work_seconds < 0 then
+            return JT.zeropad (total_hours, 3) & ":00.0";
+         else
+            work_hours := work_seconds / secs_per_hour;
+            work_seconds := work_seconds - (work_hours * secs_per_hour);
+            total_minutes := work_seconds / 60;
+            work_seconds := (work_seconds - (total_minutes * 60)) * 10 / 60;
+            return
+              JT.zeropad (total_hours, 3) & LAT.Colon &
+              JT.zeropad (total_minutes, 2) & '.' &
+              JT.int2str (work_seconds);
+         end if;
+      end if;
    end elapsed_HH_MM_SS;
 
 
