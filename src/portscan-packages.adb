@@ -395,8 +395,14 @@ package body PortScan.Packages is
                if counter > required then
                   --  package has more dependencies than we are looking for
                   if debug_dep_check then
-                     TIO.Put_Line (JT.USS (target_pkg) & " has more " &
-                        "dependencies than " & JT.USS (origin) & " requires");
+                     if debug_dep_check then
+                        TIO.Put_Line ("Package has more dependencies than " &
+                                        "the port requires (" &
+                                        JT.int2str (required) & ")");
+                        TIO.Put_Line ("Query: " & JT.USS (query_result));
+                        TIO.Put_Line ("Tripped on: " & JT.USS (target_pkg) &
+                                        ":" & JT.USS (origin));
+                     end if;
                   end if;
                   return False;
                end if;
