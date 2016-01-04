@@ -97,7 +97,7 @@ package body PortScan.Packages is
    ----------------------------
    --  limited_sanity_check  --
    ----------------------------
-   procedure limited_sanity_check (repository : String)
+   procedure limited_sanity_check (repository : String; dry_run : Boolean)
    is
       procedure prune_packages (cursor : ranking_crate.Cursor);
       procedure check_package (cursor : ranking_crate.Cursor);
@@ -160,7 +160,9 @@ package body PortScan.Packages is
          already_built.Clear;
          rank_queue.Iterate (check_package'Access);
       end loop;
-      rank_queue.Iterate (prune_packages'Access);
+      if not dry_run then
+         rank_queue.Iterate (prune_packages'Access);
+      end if;
       already_built.Iterate (prune_queue'Access);
    end limited_sanity_check;
 

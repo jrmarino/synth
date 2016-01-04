@@ -15,7 +15,7 @@ package PortScan.Packages is
    --  options changes and dependency changes.  Obsolete packages (related or
    --  unrelated to upcoming build) are not removed; this would occur in
    --  clean_repository().  These old packages will not interfere at this step.
-   procedure limited_sanity_check (repository : String);
+   procedure limited_sanity_check (repository : String; dry_run : Boolean);
 
    --  Iterate through the final build queue to remove any packages that
    --  match the current package names (currently unused)

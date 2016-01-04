@@ -76,7 +76,9 @@ package body PortScan.Pilot is
          goto clean_exit;
       end if;
 
-      PKG.limited_sanity_check (JT.USS (PM.configuration.dir_repository));
+      PKG.limited_sanity_check
+        (repository => JT.USS (PM.configuration.dir_repository),
+         dry_run    => False);
 
       if PKG.queue_is_empty then
          goto clean_exit;
@@ -156,7 +158,8 @@ package body PortScan.Pilot is
    ---------------------------------
    --  sanity_check_then_prefail  --
    ---------------------------------
-   function sanity_check_then_prefail (delete_first : Boolean := False)
+   function sanity_check_then_prefail (delete_first : Boolean := False;
+                                       dry_run : Boolean := False)
                                        return Boolean
    is
       procedure force_delete (plcursor : portkey_crate.Cursor);
@@ -177,7 +180,7 @@ package body PortScan.Pilot is
    begin
       start_time := CAL.Clock;
 
-      if delete_first then
+      if delete_first and then not dry_run then
          portlist.Iterate (Process => force_delete'Access);
       end if;
 
@@ -187,8 +190,13 @@ package body PortScan.Pilot is
       end if;
 
       OPS.initialize_hooks;
-      PKG.limited_sanity_check (JT.USS (PM.configuration.dir_repository));
+      PKG.limited_sanity_check
+        (repository => JT.USS (PM.configuration.dir_repository),
+         dry_run    => dry_run);
       bld_counter := (OPS.queue_length, 0, 0, 0, 0);
+      if dry_run then
+         return True;
+      end if;
 
       start_logging (total);
       start_logging (ignored);
@@ -358,7 +366,7 @@ package body PortScan.Pilot is
          end if;
       end if;
       PKG.clean_repository (repo);
-      PKG.limited_sanity_check (repo);
+      PKG.limited_sanity_check (repo, False);
       if AD.Exists (xz_meta) then
          AD.Delete_File (xz_meta);
       end if;
@@ -892,5 +900,25 @@ package body PortScan.Pilot is
       TIO.Put_Line (synthexec & " missing!" & bailing);
       return True;
    end synthexec_missing;
+
+
+   ----------------------------------
+   --  display_results_of_dry_run  --
+   ----------------------------------
+   procedure display_results_of_dry_run
+   is
+      procedure print (cursor : ranking_crate.Cursor);
+      procedure print (cursor : ranking_crate.Cursor)
+      is
+         id : port_id := ranking_crate.Element (cursor).ap_index;
+      begin
+         TIO.Put_Line ("  => " & get_catport (all_ports (id)));
+      end print;
+   begin
+      TIO.Put_Line ("These are the ports that would be built:");
+      rank_queue.Iterate (print'Access);
+      TIO.Put_Line ("Total:" & rank_queue.Length'Img);
+   end display_results_of_dry_run;
+
 
 end PortScan.Pilot;

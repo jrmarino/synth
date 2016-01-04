@@ -131,8 +131,13 @@ begin
                --  we don't want to disable full coverage
                null;
             when status =>
-               TIO.Put_Line ("multi-arg STATUS to be implemented ...");
-               return;
+               if PIL.build_pkg8_as_necessary and then
+                 PIL.scan_stack_of_single_ports and then
+                 PIL.sanity_check_then_prefail (delete_first => False,
+                                                dry_run => True)
+               then
+                  PIL.display_results_of_dry_run;
+               end if;
             when just_build =>
                if PIL.build_pkg8_as_necessary and then
                  PIL.scan_stack_of_single_ports and then

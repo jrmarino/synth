@@ -24,7 +24,8 @@ package PortScan.Pilot is
    --  For each ignored port, cascade the failures (designated "skipped" ports)
    --  Starts the build log documenting all this.
    --  Return True if no problems are encountered.
-   function sanity_check_then_prefail (delete_first : Boolean := False)
+   function sanity_check_then_prefail (delete_first : Boolean := False;
+                                       dry_run : Boolean := False)
                                        return Boolean;
 
    --  Everything is fine so kick of the parallel builders.  They will
@@ -81,6 +82,10 @@ package PortScan.Pilot is
 
    --  Scan entire ports tree
    function fully_scan_ports_tree return Boolean;
+
+   --  List every port to be built and the final tally.  This is only done
+   --  for the status options
+   procedure display_results_of_dry_run;
 
    pilot_log : exception;
 
