@@ -146,7 +146,7 @@ package body PortScan is
       wipe_make_queue;
       for m in scanners'Range loop
          mq_progress (m) := 0;
-      end if;
+      end loop;
    end reset_ports_tree;
 
 
