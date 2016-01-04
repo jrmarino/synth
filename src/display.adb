@@ -185,6 +185,9 @@ package body Display is
             result (5) := '%';
          end if;
          return result;
+      exception
+         when others =>
+            return "  ?.??";
       end fmtpc;
       procedure colorado (S : String; color :  TIC.Color_Pair;
                           col : TIC.Column_Position;
@@ -201,6 +204,8 @@ package body Display is
                                        Color => color);
          TIC.Move_Cursor (Win => zone_summary, Line => row, Column => col);
          TIC.Add (Win => zone_summary, Str => S);
+      exception
+         when others => null;
       end colorado;
 
       L1F1 : constant String := pad (JT.int2str (data.Initially));
