@@ -9,6 +9,19 @@ package Display is
 
    package TIC renames Terminal_Interface.Curses;
 
+   subtype history_origin is String (1 .. 43);
+   subtype history_elapsed is String (1 .. 8);
+   type history_rec is
+      record
+         id          : builders;
+         slavid      : String (1 .. 2);
+         run_elapsed : history_elapsed;
+         action      : String (1 .. 8);
+         pkg_elapsed : history_elapsed;
+         origin      : history_origin;
+         established : Boolean := False;
+      end record;
+
    type summary_rec is
       record
          Initially : Natural;
@@ -16,7 +29,7 @@ package Display is
          Failed    : Natural;
          Ignored   : Natural;
          Skipped   : Natural;
-         elapsed   : String (1 .. 8);
+         elapsed   : history_elapsed;
          impulse   : Natural;
          pkg_hour  : Natural;
          load      : Float;
@@ -29,21 +42,10 @@ package Display is
          shutdown  : Boolean;
          idle      : Boolean;
          slavid    : String (1 .. 2);
-         Elapsed   : String (1 .. 8);
+         Elapsed   : history_elapsed;
          LLines    : String (1 .. 7);
          phase     : String (1 .. 15);
          origin    : String (1 .. 37);
-      end record;
-
-   type history_rec is
-      record
-         id          : builders;
-         slavid      : String (1 .. 2);
-         run_elapsed : String (1 .. 8);
-         action      : String (1 .. 8);
-         pkg_elapsed : String (1 .. 8);
-         origin      : String (1 .. 43);
-         established : Boolean := False;
       end record;
 
    --  Initialize the curses screen.

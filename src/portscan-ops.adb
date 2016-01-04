@@ -174,6 +174,8 @@ package body PortScan.Ops is
                         lock_package (target);
                         instructions (slave) := target;
                         builder_states (slave) := tasked;
+                        TIO.Put_Line (logs (total), CYC.elapsed_now & " " &
+                                        port_name (instructions (slave)));
                      end if;
                   end if;
                when done_success | done_failure =>
@@ -732,6 +734,7 @@ package body PortScan.Ops is
                          return DPY.history_rec
    is
       HR : DPY.history_rec;
+      HOLast  : constant Natural := DPY.history_origin'Last;
       catport : String := port_name (pid);
    begin
       HR.id := slave;
@@ -744,11 +747,11 @@ package body PortScan.Ops is
          HR.pkg_elapsed := "00:00:00";
       else
          HR.pkg_elapsed := CYC.elapsed_build (slave);
-         if catport'Length > 43 then
-            HR.origin (1 .. 42) := catport (1 .. 42);
-            HR.origin (43) := LAT.Asterisk;
+         if catport'Last > HOLast then
+            HR.origin (1 .. HOLast - 1) := catport (1 .. HOLast - 1);
+            HR.origin (HOLast) := LAT.Asterisk;
          else
-            HR.origin (1 .. catport'Length) := catport;
+            HR.origin (1 .. catport'Last) := catport;
          end if;
       end if;
       return HR;
