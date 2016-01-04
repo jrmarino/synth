@@ -265,7 +265,7 @@ package body PortScan is
    begin
       TIO.Put_Line ("Scanning entire ports tree.");
       while combined_wait loop
-         delay 5.0;
+         delay 1.0;
          TIO.Put (scan_progress);
          combined_wait := False;
          for j in scanners'Range loop
