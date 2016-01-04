@@ -757,10 +757,12 @@ package body PortScan.Ops is
       HR.run_elapsed := CYC.elapsed_now;
       if action = "shutdown " then
          HR.pkg_elapsed := zeros;
-      elsif action = "skipped " or else action = "ignored " then
-         HR.pkg_elapsed := hyphens;
       else
-         HR.pkg_elapsed := CYC.elapsed_build (slave);
+         if action = "skipped " or else action = "ignored " then
+            HR.pkg_elapsed := hyphens;
+         else
+            HR.pkg_elapsed := CYC.elapsed_build (slave);
+         end if;
          if catport'Last > HOLast then
             HR.origin (1 .. HOLast - 1) := catport (1 .. HOLast - 1);
             HR.origin (HOLast) := LAT.Asterisk;
