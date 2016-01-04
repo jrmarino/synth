@@ -53,6 +53,7 @@ private
 
    --  Debugging purposes only, leave "False" for production
    debug_dep_check : constant Boolean := False;
+   debug_opt_check : constant Boolean := False;
 
    --  This function returns "True" if the scanned options exactly match
    --  the options in the already-built package.  Usually it's already known

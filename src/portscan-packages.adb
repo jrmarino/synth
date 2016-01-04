@@ -270,8 +270,8 @@ package body PortScan.Packages is
          return False;
       end if;
       declare
-         fullpath : constant String := repository & "/" &
-           JT.USS (all_ports (id).package_name);
+         pkg_name : constant String := JT.USS (all_ports (id).package_name);
+         fullpath : constant String := repository & "/" & pkg_name;
          command  : constant String := "pkg query -F " & fullpath & " %Ok:%Ov";
          content  : JT.Text;
          topline  : JT.Text;
@@ -311,21 +311,43 @@ package body PortScan.Packages is
                counter := counter + 1;
                if counter > required then
                   --  package has more options than we are looking for
+                  if debug_opt_check then
+                     TIO.Put_Line ("options " & JT.USS (namekey));
+                     TIO.Put_Line (pkg_name & " has more options than required "
+                                     & "(" & JT.int2str (required) & ")");
+                  end if;
                   return False;
                end if;
                if all_ports (id).options.Contains (namekey) then
                   if knobval /= all_ports (id).options.Element (namekey) then
                      --  port option value doesn't match package option value
+                     if debug_opt_check then
+                        if knobval then
+                           TIO.Put_Line (pkg_name & " " & JT.USS (namekey) &
+                              " is on but port says it must be off");
+                        else
+                           TIO.Put_Line (pkg_name & " " & JT.USS (namekey) &
+                              " is off but port says it must be on");
+                        end if;
+                     end if;
                      return False;
                   end if;
                else
                   --  Name of package option not found in port options
+                  if debug_opt_check then
+                     TIO.Put_Line (pkg_name & " option " & JT.USS (namekey) &
+                                  " is no longer present in the port");
+                  end if;
                   return False;
                end if;
             end;
          end loop;
          if counter < required then
             --  The ports tree has more options than the existing package
+            if debug_opt_check then
+               TIO.Put_Line (pkg_name & " has less options than required "
+                             & "(" & JT.int2str (required) & ")");
+            end if;
             return False;
          end if;
 
