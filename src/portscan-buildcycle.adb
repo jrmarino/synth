@@ -1001,29 +1001,34 @@ package body PortScan.Buildcycle is
                                    from_when : CAL.Time)
                                    return Natural
    is
-      diff_days : ACA.Day_Count;
-      diff_secs : Duration;
-      leap_secs : ACA.Leap_Seconds_Count;
-      totalsecs : Duration;
-      result    : Natural;
+      diff_days    : ACA.Day_Count;
+      diff_secs    : Duration;
+      leap_secs    : ACA.Leap_Seconds_Count;
+      result       : Natural;
+      rightnow     : CAL.Time := CAL.Clock;
+      work_seconds : Integer;
+      work_days    : Integer;
       use type ACA.Day_Count;
    begin
       if packages_done = 0 then
          return 0;
       end if;
-      --  I have no idea why left/right have to be reversed from "Elapsed_Now"!
-      ACA.Difference (Left    => CAL.Clock,
+      ACA.Difference (Left    => rightnow,
                       Right   => from_when,
                       Days    => diff_days,
                       Seconds => diff_secs,
                       Leap_Seconds => leap_secs);
-      totalsecs := diff_secs + (Duration (diff_days) * 3600 * 24);
-      if totalsecs <= Duration (0) then
+
+      work_seconds := Integer (diff_secs);
+      work_days    := Integer (diff_days);
+      work_seconds := work_seconds + (work_days * 3600 * 24);
+
+      if work_seconds < 0 then
          --  should be impossible to get here.
          return 0;
       end if;
       result := packages_done * 3600;
-      result := result / Natural (totalsecs);
+      result := result / work_seconds;
       return result;
    exception
       when others => return 0;
