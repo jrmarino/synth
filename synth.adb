@@ -11,7 +11,7 @@ procedure synth
 is
    type mandate_type is (unset, status, help, configure, version, up_system,
                          up_repo, purge, everything, build, install, force,
-                         just_build, test);
+                         just_build, test, status_everything);
 
    mandate : mandate_type := unset;
 
@@ -62,6 +62,8 @@ begin
          mandate := purge;
       elsif first = "everything" then
          mandate := everything;
+      elsif first = "status-everything" then
+         mandate := status_everything;
       elsif first = "test" then
          mandate := test;
       end if;
@@ -74,7 +76,7 @@ begin
                                "' is not a valid keyword.");
                return;
             when help | configure | version | up_repo | up_system | purge |
-                 everything =>
+                 everything | status_everything =>
                ACT.print_version;
                TIO.Put_Line (comerr & "'" & first &
                                "' keyword uses no arguments.");
@@ -126,7 +128,7 @@ begin
          ----------------------------------
          case mandate is
             when help | configure | version | up_repo | up_system | purge |
-                 everything | unset =>
+                 everything | status_everything | unset =>
                --  Handled above.  Don't use "others" here;
                --  we don't want to disable full coverage
                null;
@@ -278,6 +280,14 @@ begin
                   if PIL.rebuild_local_respository (use_full_scan => False) then
                      null;
                   end if;
+               end if;
+            when status_everything =>
+               if PIL.build_pkg8_as_necessary and then
+                 PIL.fully_scan_ports_tree and then
+                 PIL.sanity_check_then_prefail (delete_first => False,
+                                                dry_run => True)
+               then
+                  PIL.display_results_of_dry_run;
                end if;
          end case;
       end if;
