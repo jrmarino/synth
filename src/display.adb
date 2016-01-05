@@ -50,6 +50,17 @@ package body Display is
    end terminate_monitor;
 
 
+   -----------------------------------
+   --  set_full_redraw_next_update  --
+   -----------------------------------
+   procedure set_full_redraw_next_update is
+   begin
+      draw_static_summary_zone;
+      draw_static_builders_zone;
+      draw_static_actions_zone;
+   end set_full_redraw_next_update;
+
+
    ---------------------------
    --  launch_summary_zone  --
    ---------------------------
@@ -67,16 +78,15 @@ package body Display is
    --------------------------------
    procedure draw_static_summary_zone
    is
-      line1 : String := "Total 0       Built 0      Ignored 0      " &
-                        "Load  0.00  Pkg/hour 0   ";
-      line2 : String := " Left 0      Failed 0      skipped 0      " &
-                        "swap  0.0%   Impulse 0     00:00:00";
+      line1 : String := "Total         Built        Ignored        " &
+                        "Load  0.00  Pkg/hour     ";
+      line2 : String := " Left        Failed        skipped        " &
+                        "swap  0.0%   Impulse       00:00:00";
    begin
       TIC.Set_Character_Attributes (Win   => zone_summary,
                                     Attr  => bright,
                                     Color => TIC.Color_Pair (c_sumlabel));
 
-      TIC.Clear_On_Next_Update;
       TIC.Move_Cursor (Win => zone_summary, Line => 0, Column => 0);
       TIC.Add (Win => zone_summary, Str => line1);
       TIC.Move_Cursor (Win => zone_summary, Line => 1, Column => 0);
@@ -109,6 +119,7 @@ package body Display is
       lastrow : constant TIC.Line_Position := inc (height, -1);
       dashes  : constant String (1 .. 79) := (others => '=');
       header  : String (1 .. 79) := (others => ' ');
+      blank   : String (1 .. 79) := (others => ' ');
       headtxt : constant String := " ID  Elapsed   Build Phase      " &
         "Origin                                   Lines";
    begin
@@ -116,7 +127,6 @@ package body Display is
       TIC.Set_Character_Attributes (Win   => zone_builders,
                                     Attr  => bright,
                                     Color => TIC.Color_Pair (c_dashes));
-      TIC.Clear_On_Next_Update;
       TIC.Move_Cursor (Win => zone_builders, Line => 0, Column => 0);
       TIC.Add (Win => zone_builders, Str => dashes);
       TIC.Move_Cursor (Win => zone_builders, Line => 2, Column => 0);
@@ -129,6 +139,10 @@ package body Display is
                                     Color => TIC.Color_Pair (c_tableheader));
       TIC.Move_Cursor (Win => zone_builders, Line => 1, Column => 0);
       TIC.Add (Win => zone_builders, Str => header);
+      for z in 3 .. inc (lastrow, -1) loop
+         TIC.Move_Cursor (Win => zone_builders, Line => z, Column => 0);
+         TIC.Add (Win => zone_builders, Str => blank);
+      end loop;
    end draw_static_builders_zone;
 
 
@@ -330,6 +344,20 @@ package body Display is
       end if;
       history (history_arrow) := HR;
    end insert_history;
+
+
+   --------------------------------
+   --  draw_static_actions_zone  --
+   --------------------------------
+   procedure draw_static_actions_zone
+   is
+      blank : constant String (1 .. 79) := (others => ' ');
+   begin
+      for z in 0 .. inc (historyheight, -1) loop
+         TIC.Move_Cursor (Win => zone_actions, Line => z, Column => 0);
+         TIC.Add (Win => zone_actions, Str => blank);
+      end loop;
+   end draw_static_actions_zone;
 
 
    ------------------------------

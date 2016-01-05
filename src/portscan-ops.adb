@@ -32,9 +32,11 @@ package body PortScan.Ops is
    procedure parallel_bulk_run (num_builders : builders; logs : dim_handlers)
    is
       subtype cycle_count is Natural range 1 .. 9;
+      subtype refresh_count is Natural range 1 .. 100;
       instructions   : dim_instruction   := (others => port_match_failed);
       builder_states : dim_builder_state := (others => idle);
       cntcycle       : cycle_count       := cycle_count'First;
+      cntrefresh     : refresh_count     := refresh_count'First;
       run_complete   : Boolean           := False;
       available      : Positive          := Integer (num_builders);
       target         : port_id;
@@ -257,6 +259,12 @@ package body PortScan.Ops is
             TIO.Flush (logs (skipped));
             TIO.Flush (logs (total));
             if curses_support then
+               if cntrefresh = refresh_count'Last then
+                  cntrefresh := refresh_count'First;
+                  DPY.set_full_redraw_next_update;
+               else
+                  cntrefresh := cntrefresh + 1;
+               end if;
                sumdata.Initially := bld_counter (total);
                sumdata.Built     := bld_counter (success);
                sumdata.Failed    := bld_counter (failure);

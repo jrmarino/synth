@@ -70,6 +70,10 @@ package Display is
    --  Insert history as builder finishes (shutdown, success, failure);
    procedure insert_history (HR : history_rec);
 
+   --  Clears and redraws the static portion of builder and summary zones
+   --  (Realized when the regular zones are refreshed)
+   procedure set_full_redraw_next_update;
+
 private
 
    type palette_rec is
@@ -125,5 +129,6 @@ private
    procedure establish_colors;
    procedure draw_static_summary_zone;
    procedure draw_static_builders_zone;
+   procedure draw_static_actions_zone;
 
 end Display;
