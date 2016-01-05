@@ -179,7 +179,9 @@ package body Replicant is
    is
       command : constant String := "/sbin/umount " & device_or_node;
    begin
-      execute (command);
+      --  failure to unmount causes stderr squawks which messes up curses
+      --  display.  Just ignore for now (Add robustness later)
+      silent_exec (command);
    exception
       when others => null;  -- silently fail
    end unmount;
