@@ -84,6 +84,7 @@ private
 
    history       : dim_history;
    history_arrow : cyclic_range := cyclic_range'Last;
+   builders_used : Integer;
 
    app_width     : TIC.Column_Count := 80;
    historyheight : TIC.Line_Position;
@@ -116,11 +117,13 @@ private
                             (Dim_Character => True, others => False);
 
    procedure launch_summary_zone;
-   procedure launch_builders_zone (num_builders : builders);
-   procedure launch_actions_zone (num_builders : builders);
+   procedure launch_builders_zone;
+   procedure launch_actions_zone;
 
    function inc (X : TIC.Line_Position; by : Integer) return TIC.Line_Position;
 
    procedure establish_colors;
+   procedure draw_static_summary_zone;
+   procedure draw_static_builders_zone;
 
 end Display;

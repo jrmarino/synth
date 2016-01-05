@@ -24,9 +24,16 @@ package body Display is
 
       establish_colors;
 
+      builders_used := Integer (num_builders);
+
       launch_summary_zone;
-      launch_builders_zone (num_builders);
-      launch_actions_zone (num_builders);
+      launch_builders_zone;
+      launch_actions_zone;
+
+      draw_static_summary_zone;
+      draw_static_builders_zone;
+      TIC.Refresh (Win => zone_summary);
+      TIC.Refresh (Win => zone_builders);
       return True;
    end launch_monitor;
 
@@ -46,37 +53,58 @@ package body Display is
    ---------------------------
    --  launch_summary_zone  --
    ---------------------------
-   procedure launch_summary_zone
+   procedure launch_summary_zone is
+   begin
+      zone_summary := TIC.Create (Number_Of_Lines       => 2,
+                                  Number_Of_Columns     => app_width,
+                                  First_Line_Position   => 0,
+                                  First_Column_Position => 0);
+   end launch_summary_zone;
+
+
+   --------------------------------
+   --  draw_static_summary_zone  --
+   --------------------------------
+   procedure draw_static_summary_zone
    is
       line1 : String := "Total 0       Built 0      Ignored 0      " &
                         "Load  0.00  Pkg/hour 0   ";
       line2 : String := " Left 0      Failed 0      skipped 0      " &
                         "swap  0.0%   Impulse 0     00:00:00";
    begin
-      zone_summary := TIC.Create (Number_Of_Lines       => 2,
-                                  Number_Of_Columns     => app_width,
-                                  First_Line_Position   => 0,
-                                  First_Column_Position => 0);
-
       TIC.Set_Character_Attributes (Win   => zone_summary,
                                     Attr  => bright,
                                     Color => TIC.Color_Pair (c_sumlabel));
 
+      TIC.Clear_On_Next_Update;
       TIC.Move_Cursor (Win => zone_summary, Line => 0, Column => 0);
       TIC.Add (Win => zone_summary, Str => line1);
       TIC.Move_Cursor (Win => zone_summary, Line => 1, Column => 0);
       TIC.Add (Win => zone_summary, Str => line2);
-
-      TIC.Refresh (Win => zone_summary);
-   end launch_summary_zone;
+   end draw_static_summary_zone;
 
 
    ----------------------------
    --  launch_builders_zone  --
    ----------------------------
-   procedure launch_builders_zone (num_builders : builders)
+   procedure launch_builders_zone
    is
-      hghtint : constant Integer := 4 + Integer (num_builders);
+      hghtint : constant Integer := 4 + builders_used;
+      height  : constant TIC.Line_Position := TIC.Line_Position (hghtint);
+   begin
+      zone_builders := TIC.Create (Number_Of_Lines       => height,
+                                   Number_Of_Columns     => app_width,
+                                   First_Line_Position   => 2,
+                                   First_Column_Position => 0);
+   end launch_builders_zone;
+
+
+   ---------------------------------
+   --  draw_static_builders_zone  --
+   ---------------------------------
+   procedure draw_static_builders_zone
+   is
+      hghtint : constant Integer := 4 + builders_used;
       height  : constant TIC.Line_Position := TIC.Line_Position (hghtint);
       lastrow : constant TIC.Line_Position := inc (height, -1);
       dashes  : constant String (1 .. 79) := (others => '=');
@@ -85,14 +113,10 @@ package body Display is
         "Origin                                   Lines";
    begin
       header (1 .. headtxt'Length) := headtxt;
-      zone_builders := TIC.Create (Number_Of_Lines       => height,
-                                   Number_Of_Columns     => app_width,
-                                   First_Line_Position   => 2,
-                                   First_Column_Position => 0);
-
       TIC.Set_Character_Attributes (Win   => zone_builders,
                                     Attr  => bright,
                                     Color => TIC.Color_Pair (c_dashes));
+      TIC.Clear_On_Next_Update;
       TIC.Move_Cursor (Win => zone_builders, Line => 0, Column => 0);
       TIC.Add (Win => zone_builders, Str => dashes);
       TIC.Move_Cursor (Win => zone_builders, Line => 2, Column => 0);
@@ -105,17 +129,15 @@ package body Display is
                                     Color => TIC.Color_Pair (c_tableheader));
       TIC.Move_Cursor (Win => zone_builders, Line => 1, Column => 0);
       TIC.Add (Win => zone_builders, Str => header);
-
-      TIC.Refresh (Win => zone_builders);
-   end launch_builders_zone;
+   end draw_static_builders_zone;
 
 
    ---------------------------
    --  launch_actions_zone  --
    ---------------------------
-   procedure launch_actions_zone (num_builders : builders)
+   procedure launch_actions_zone
    is
-      consumed   : constant Integer := Integer (num_builders) + 4 + 2;
+      consumed   : constant Integer := builders_used + 4 + 2;
       difference : constant Integer := 0 - consumed;
       viewpos    : constant TIC.Line_Position := TIC.Line_Position (consumed);
    begin
