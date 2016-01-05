@@ -172,22 +172,15 @@ package body Display is
          result : fivelong := (others => ' ');
          raw1   : constant loadtype := loadtype (f);
          raw2   : constant String := raw1'Img;
-         rlen   : constant Natural := raw2'Length;
-         start  : Natural;
+         raw3   : constant String := raw2 (2 .. raw2'Last);
+         rlen   : constant Natural := raw3'Length;
+         start  : constant Natural := 6 - rlen;
       begin
-         if rlen <= 5 then
-            start := 6 - rlen;
-            result (start .. 5) := raw2;
-         else
-            result := raw2 (1 .. 5);
-         end if;
+         result (start .. 5) := raw3;
          if percent then
             result (5) := '%';
          end if;
          return result;
-      exception
-         when others =>
-            return "  ?.??";
       end fmtpc;
       procedure colorado (S : String; color :  TIC.Color_Pair;
                           col : TIC.Column_Position;
