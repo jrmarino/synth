@@ -168,7 +168,7 @@ package body Display is
       end pad;
       function fmtpc (f : Float; percent : Boolean) return fivelong
       is
-         type loadtype is delta 0.01 digits 3;
+         type loadtype is delta 0.01 digits 4;
          result : fivelong := (others => ' ');
          raw1   : constant loadtype := loadtype (f);
          raw2   : constant String := raw1'Img;
