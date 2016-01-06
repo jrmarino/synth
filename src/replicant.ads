@@ -154,4 +154,7 @@ private
    --  Used for per-profile make.conf fragments (if they exist)
    procedure concatenate_makeconf (makeconf_handle : TIO.File_Type);
 
+   --  Wrapper for rm -rf <directory>
+   procedure annihilate_directory_tree (tree : String);
+
 end Replicant;

@@ -592,6 +592,19 @@ package body Replicant is
    end standalone_pkg8_install;
 
 
+   ---------------------------------
+   --  annihilate_directory_tree  --
+   ---------------------------------
+   procedure annihilate_directory_tree (tree : String)
+   is
+      command : constant String := "/bin/rm -rf " & tree;
+   begin
+      silent_exec (command);
+   exception
+      when others => null;
+   end annihilate_directory_tree;
+
+
    --------------------
    --  launch_slave  --
    --------------------
@@ -686,12 +699,14 @@ package body Replicant is
    begin
       unmount (slave_base & root_localbase);
       if not PM.configuration.tmpfs_localbase then
-         AD.Delete_Tree (slave_local);
+         --  We can't use AD.Delete_Tree because it skips directories
+         --  starting with "." (pretty useless then)
+         annihilate_directory_tree (slave_local);
       end if;
 
       unmount (location (slave_base, wrkdirs));
       if not PM.configuration.tmpfs_workdir then
-         AD.Delete_Tree (slave_work);
+         annihilate_directory_tree (slave_work);
       end if;
 
       if AD.Exists (root_usr_src) then
