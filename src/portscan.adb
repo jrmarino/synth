@@ -394,7 +394,6 @@ package body PortScan is
       chroot   : constant String := "/usr/sbin/chroot " &
                  JT.USS (PM.configuration.dir_buildbase) & ss_base;
       command  : constant String := chroot & " /usr/bin/make -C " & fullport &
-                 " PORTSDIR=" & xports & " PACKAGE_BUILDING=yes" & get_ccache &
                  " -VPKGVERSION -VPKGFILE:T -VMAKE_JOBS_NUMBER -VIGNORE" &
                  " -VFETCH_DEPENDS -VEXTRACT_DEPENDS -VPATCH_DEPENDS" &
                  " -VBUILD_DEPENDS -VLIB_DEPENDS -VRUN_DEPENDS" &
@@ -836,19 +835,6 @@ package body PortScan is
    begin
       return JT.USS (catport);
    end get_catport;
-
-
-   ------------------
-   --  get_ccache  --
-   ------------------
-   function get_ccache return String
-   is
-   begin
-      if AD.Exists (JT.USS (PM.configuration.dir_ccache)) then
-         return " WITH_CCACHE_BUILD=yes CCACHE_DIR=/ccache";
-      end if;
-      return "";
-   end get_ccache;
 
 
    ---------------------
