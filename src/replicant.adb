@@ -206,7 +206,7 @@ package body Replicant is
    -------------------
    procedure mount_tmpfs  (mount_point : String; max_size_M : Natural := 0)
    is
-      cmd_freebsd   : constant String := "/sbin/mount";
+      cmd_freebsd   : constant String := "/sbin/mount -t tmpfs";
       cmd_dragonfly : constant String := "/sbin/mount_tmpfs";
       command       : JT.Text;
    begin
@@ -315,7 +315,10 @@ package body Replicant is
       command : constant String := "/usr/sbin/mtree -p " & path &
         " -f /etc/mtree/BSD.local.dist -deqU";
    begin
-      silent_exec (command);
+      case flavor is
+         when freebsd | unknown => null;
+         when dragonfly => silent_exec (command);
+      end case;
    end populate_localbase;
 
 

@@ -593,9 +593,9 @@ package body PortScan.Packages is
             calculated_abi     := JT.SUS (fbsd1);
             calculated_alt_abi := JT.SUS (fbsd2);
             JT.SU.Append (calculated_abi,
-                          JT.SU.Slice (UN, 1, ndxdot - 1) & ".");
+                          JT.SU.Slice (UN, 1, ndxdot - 1) & ":");
             JT.SU.Append (calculated_alt_abi,
-                          JT.SU.Slice (UN, 1, ndxdot - 1) & ".");
+                          JT.SU.Slice (UN, 1, ndxdot - 1) & ":");
             calc_abi_noarch     := calculated_abi;
             calc_alt_abi_noarch := calculated_alt_abi;
             JT.SU.Append (calculated_abi,
