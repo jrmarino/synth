@@ -159,7 +159,8 @@ package body PortScan.Pilot is
       if SIG.graceful_shutdown_requested then
          goto clean_exit;
       end if;
-      if not CYC.install_pkg8 (PortScan.scan_slave) then
+      if not REP.standalone_pkg8_install (PortScan.scan_slave) then
+         TIO.Put_Line ("Failed to install pkg(8) scanner" & bailing);
          successful := False;
          goto clean_exit;
       end if;

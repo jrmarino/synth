@@ -568,11 +568,28 @@ package body Replicant is
    procedure execute_ldconfig (id : builders)
    is
       smount  : constant String := get_slave_mount (id);
-      command : constant String := "/usr/sbin/chroot " & smount &
+      command : constant String := chroot & smount &
                                    " /sbin/ldconfig -m /lib /usr/lib";
    begin
       execute (command);
    end execute_ldconfig;
+
+
+   -------------------------------
+   --  standalone_pkg8_install  --
+   -------------------------------
+   function standalone_pkg8_install (id : builders) return Boolean
+   is
+      smount  : constant String := get_slave_mount (id);
+      taropts : constant String := "-C / */pkg-static";
+      command : constant String := chroot & smount &
+        " /usr/bin/tar -xf /packages/Latest/pkg.txz " & taropts;
+   begin
+      silent_exec (command);
+      return True;
+   exception
+      when others => return False;
+   end standalone_pkg8_install;
 
 
    --------------------

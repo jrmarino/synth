@@ -31,6 +31,10 @@ package Replicant is
    --  Returns True if the attempt to clear mounts is successful.
    function clear_existing_mounts return Boolean;
 
+   --  In order to do scanning in a clean environment prior to the true build
+   --  Returns True on success
+   function standalone_pkg8_install (id : builders) return Boolean;
+
 private
 
    type mount_mode is (readonly, readwrite);
@@ -78,6 +82,7 @@ private
    root_distfiles   : constant String := "/distfiles";
    root_ccache      : constant String := "/ccache";
    root_localbase   : constant String := "/usr/local";
+   chroot           : constant String := "/usr/sbin/chroot ";
 
    flavor         : nullfs_flavor   := unknown;
 
