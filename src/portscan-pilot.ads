@@ -99,6 +99,7 @@ private
 
    badport : constant String := "Invalid port origin: ";
    bailing : constant String := "  (Synth must exit)";
+   shutreq : constant String := "Graceful shutdown requested, exiting ...";
    pkgng   : constant String := "ports-mgmt/pkg";
    pidfile : constant String := "/var/run/synth.pid";
    logname : constant dim_logname := ("00_last_results.log",

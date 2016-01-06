@@ -6,13 +6,15 @@ with Ada.Numerics.Discrete_Random;
 with GNAT.String_Split;
 with PortScan.Buildcycle;
 with Replicant;
+with Signals;
 
 package body PortScan.Ops is
 
    package EX  renames Ada.Exceptions;
    package GSS renames GNAT.String_Split;
-   package REP renames Replicant;
    package CYC renames PortScan.Buildcycle;
+   package REP renames Replicant;
+   package SIG renames Signals;
 
 
    --------------------------
@@ -167,7 +169,9 @@ package body PortScan.Ops is
                   else
                      target := top_buildable_port;
                      if target = port_match_failed then
-                        if nothing_left (num_builders) then
+                        if SIG.graceful_shutdown_requested or else
+                          nothing_left (num_builders)
+                        then
                            run_complete := True;
                            builder_states (slave) := shutdown;
                         else
@@ -393,6 +397,9 @@ package body PortScan.Ops is
          end if;
          cursor := ranking_crate.Next (Position => cursor);
       end loop;
+      if SIG.graceful_shutdown_requested then
+         return port_match_failed;
+      end if;
       return result;
    end top_buildable_port;
 

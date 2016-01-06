@@ -7,6 +7,7 @@ with PortScan.Ops;
 with PortScan.Packages;
 with PortScan.Buildcycle;
 with Replicant;
+with Signals;
 
 package body PortScan.Pilot is
 
@@ -16,6 +17,7 @@ package body PortScan.Pilot is
    package PKG renames PortScan.Packages;
    package CYC renames PortScan.Buildcycle;
    package REP renames Replicant;
+   package SIG renames Signals;
 
    ---------------------
    --  store_origins  --
@@ -76,6 +78,10 @@ package body PortScan.Pilot is
          goto clean_exit;
       end if;
 
+      if SIG.graceful_shutdown_requested then
+         goto clean_exit;
+      end if;
+
       PKG.limited_sanity_check
         (repository => JT.USS (PM.configuration.dir_repository),
          dry_run    => False);
@@ -86,6 +92,10 @@ package body PortScan.Pilot is
 
       CYC.initialize (test_mode => False);
       selection := OPS.top_buildable_port;
+      if SIG.graceful_shutdown_requested or else selection = port_match_failed
+      then
+         goto clean_exit;
+      end if;
       TIO.Put ("Stand by, building pkg(8) first ... ");
 
       pkg_good := CYC.build_package (id => PortScan.scan_slave,
@@ -100,6 +110,10 @@ package body PortScan.Pilot is
       TIO.Put_Line ("done!");
 
       <<clean_exit>>
+      if SIG.graceful_shutdown_requested then
+         TIO.Put_Line (shutreq);
+         result := False;
+      end if;
       REP.destroy_slave (id => PortScan.scan_slave);
       REP.finalize;
       reset_ports_tree;
@@ -128,6 +142,9 @@ package body PortScan.Pilot is
             --  we've already built pkg(8) if we get here, just skip it
             return;
          end if;
+         if SIG.graceful_shutdown_requested then
+            successful := False;
+         end if;
          successful := PortScan.scan_single_port
            (catport    => origin,
             repository => JT.USS (PM.configuration.dir_repository));
@@ -139,6 +156,9 @@ package body PortScan.Pilot is
    begin
       REP.initialize;
       REP.launch_slave (id => PortScan.scan_slave);
+      if SIG.graceful_shutdown_requested then
+         goto clean_exit;
+      end if;
       if not CYC.install_pkg8 (PortScan.scan_slave) then
          successful := False;
          goto clean_exit;
@@ -149,6 +169,9 @@ package body PortScan.Pilot is
       end if;
 
       <<clean_exit>>
+      if SIG.graceful_shutdown_requested then
+         TIO.Put_Line (shutreq);
+      end if;
       REP.destroy_slave (id => PortScan.scan_slave);
       REP.finalize;
       return successful;
@@ -197,6 +220,10 @@ package body PortScan.Pilot is
       if dry_run then
          return True;
       end if;
+      if SIG.graceful_shutdown_requested then
+         TIO.Put_Line (shutreq);
+         return False;
+      end if;
 
       start_logging (total);
       start_logging (ignored);
@@ -207,6 +234,7 @@ package body PortScan.Pilot is
       loop
          ptid := OPS.next_ignored_port;
          exit when ptid = PortScan.port_match_failed;
+         exit when SIG.graceful_shutdown_requested;
          bld_counter (ignored) := bld_counter (ignored) + 1;
          TIO.Put_Line (Flog (total), CYC.elapsed_now & " " &
                          OPS.port_name (ptid) & " has been ignored: " &
@@ -222,16 +250,22 @@ package body PortScan.Pilot is
       TIO.Put_Line (Flog (total), CYC.elapsed_now & " Sanity check complete. "
                     & "Ports remaining to build:" & OPS.queue_length'Img);
       TIO.Flush (Flog (total));
-      if OPS.integrity_intact then
-         return True;
+      if SIG.graceful_shutdown_requested then
+         TIO.Put_Line (shutreq);
       else
-         TIO.Put_Line ("Queue integrity lost! " & bailing);
-         stop_logging (total);
-         stop_logging (skipped);
-         stop_logging (success);
-         stop_logging (failure);
-         return False;
+         if OPS.integrity_intact then
+            return True;
+         end if;
       end if;
+      --  If here, we either got control-C or failed integrity check
+      if not SIG.graceful_shutdown_requested then
+         TIO.Put_Line ("Queue integrity lost! " & bailing);
+      end if;
+      stop_logging (total);
+      stop_logging (skipped);
+      stop_logging (success);
+      stop_logging (failure);
+      return False;
    end sanity_check_then_prefail;
 
 
@@ -245,7 +279,7 @@ package body PortScan.Pilot is
       if PKG.queue_is_empty then
          TIO.Put_Line ("After inspection, it has been determined that there " &
                          "are no packages that");
-         TIO.Put_Line ("require rebuilding.  Therefore the task is complete.");
+         TIO.Put_Line ("require rebuilding; the task is therefore complete.");
       else
          REP.initialize;
          CYC.initialize (testmode);
@@ -257,7 +291,11 @@ package body PortScan.Pilot is
          stop_logging (success);
          stop_logging (failure);
          stop_logging (skipped);
-         TIO.Put_Line (LAT.LF & "The task is complete.  Final tally:");
+         TIO.Put_Line (LAT.LF & LAT.LF);
+         if SIG.graceful_shutdown_requested then
+            TIO.Put_Line (shutreq);
+         end if;
+         TIO.Put_Line ("The task is complete.  Final tally:");
          TIO.Put_Line ("Initial queue size:" & bld_counter (total)'Img);
          TIO.Put_Line ("    packages built:" & bld_counter (success)'Img);
          TIO.Put_Line ("           ignored:" & bld_counter (ignored)'Img);

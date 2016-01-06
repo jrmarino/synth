@@ -4,11 +4,13 @@
 with Util.Streams.Pipes;
 with Util.Streams.Buffered;
 with PortScan.Ops;
+with Signals;
 
 package body PortScan.Packages is
 
    package STR renames Util.Streams;
    package OPS renames PortScan.Ops;
+   package SIG renames Signals;
 
 
    ---------------------------
@@ -156,6 +158,9 @@ package body PortScan.Packages is
       parallel_package_scan (repository);
 
       while not clean_pass loop
+         if SIG.graceful_shutdown_requested then
+            return;
+         end if;
          clean_pass := True;
          already_built.Clear;
          rank_queue.Iterate (check_package'Access);
@@ -741,7 +746,9 @@ package body PortScan.Packages is
          is
             target_port : port_index := subqueue.Element (cursor);
          begin
-            passed_initial_package_scan (repository, target_port);
+            if not SIG.graceful_shutdown_requested then
+               passed_initial_package_scan (repository, target_port);
+            end if;
             mq_progress (lot) := mq_progress (lot) + 1;
          end populate;
       begin
