@@ -869,7 +869,7 @@ package body PortScan.Ops is
         nvpair ("DIR_DISTFILES", PM.configuration.dir_distfiles) &
         nvpair ("DIR_LOGS", PM.configuration.dir_logs) &
         nvpair ("DIR_BUILDBASE", PM.configuration.dir_buildbase);
-      command : constant String := "/usr/bin/env " & common_env &
+      command : constant String := "/usr/bin/env -i " & common_env &
         envvar_list & " " & JT.USS (hook_location (hook));
    begin
       if not active_hook (hook) then

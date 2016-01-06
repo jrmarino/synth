@@ -7,6 +7,7 @@ with Util.Streams.Pipes;
 with Util.Streams.Buffered;
 with GNAT.String_Split;
 with Ada.Exceptions;
+with Signals;
 
 package body PortScan is
 
@@ -14,6 +15,7 @@ package body PortScan is
    package RGX renames GNAT.Regpat;
    package STR renames Util.Streams;
    package GSS renames GNAT.String_Split;
+   package SIG renames Signals;
 
 
    ------------------------------
@@ -198,8 +200,12 @@ package body PortScan is
             target_port : port_index := subqueue.Element (cursor);
          begin
             if not aborted then
-               populate_port_data (target_port);
-               mq_progress (lot) := mq_progress (lot) + 1;
+               if SIG.graceful_shutdown_requested then
+                  aborted := True;
+               else
+                  populate_port_data (target_port);
+                  mq_progress (lot) := mq_progress (lot) + 1;
+               end if;
             end if;
          exception
             when issue : others =>

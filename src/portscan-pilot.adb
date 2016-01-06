@@ -379,7 +379,11 @@ package body PortScan.Pilot is
          PortScan.set_build_priority;
          return True;
       else
-         TIO.Put_Line ("Failed to scan ports tree " & bailing);
+         if SIG.graceful_shutdown_requested then
+            TIO.Put_Line (shutreq);
+         else
+            TIO.Put_Line ("Failed to scan ports tree " & bailing);
+         end if;
          return False;
       end if;
    end fully_scan_ports_tree;
@@ -405,6 +409,10 @@ package body PortScan.Pilot is
       end if;
       PKG.clean_repository (repo);
       PKG.limited_sanity_check (repo, False);
+      if SIG.graceful_shutdown_requested then
+         TIO.Put_Line (shutreq);
+         return False;
+      end if;
       if AD.Exists (xz_meta) then
          AD.Delete_File (xz_meta);
       end if;

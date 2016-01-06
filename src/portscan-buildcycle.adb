@@ -839,12 +839,11 @@ package body PortScan.Buildcycle is
       PATH : constant String := "PATH=/sbin:/bin:/usr/sbin:/usr/bin:" &
                                 "/usr/local/sbin:/usr/local/bin ";
       TERM : constant String := "TERM=cons25 ";
-      TCAP : constant String := "TERMCAP= ";
       USER : constant String := "USER=root ";
       HOME : constant String := "HOME=/root ";
       LANG : constant String := "LANG=C ";
    begin
-      return " /usr/bin/env " & USER & HOME & LANG & TERM & TCAP & PATH;
+      return " /usr/bin/env -i " & USER & HOME & LANG & TERM & PATH;
    end environment_override;
 
 
