@@ -2,10 +2,12 @@
 --  Reference: ../License.txt
 
 with JohnnyText;
+with Signals;
 
 package body Display is
 
-   package JT renames JohnnyText;
+   package  JT renames JohnnyText;
+   package SIG renames Signals;
 
    ----------------------
    --  launch_monitor  --
@@ -117,13 +119,10 @@ package body Display is
       hghtint : constant Integer := 4 + builders_used;
       height  : constant TIC.Line_Position := TIC.Line_Position (hghtint);
       lastrow : constant TIC.Line_Position := inc (height, -1);
-      dashes  : constant String (1 .. 79) := (others => '=');
-      header  : String (1 .. 79) := (others => ' ');
-      blank   : String (1 .. 79) := (others => ' ');
-      headtxt : constant String := " ID  Elapsed   Build Phase      " &
-        "Origin                                   Lines";
+      dashes  : constant appline := (others => '=');
+      headtxt : constant appline := " ID  Elapsed   Build Phase      " &
+        "Origin                                   Lines ";
    begin
-      header (1 .. headtxt'Length) := headtxt;
       TIC.Set_Character_Attributes (Win   => zone_builders,
                                     Attr  => bright,
                                     Color => TIC.Color_Pair (c_dashes));
@@ -134,11 +133,18 @@ package body Display is
       TIC.Move_Cursor (Win => zone_builders, Line => lastrow, Column => 0);
       TIC.Add (Win => zone_builders, Str => dashes);
 
-      TIC.Set_Character_Attributes (Win   => zone_builders,
-                                    Attr  => normal,
-                                    Color => TIC.Color_Pair (c_tableheader));
       TIC.Move_Cursor (Win => zone_builders, Line => 1, Column => 0);
-      TIC.Add (Win => zone_builders, Str => header);
+      if SIG.graceful_shutdown_requested then
+         TIC.Set_Character_Attributes (Win   => zone_builders,
+                                       Attr  => bright,
+                                       Color => c_advisory);
+         TIC.Add (Win => zone_builders, Str => shutdown_msg);
+      else
+         TIC.Set_Character_Attributes (Win   => zone_builders,
+                                       Attr  => normal,
+                                       Color => c_tableheader);
+         TIC.Add (Win => zone_builders, Str => headtxt);
+      end if;
       for z in 3 .. inc (lastrow, -1) loop
          TIC.Move_Cursor (Win => zone_builders, Line => z, Column => 0);
          TIC.Add (Win => zone_builders, Str => blank);
@@ -315,6 +321,13 @@ package body Display is
          TIC.Add (Win => zone_builders, Str => S);
       end colorado;
    begin
+      if SIG.graceful_shutdown_requested then
+         TIC.Set_Character_Attributes (Win   => zone_builders,
+                                       Attr  => bright,
+                                       Color => c_advisory);
+         TIC.Move_Cursor (Win => zone_builders, Line => 1, Column => 0);
+         TIC.Add (Win => zone_builders, Str => shutdown_msg);
+      end if;
       print_id;
       colorado (BR.Elapsed, c_standard,  5, row, True);
       colorado (BR.phase,   c_bldphase, 15, row, True);
@@ -349,9 +362,7 @@ package body Display is
    --------------------------------
    --  draw_static_actions_zone  --
    --------------------------------
-   procedure draw_static_actions_zone
-   is
-      blank : constant String (1 .. 79) := (others => ' ');
+   procedure draw_static_actions_zone is
    begin
       for z in 0 .. inc (historyheight, -1) loop
          TIC.Move_Cursor (Win => zone_actions, Line => z, Column => 0);
@@ -373,9 +384,7 @@ package body Display is
       function col_action (action : String) return TIC.Color_Pair;
       procedure print_id (id : builders; sid : String; row : TIC.Line_Position;
                           action : String);
-      procedure clear_row (row : TIC.Line_Position)
-      is
-         blank : String (1 .. 79) := (others => ' ');
+      procedure clear_row (row : TIC.Line_Position) is
       begin
          TIC.Set_Character_Attributes (Win   => zone_actions,
                                        Attr  => TIC.Normal_Video,
@@ -497,6 +506,7 @@ package body Display is
       c_origin      := TIC.Color_Pair (6);
       c_bldphase    := TIC.Color_Pair (4);
       c_shutdown    := TIC.Color_Pair (8);
+      c_advisory    := TIC.Color_Pair (4);
 
       c_slave  (1).palette   := TIC.Color_Pair (1);  --  white / Black
       c_slave  (1).attribute := bright;

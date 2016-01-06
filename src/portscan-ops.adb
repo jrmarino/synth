@@ -174,9 +174,13 @@ package body PortScan.Ops is
                         then
                            run_complete := True;
                            builder_states (slave) := shutdown;
+                           DPY.insert_history (assemble_HR (slave, 0,
+                                               DPY.action_shutdown));
                         else
                            if shutdown_recommended (available) then
                               builder_states (slave) := shutdown;
+                              DPY.insert_history (assemble_HR (slave, 0,
+                                                  DPY.action_shutdown));
                               available := available - 1;
                            end if;
                         end if;
@@ -195,7 +199,7 @@ package body PortScan.Ops is
                      if curses_support then
                         DPY.insert_history
                           (assemble_HR (slave, instructions (slave),
-                           "success "));
+                           DPY.action_success));
                      else
                         TIO.Put_Line (CYC.elapsed_now & " => [" &
                                         JT.zeropad (Integer (slave), 2) &
@@ -229,7 +233,7 @@ package body PortScan.Ops is
                      if curses_support then
                         DPY.insert_history
                           (assemble_HR (slave, instructions (slave),
-                           "failure "));
+                           DPY.action_failure));
                      else
                         TIO.Put_Line (CYC.elapsed_now & " => [" &
                                         JT.zeropad (Integer (slave), 2) &
@@ -244,7 +248,8 @@ package body PortScan.Ops is
                   instructions (slave) := port_match_failed;
                   if run_complete then
                      builder_states (slave) := shutdown;
-                     DPY.insert_history (assemble_HR (slave, 0, "shutdown"));
+                     DPY.insert_history (assemble_HR (slave, 0,
+                                         DPY.action_shutdown));
                   else
                      builder_states (slave) := idle;
                   end if;
@@ -340,7 +345,7 @@ package body PortScan.Ops is
                             port_name (purged));
             TIO.Put_Line (logs (skipped), port_name (purged) &
                             " by " & culprit);
-            DPY.insert_history (assemble_HR (1, purged, "skipped "));
+            DPY.insert_history (assemble_HR (1, purged, DPY.action_skipped));
             run_hook (pkg_skipped, "RESULT=skipped ORIGIN=" & port_name (purged)
                       & " PKGNAME=" & package_name (purged) & " ");
          end if;
@@ -607,7 +612,8 @@ package body PortScan.Ops is
          QR := ranking_crate.Element (Position => cursor);
          if all_ports (QR.ap_index).ignored then
             result := QR.ap_index;
-            DPY.insert_history (assemble_HR (1, QR.ap_index, "ignored "));
+            DPY.insert_history (assemble_HR (1, QR.ap_index,
+                                DPY.action_ignored));
             run_hook (pkg_ignored, "RESULT=ignored ORIGIN=" &
                         port_name (QR.ap_index) & " PKGNAME="
                       & package_name (QR.ap_index) & " ");
@@ -758,7 +764,8 @@ package body PortScan.Ops is
    -------------------
    --  assemble_HR  --
    -------------------
-   function assemble_HR (slave : builders; pid : port_id; action : String)
+   function assemble_HR (slave : builders; pid : port_id;
+                         action : DPY.history_action)
                          return DPY.history_rec
    is
       HR : DPY.history_rec;
@@ -773,10 +780,12 @@ package body PortScan.Ops is
       HR.action      := action;
       HR.origin      := (others => ' ');
       HR.run_elapsed := CYC.elapsed_now;
-      if action = "shutdown " then
+      if action = DPY.action_shutdown then
          HR.pkg_elapsed := zeros;
       else
-         if action = "skipped " or else action = "ignored " then
+         if action = DPY.action_skipped or else
+           action = DPY.action_ignored
+         then
             HR.pkg_elapsed := hyphens;
          else
             HR.pkg_elapsed := CYC.elapsed_build (slave);

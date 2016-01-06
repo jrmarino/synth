@@ -96,7 +96,8 @@ private
    function  get_instant_load return Float;
    function  hourly_build_rate return Natural;
    function  impulse_rate return Natural;
-   function  assemble_HR (slave : builders; pid : port_id; action : String)
+   function  assemble_HR (slave : builders; pid : port_id;
+                          action : DPY.history_action)
                           return DPY.history_rec;
    function  file_is_executable (filename : String) return Boolean;
    procedure delete_rank (id : port_id);

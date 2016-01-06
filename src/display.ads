@@ -11,12 +11,13 @@ package Display is
 
    subtype history_origin is String (1 .. 43);
    subtype history_elapsed is String (1 .. 8);
+   subtype history_action  is String (1 .. 8);
    type history_rec is
       record
          id          : builders;
          slavid      : String (1 .. 2);
          run_elapsed : history_elapsed;
-         action      : String (1 .. 8);
+         action      : history_action;
          pkg_elapsed : history_elapsed;
          origin      : history_origin;
          established : Boolean := False;
@@ -47,6 +48,12 @@ package Display is
          phase     : String (1 .. 15);
          origin    : String (1 .. 37);
       end record;
+
+   action_shutdown : constant history_action := "shutdown";
+   action_skipped  : constant history_action := "skipped ";
+   action_ignored  : constant history_action := "ignored ";
+   action_success  : constant history_action := "success ";
+   action_failure  : constant history_action := "failure ";
 
    --  Initialize the curses screen.
    --  Returns False if no color support (curses not used at all)
@@ -85,6 +92,7 @@ private
    type builder_palette is array (builders) of palette_rec;
    type cyclic_range is range 1 .. 50;
    type dim_history is array (cyclic_range) of history_rec;
+   subtype appline is String (1 .. 79);
 
    history       : dim_history;
    history_arrow : cyclic_range := cyclic_range'Last;
@@ -110,6 +118,7 @@ private
    c_origin      : TIC.Color_Pair;
    c_bldphase    : TIC.Color_Pair;
    c_shutdown    : TIC.Color_Pair;
+   c_advisory    : TIC.Color_Pair;
 
    cursor_vis    : TIC.Cursor_Visibility := TIC.Invisible;
 
@@ -119,6 +128,10 @@ private
                             (Bold_Character => True, others => False);
    dimmed        : constant TIC.Character_Attribute_Set :=
                             (Dim_Character => True, others => False);
+
+   shutdown_msg : constant appline := "        Graceful shutdown in " &
+                  "progress, so no new tasks will be started.        ";
+   blank        : constant appline := (others => ' ');
 
    procedure launch_summary_zone;
    procedure launch_builders_zone;
