@@ -112,7 +112,7 @@ package body Replicant is
       flavor := opsys;
 
       if AD.Exists (mm) then
-         AD.Delete_Tree (mm);
+         annihilate_directory_tree (mm);
       end if;
 
       AD.Create_Path (mm);
@@ -131,7 +131,7 @@ package body Replicant is
       mm : constant String := get_master_mount;
    begin
       if AD.Exists (mm) then
-         AD.Delete_Tree (mm);
+         annihilate_directory_tree (mm);
       end if;
    end finalize;
 
@@ -732,7 +732,7 @@ package body Replicant is
       folder_access (location (slave_base, var) & "/empty", unlock);
 
       unmount (slave_base);
-      AD.Delete_Tree (slave_base);
+      annihilate_directory_tree (slave_base);
 
    exception
       when hiccup : others => EX.Reraise_Occurrence (hiccup);
