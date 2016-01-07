@@ -506,7 +506,7 @@ package body Display is
       c_tableheader := TIC.Color_Pair (1);
       c_origin      := TIC.Color_Pair (6);
       c_bldphase    := TIC.Color_Pair (4);
-      c_shutdown    := TIC.Color_Pair (8);
+      c_shutdown    := TIC.Color_Pair (1);
       c_advisory    := TIC.Color_Pair (4);
 
       c_slave  (1).palette   := TIC.Color_Pair (1);  --  white / Black
