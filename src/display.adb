@@ -80,10 +80,12 @@ package body Display is
    --------------------------------
    procedure draw_static_summary_zone
    is
-      line1 : String := "Total         Built        Ignored        " &
-                        "Load  0.00  Pkg/hour     ";
-      line2 : String := " Left        Failed        skipped        " &
-                        "swap  0.0%   Impulse       00:00:00";
+      line1 : constant appline :=
+        " Total         Built        Ignored        Load  0.00  Pkg/hour" &
+        "                ";
+      line2 : constant appline :=
+        "  Left        Failed        skipped        swap  0.0%   Impulse" &
+        "       00:00:00 ";
    begin
       TIC.Set_Character_Attributes (Win   => zone_summary,
                                     Attr  => bright,
@@ -267,18 +269,18 @@ package body Display is
          L1F4 := fmtpc (data.load, False);
       end if;
 
-      colorado (L1F1, c_standard,  6, 0);
-      colorado (L1F2, c_success,  20, 0);
-      colorado (L1F3, c_ignored,  35, 0);
-      colorado (L1F4, c_standard, 47, 0, True);
-      colorado (L1F5, c_standard, 63, 0, True);
+      colorado (L1F1, c_standard,  7, 0);
+      colorado (L1F2, c_success,  21, 0);
+      colorado (L1F3, c_ignored,  36, 0);
+      colorado (L1F4, c_standard, 48, 0, True);
+      colorado (L1F5, c_standard, 64, 0, True);
 
-      colorado (L2F1, c_standard,  6, 1);
-      colorado (L2F2, c_failure,  20, 1);
-      colorado (L2F3, c_skipped,  35, 1);
-      colorado (L2F4, c_standard, 47, 1, True);
-      colorado (L2F5, c_standard, 63, 1, True);
-      colorado (data.elapsed, c_elapsed, 69, 1);
+      colorado (L2F1, c_standard,  7, 1);
+      colorado (L2F2, c_failure,  21, 1);
+      colorado (L2F3, c_skipped,  36, 1);
+      colorado (L2F4, c_standard, 48, 1, True);
+      colorado (L2F5, c_standard, 64, 1, True);
+      colorado (data.elapsed, c_elapsed, 70, 1);
 
       TIC.Refresh (Win => zone_summary);
    end summarize;
