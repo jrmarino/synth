@@ -1,13 +1,26 @@
 --  This file is covered by the Internet Software Consortium (ISC) License
 --  Reference: ../License.txt
 
+with Ada.Text_IO;
+with Ada.Characters.Latin_1;
+
 package body Signals is
+
+   package TIO renames Ada.Text_IO;
+   package LAT renames Ada.Characters.Latin_1;
 
    -----------------------------------
    --  graceful_shutdown_requested  --
    -----------------------------------
-   function graceful_shutdown_requested return Boolean is
+   function graceful_shutdown_requested return Boolean
+   is
+      caught_char : Character;
+      got_one     : Boolean;
    begin
+      TIO.Get_Immediate (Item => caught_char, Available => got_one);
+      if got_one and then caught_char = LAT.ESC then
+         control_c_break := True;
+      end if;
       return control_c_break;
    end graceful_shutdown_requested;
 
