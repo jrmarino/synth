@@ -916,6 +916,15 @@ package body PortScan.Pilot is
    end previous_run_mounts_detected;
 
 
+   -------------------------------------
+   --  previous_realfs_work_detected  --
+   -------------------------------------
+   function previous_realfs_work_detected return Boolean is
+   begin
+      return REP.disk_workareas_exist;
+   end previous_realfs_work_detected;
+
+
    ---------------------------------------
    --  old_mounts_successfully_removed  --
    ---------------------------------------
@@ -933,6 +942,22 @@ package body PortScan.Pilot is
                       JT.USS (PM.configuration.dir_buildbase));
       return False;
    end old_mounts_successfully_removed;
+
+
+   --------------------------------------------
+   --  old_realfs_work_successfully_removed  --
+   --------------------------------------------
+   function old_realfs_work_successfully_removed return Boolean is
+   begin
+      if REP.clear_existing_workareas then
+         TIO.Put_Line ("Directory removal successful!");
+         return True;
+      end if;
+      TIO.Put_Line ("The attempt to remove the work directories located at ");
+      TIO.Put_Line (JT.USS (PM.configuration.dir_buildbase) & "failed.");
+      TIO.Put_Line ("Please remove them manually before continuing");
+      return False;
+   end old_realfs_work_successfully_removed;
 
 
    -------------------------

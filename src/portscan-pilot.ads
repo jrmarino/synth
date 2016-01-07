@@ -74,9 +74,17 @@ package PortScan.Pilot is
    --  The action upon "True" would be to try to clean them up (else abort)
    function previous_run_mounts_detected return Boolean;
 
+   --  Checks if work directories are left over from aborted previous run
+   --  The action upon "True" would be to remove them completely
+   function previous_realfs_work_detected return Boolean;
+
    --  Returns True if all the old mounts were unmounted without issue.
    --  If not, it will emit messages so Synth can just eject directly.
    function old_mounts_successfully_removed return Boolean;
+
+   --  Returns True if all the old SL*_(work|localbase) directories
+   --  were removed without any problems
+   function old_realfs_work_successfully_removed return Boolean;
 
    --  libexec/synthexec is required, make sure it's installed!
    function synthexec_missing return Boolean;

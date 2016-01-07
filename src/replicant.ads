@@ -28,8 +28,14 @@ package Replicant is
    --  Returns True if any mounts are detected (used by pilot)
    function synth_mounts_exist return Boolean;
 
+   --  Returns True if any _work/_localbase dirs are detected (used by pilot)
+   function disk_workareas_exist return Boolean;
+
    --  Returns True if the attempt to clear mounts is successful.
    function clear_existing_mounts return Boolean;
+
+   --  Returns True if the attempt to remove the disk work areas is successful
+   function clear_existing_workareas return Boolean;
 
    --  In order to do scanning in a clean environment prior to the true build
    --  Returns True on success

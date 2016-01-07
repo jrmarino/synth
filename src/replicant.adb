@@ -829,6 +829,53 @@ package body Replicant is
 
 
    ----------------------------
+   --  disk_workareas_exist  --
+   ----------------------------
+   function disk_workareas_exist return Boolean
+   is
+      Search    : AD.Search_Type;
+      buildbase : constant String := JT.USS (PM.configuration.dir_buildbase);
+      result    : Boolean := False;
+   begin
+      AD.Start_Search (Search    => Search,
+                       Directory => buildbase,
+                       Filter    => (AD.Directory => True, others => False),
+                       Pattern   => "SL*_*");
+
+      result := AD.More_Entries (Search => Search);
+      return result;
+   end disk_workareas_exist;
+
+
+   --------------------------------
+   --  clear_existing_workareas  --
+   --------------------------------
+   function clear_existing_workareas return Boolean
+   is
+      Search    : AD.Search_Type;
+      Dir_Ent   : AD.Directory_Entry_Type;
+      buildbase : constant String := JT.USS (PM.configuration.dir_buildbase);
+   begin
+      AD.Start_Search (Search    => Search,
+                       Directory => buildbase,
+                       Filter    => (AD.Directory => True, others => False),
+                       Pattern   => "SL*_*");
+      while AD.More_Entries (Search => Search) loop
+         AD.Get_Next_Entry (Search => Search, Directory_Entry => Dir_Ent);
+         declare
+            target : constant String := buildbase & "/" &
+                                        AD.Simple_Name (Dir_Ent);
+         begin
+            annihilate_directory_tree (target);
+         end;
+      end loop;
+      return True;
+   exception
+      when others => return False;
+   end clear_existing_workareas;
+
+
+   ----------------------------
    --  concatenate_makeconf  --
    ----------------------------
    procedure concatenate_makeconf (makeconf_handle : TIO.File_Type)

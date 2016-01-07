@@ -37,6 +37,8 @@ begin
       holdon : constant String := "Synth is already running on this system.";
       badmnt : constant String := "Builder mounts detected; attempting to " &
                                   "remove them automatically ...";
+      badwrk : constant String := "Old work directories detected; attempting " &
+                                  "to remove them automatically ...";
    begin
       if first = "help" then
          mandate := help;
@@ -113,6 +115,13 @@ begin
          if PIL.previous_run_mounts_detected then
             TIO.Put_Line (badmnt);
             if not PIL.old_mounts_successfully_removed then
+               return;
+            end if;
+         end if;
+
+         if PIL.previous_realfs_work_detected then
+            TIO.Put_Line (badwrk);
+            if not PIL.old_realfs_work_successfully_removed then
                return;
             end if;
          end if;
@@ -242,6 +251,13 @@ begin
          if PIL.previous_run_mounts_detected then
             TIO.Put_Line (badmnt);
             if not PIL.old_mounts_successfully_removed then
+               return;
+            end if;
+         end if;
+
+         if PIL.previous_realfs_work_detected then
+            TIO.Put_Line (badwrk);
+            if not PIL.old_realfs_work_successfully_removed then
                return;
             end if;
          end if;
