@@ -142,6 +142,7 @@ package body PortScan.Pilot is
          end if;
          if SIG.graceful_shutdown_requested then
             successful := False;
+            return;
          end if;
          successful := PortScan.scan_single_port (catport => origin);
          if not successful then
@@ -167,6 +168,7 @@ package body PortScan.Pilot is
 
       <<clean_exit>>
       if SIG.graceful_shutdown_requested then
+         successful := False;
          TIO.Put_Line (shutreq);
       end if;
       REP.destroy_slave (id => PortScan.scan_slave);
@@ -289,9 +291,6 @@ package body PortScan.Pilot is
          stop_logging (failure);
          stop_logging (skipped);
          TIO.Put_Line (LAT.LF & LAT.LF);
-         if SIG.graceful_shutdown_requested then
-            TIO.Put_Line (shutreq);
-         end if;
          TIO.Put_Line ("The task is complete.  Final tally:");
          TIO.Put_Line ("Initial queue size:" & bld_counter (total)'Img);
          TIO.Put_Line ("    packages built:" & bld_counter (success)'Img);
