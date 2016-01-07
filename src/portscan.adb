@@ -39,7 +39,7 @@ package body PortScan is
    ------------------------
    --  scan_single_port  --
    ------------------------
-   function scan_single_port (repository, catport : String)
+   function scan_single_port (catport : String)
                               return Boolean
    is
       xports : constant String := JT.USS (PM.configuration.dir_buildbase) &

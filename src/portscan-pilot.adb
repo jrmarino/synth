@@ -66,9 +66,7 @@ package body PortScan.Pilot is
    begin
       REP.initialize;
       REP.launch_slave (id => PortScan.scan_slave);
-      good_scan := PortScan.scan_single_port
-        (catport    => pkgng,
-         repository => JT.USS (PM.configuration.dir_repository));
+      good_scan := PortScan.scan_single_port (catport => pkgng);
 
       if good_scan then
          PortScan.set_build_priority;
@@ -145,9 +143,7 @@ package body PortScan.Pilot is
          if SIG.graceful_shutdown_requested then
             successful := False;
          end if;
-         successful := PortScan.scan_single_port
-           (catport    => origin,
-            repository => JT.USS (PM.configuration.dir_repository));
+         successful := PortScan.scan_single_port (catport => origin);
          if not successful then
             TIO.Put_Line ("Scan of " & origin & " failed!" & bailing);
          end if;
