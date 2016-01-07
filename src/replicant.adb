@@ -790,9 +790,16 @@ package body Replicant is
       mlength   : Natural;
       mpoints   : crate.Vector;
 
-      procedure annihilate (cursor : crate.Cursor) is
+      procedure annihilate (cursor : crate.Cursor)
+      is
+         mountpoint : constant String := JT.USS (crate.Element (cursor));
       begin
-         unmount (JT.USS (crate.Element (cursor)));
+         unmount (mountpoint);
+         if AD.Exists (mountpoint) then
+            AD.Delete_Directory (mountpoint);
+         end if;
+      exception
+         when others => null;
       end annihilate;
    begin
       comres := internal_system_command (command1);
