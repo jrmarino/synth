@@ -9,7 +9,7 @@ package Display is
 
    package TIC renames Terminal_Interface.Curses;
 
-   subtype history_origin is String (1 .. 43);
+   subtype history_origin  is String (1 .. 45);
    subtype history_elapsed is String (1 .. 8);
    subtype history_action  is String (1 .. 8);
    type history_rec is

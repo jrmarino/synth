@@ -433,14 +433,14 @@ package body Display is
          TIC.Set_Character_Attributes (Win   => zone_actions,
                                        Attr  => normal,
                                        Color => c_standard);
-         TIC.Move_Cursor (Win => zone_actions, Line => row, Column => 13);
+         TIC.Move_Cursor (Win => zone_actions, Line => row, Column => 10);
          TIC.Add (Win => zone_actions, Str => "[--]");
          if action /= "skipped " and then action /= "ignored "
          then
             TIC.Set_Character_Attributes (Win   => zone_actions,
                                           Attr  => c_slave (id).attribute,
                                           Color => c_slave (id).palette);
-            TIC.Move_Cursor (Win => zone_actions, Line => row, Column => 14);
+            TIC.Move_Cursor (Win => zone_actions, Line => row, Column => 11);
             TIC.Add (Win => zone_actions, Str => sid);
          end if;
       end print_id;
@@ -457,16 +457,15 @@ package body Display is
       for row in TIC.Line_Position (0) .. maxrow loop
 
          if history (arrow).established then
-              colorado (history (arrow).run_elapsed & " =>",
-                        c_standard, 1, row, True);
+            colorado (history (arrow).run_elapsed, c_standard, 1, row, True);
             print_id (id     => history (arrow).id,
                       sid    => history (arrow).slavid,
                       row    => row,
                       action => history (arrow).action);
             colorado (history (arrow).action,
-                      col_action (history (arrow).action), 18, row);
-            colorado (history (arrow).pkg_elapsed, c_standard, 27, row, True);
-            colorado (history (arrow).origin, c_origin, 36, row);
+                      col_action (history (arrow).action), 15, row);
+            colorado (history (arrow).origin, c_origin, 24, row);
+            colorado (history (arrow).pkg_elapsed, c_standard, 70, row, True);
          else
             clear_row (row);
          end if;
