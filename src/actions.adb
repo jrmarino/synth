@@ -103,7 +103,7 @@ package body Actions is
          synth & opt11 & "Like 'build', but skips post-build questions" &
          synth & opt12 & "Like 'build', but upgrades system without asking" &
          synth & opt13 & "Like 'build', but deletes existing packages first" &
-         synth & opt14 & "Like 'just-build', but with DEVELOPER=yes set");
+         synth & opt14 & "Like 'force', but with DEVELOPER=yes set");
       TIO.Put_Line
                (LAT.LF & "[ports] is a space-delimited list of origins, " &
                          "e.g. editors/joe editors/emacs." &

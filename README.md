@@ -138,7 +138,7 @@ what it requested.
 
 #### > synth test [ports]
 
-This command is similar to "synth build [ports]", but the difference is that
+This command is similar to "synth force [ports]", but the difference is that
 the ports are built under DEVELOPER mode and have additional checks.  This
 makes the build logs suitable for submitting to FreeBSD Bugzilla (as an
 alternative to Poudriere)
