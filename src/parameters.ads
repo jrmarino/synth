@@ -135,6 +135,7 @@ private
    function query_distfiles (portsdir : String) return String;
    function query_opsys (portsdir : String) return String;
    function enough_memory (num_builders : builders) return Boolean;
+   function determine_portsdirs return String;
    procedure query_physical_memory;
    procedure mkdirp_from_file (filename : String);
 

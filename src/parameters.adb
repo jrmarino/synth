@@ -6,6 +6,7 @@ with Ada.Text_IO;
 with Ada.Characters.Latin_1;
 with Util.Streams.Pipes;
 with Util.Streams.Buffered;
+with GNAT.OS_Lib;
 
 package body Parameters is
 
@@ -13,6 +14,7 @@ package body Parameters is
    package TIO renames Ada.Text_IO;
    package STR renames Util.Streams;
    package LAT renames Ada.Characters.Latin_1;
+   package OSL renames GNAT.OS_Lib;
 
    --------------------------
    --  load_configuration  --
@@ -39,6 +41,16 @@ package body Parameters is
          exception
             when Error : others =>
                TIO.Put_Line ("Failed to create " & conf_location);
+               return False;
+         end;
+         declare
+            test : String := determine_portsdirs;
+         begin
+            null;
+         exception
+            when Error : others =>
+               TIO.Put_Line ("Could not find ports directory at standard " &
+                            "location, nor PORTSDIR environment variable.");
                return False;
          end;
       end if;
@@ -75,8 +87,33 @@ package body Parameters is
 
       return True;
    exception
-      when mishap : others =>  return False;
+      when mishap : others => return False;
    end load_configuration;
+
+
+   ---------------------------
+   --  determine_portsdirs  --
+   ---------------------------
+   function determine_portsdirs return String is
+   begin
+      --  PORTSDIR in environment takes precedence
+      declare
+         portsdir : String := OSL.Getenv ("PORTSDIR").all;
+      begin
+         if portsdir /= "" then
+            if AD.Exists (portsdir) then
+               return portsdir;
+            end if;
+         end if;
+      end;
+      if AD.Exists (std_dports_loc) then
+         return std_dports_loc;
+      elsif AD.Exists (std_ports_loc) then
+         return std_ports_loc;
+      end if;
+      raise update_config
+        with "Default ports directory cannot be found";
+   end determine_portsdirs;
 
 
    -----------------------------
@@ -94,12 +131,9 @@ package body Parameters is
                            num_builders     => def_builders,
                            jobs_per_builder => def_jlimit);
 
-      res.dir_packages   := extract_string (profile, Field_01, LS_Packages);
-      if AD.Exists (std_dports_loc) then
-         res.dir_portsdir := extract_string (profile, Field_03, std_dports_loc);
-      else
-         res.dir_portsdir := extract_string (profile, Field_03, std_ports_loc);
-      end if;
+      res.dir_packages := extract_string (profile, Field_01, LS_Packages);
+      res.dir_portsdir := extract_string (profile, Field_03,
+                                          determine_portsdirs);
       res.dir_repository := res.dir_packages;
       JT.SU.Append (res.dir_repository, "/All");
 
