@@ -10,7 +10,7 @@ package Parameters is
 
    package JT renames JohnnyText;
 
-   live_system   : constant String := "Live System";
+   live_system   : constant String := "LiveSystem";
    no_ccache     : constant String := "disabled";
    synth_confdir : constant String := host_localbase & "/etc/synth";
    type configuration_record is
@@ -76,7 +76,7 @@ private
    --    12+ CPU :: floor (75% * CPU), 5 jobs per builder
 
    --  Each section is identical, but represents a profile
-   --  Selection 1 is the live system, a.k.a "[Live System]"
+   --  Selection 1 is the live system, a.k.a "[LiveSystem]"
    --  If /usr/dports exists, that will be the default ports tree directory,
    --  otherwise /usr/ports is.
    --  The OpSys and distfiles are queried so "std_opsys" and "std_distfiles"

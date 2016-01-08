@@ -48,7 +48,7 @@ editors/libreoffice
 
 Synth uses an interactive menu to configure itself.  It is based on profiles
 that can mix and match the parts of the build system.  Most people will use
-the "Live System", but advanced users may have custom bases installed
+the "LiveSystem" profile, but advanced users may have custom bases installed
 elsewhere and prefer to create a profile that uses them.  The configuration
 also covers items such as how many builders to spawn during building, whether
 tmpfs should be used, etc.
@@ -162,8 +162,8 @@ and then deletes the files en-masse without asking.
 Any file that matches the path "/usr/local/etc/synth/[profile]-make.conf"
 where [profile] is the name of the selected configuration profile will be
 appended to the builders stock make.conf.  Note that the default profile
-name is "Live System" with a space, so that would make the path is
-"/usr/local/etc/synth/Live\ System-make.conf" for most users.
+name is "LiveSystem" with a space, so that would make the path is
+"/usr/local/etc/synth/LiveSystem-make.conf" for most users.
 
 #### Graceful exits
 
