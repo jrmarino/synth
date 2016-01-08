@@ -14,7 +14,7 @@ The version screen appears when Synth is executed with no command, an
 unknown command, or the "version" command.  It displays the current version,
 the copyright, and a summary of valid commands along with the usage.
 
-![synth version](https://www.dragonflybsd.org/~marino/synth-img/version.png)
+![synth version](http://downloads.dragonlace.net/misc/synth-img/version.png)
 
 #### > synth help
 
@@ -23,7 +23,7 @@ It provides a slightly longer explanation of each command Synth recognizes.
 For the most detailed explanation of the Synth commands, please refer the
 manual page, e.g. "man synth".
 
-![synth help](https://www.dragonflybsd.org/~marino/synth-img/help.png)
+![synth help](http://downloads.dragonlace.net/misc/synth-img/help.png)
 
 There are two command forms: commands with no arguments (e.g. help, version)
 and that take a list of port origins (unlimited) or a single path to file
@@ -53,7 +53,7 @@ and prefer to create a profile that uses them.  The configuration also covers
 items such as how many builders to spawn during building, whether tmpfs should
 be used, etc.
 
-![synth configure](https://www.dragonflybsd.org/~marino/synth-img/configure.png)
+![synth configure](http://downloads.dragonlace.net/misc/synth-img/configure.png)
 
 Just press the letter of the item that needs configuring.  All changes will be
 marked with an asterisk, and pressing the Enter key (carriage return) will
@@ -80,7 +80,7 @@ what actually will be rebuilt.  The "synth status-everything" command returns
 the incremental list of ports that would be built if the entire ports tree is
 requested (this is obviously not a command for an average user).
 
-![synth status](https://www.dragonflybsd.org/~marino/synth-img/status.png)
+![synth status](http://downloads.dragonlace.net/misc/synth-img/status.png)
 
 #### > synth upgrade-system
 
@@ -91,7 +91,7 @@ When that is finished, the local repository will be updated, and finally the
 system's pkg(8) program will be commanded to update the system using the local
 repository.
 
-![synth status](https://www.dragonflybsd.org/~marino/synth-img/ncurses.png)
+![synth status](http://downloads.dragonlace.net/misc/synth-img/ncurses.png)
 
 During the build process, the build status is shown and updated every second.
 The user can see the results of recent builds (up to 50, but limited to screen
