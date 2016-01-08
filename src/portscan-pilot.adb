@@ -985,17 +985,35 @@ package body PortScan.Pilot is
    procedure display_results_of_dry_run
    is
       procedure print (cursor : ranking_crate.Cursor);
+      listlog  : TIO.File_Type;
+      filename : constant String := "/tmp/synth_status_results.txt";
+      goodlog  : Boolean;
+
       procedure print (cursor : ranking_crate.Cursor)
       is
          id : port_id := ranking_crate.Element (cursor).ap_index;
       begin
          TIO.Put_Line ("  => " & get_catport (all_ports (id)));
+         if goodlog then
+            TIO.Put_Line (listlog, get_catport (all_ports (id)));
+         end if;
       end print;
    begin
+      declare
+      begin
+         TIO.Create (File => listlog, Mode => TIO.Out_File, Name => filename);
+         goodlog := True;
+      exception
+         when others => goodlog := False;
+      end;
       TIO.Put_Line ("These are the ports that would be built:");
       rank_queue.Iterate (print'Access);
       TIO.Put_Line ("Total packages that would be built:" &
                       rank_queue.Length'Img);
+      if goodlog then
+         TIO.Close (listlog);
+         TIO.Put_Line ("The complete list can also be found at " & filename);
+      end if;
    end display_results_of_dry_run;
 
 
