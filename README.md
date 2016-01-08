@@ -180,7 +180,7 @@ options don't match the current port, the option names are different, etc)
 then it will print out the problematic ports and halt, recommending that
 the cached options either be removed or re-saved to something valid.  To
 build a package with non-default options, just run
-"> make -C /usr/ports/<category>/<portname> config" before staring a build.
+"make -C /usr/ports/[category]/[portname] config" before staring a build.
 
 #### Build logs
 
