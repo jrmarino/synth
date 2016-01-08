@@ -837,6 +837,9 @@ package body Replicant is
       buildbase : constant String := JT.USS (PM.configuration.dir_buildbase);
       result    : Boolean := False;
    begin
+      if not AD.Exists (buildbase) then
+         return False;
+      end if;
       AD.Start_Search (Search    => Search,
                        Directory => buildbase,
                        Filter    => (AD.Directory => True, others => False),
