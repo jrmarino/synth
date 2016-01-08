@@ -132,8 +132,17 @@ package body Parameters is
                            jobs_per_builder => def_jlimit);
 
       res.dir_packages := extract_string (profile, Field_01, LS_Packages);
-      res.dir_portsdir := extract_string (profile, Field_03,
-                                          determine_portsdirs);
+      if param_set (profile, Field_03) then
+         --  We can only check determine_portsdirs when no synth.ini file
+         --  exists.  It's possible that it was configured with PORTSDIR
+         --  set which can be removed later.  Use the dummy std_ports_loc
+         --  when we are sure the parameter is set (so dummy will NOT be used)
+         res.dir_portsdir := extract_string (profile, Field_03,
+                                             std_ports_loc);
+      else
+         res.dir_portsdir := extract_string (profile, Field_03,
+                                             determine_portsdirs);
+      end if;
       res.dir_repository := res.dir_packages;
       JT.SU.Append (res.dir_repository, "/All");
 
