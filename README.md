@@ -162,7 +162,7 @@ and then deletes the files en-masse without asking.
 Any file that matches the path "/usr/local/etc/synth/[profile]-make.conf"
 where [profile] is the name of the selected configuration profile will be
 appended to the builders stock make.conf.  Note that the default profile
-name is "Live System" with a space, so that would me the path is
+name is "Live System" with a space, so that would make the path is
 "/usr/local/etc/synth/Live\ System-make.conf" for most users.
 
 #### Graceful exits
