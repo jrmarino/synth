@@ -53,7 +53,7 @@ and prefer to create a profile that uses them.  The configuration also covers
 items such as how many builders to spawn during building, whether tmpfs should
 be used, etc.
 
-![synth configure](http://downloads.dragonlace.net/misc/synth-img/configure.png)
+![synth configure](http://downloads.dragonlace.net/misc/synth-img/configure2.png)
 
 Just press the letter of the item that needs configuring.  All changes will be
 marked with an asterisk, and pressing the Enter key (carriage return) will
