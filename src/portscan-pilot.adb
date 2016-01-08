@@ -131,7 +131,7 @@ package body PortScan.Pilot is
 
       procedure scan (plcursor : portkey_crate.Cursor)
       is
-         origin  : constant String := JT.USS (portkey_crate.Key (plcursor));
+         origin : constant String := JT.USS (portkey_crate.Key (plcursor));
       begin
          if not successful then
             return;
@@ -144,9 +144,9 @@ package body PortScan.Pilot is
             successful := False;
             return;
          end if;
-         successful := PortScan.scan_single_port (catport => origin);
-         if not successful then
-            TIO.Put_Line ("Scan of " & origin & " failed!" & bailing);
+         if not PortScan.scan_single_port (catport => origin) then
+            TIO.Put_Line ("Scan of " & origin & " failed (port deleted?), " &
+                            "it will not be considered.");
          end if;
       end scan;
 
@@ -164,6 +164,10 @@ package body PortScan.Pilot is
       portlist.Iterate (Process => scan'Access);
       if successful then
          PortScan.set_build_priority;
+         if PKG.queue_is_empty then
+            successful := False;
+            TIO.Put_Line ("There are no valid ports to build." & bailing);
+         end if;
       end if;
 
       <<clean_exit>>
