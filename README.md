@@ -48,10 +48,10 @@ editors/libreoffice
 
 Synth uses an interactive menu to configure itself.  It is based on profiles
 that can mix and match the parts of the build system.  Most people will use
-the "Live System", but advanced users may have custom bases installed else
-and prefer to create a profile that uses them.  The configuration also covers
-items such as how many builders to spawn during building, whether tmpfs should
-be used, etc.
+the "Live System", but advanced users may have custom bases installed
+elsewhere and prefer to create a profile that uses them.  The configuration
+also covers items such as how many builders to spawn during building, whether
+tmpfs should be used, etc.
 
 ![synth configure](http://downloads.dragonlace.net/misc/synth-img/configure2.png)
 
