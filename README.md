@@ -94,7 +94,7 @@ The command will remove all previously fetched distfiles that are no longer refe
 
 #### Custom make.conf
 
-Any file that matches the path “/usr/local/etc/synth/<profile>-make.conf” where <profile> is the name of the selected configuration profile will be appended to the builders stock make.conf.  Note that the default profile name is “Live System” with a space, so that would me the path is “/usr/local/etc/synth/Live\ System-make.conf” for most users.
+Any file that matches the path “/usr/local/etc/synth/[profile]-make.conf” where [profile] is the name of the selected configuration profile will be appended to the builders stock make.conf.  Note that the default profile name is “Live System” with a space, so that would me the path is “/usr/local/etc/synth/Live\ System-make.conf” for most users.
 
 #### Graceful exits
 
@@ -106,7 +106,7 @@ Synth uses cached options if they have been saved.  Synth will scan these option
 
 #### Build logs
 
-Every build produces a log.  By default they are located at /var/logs/synth, but this location is configurable.  The log name is in the format <category>___<portname>.log.
+Every build produces a log.  By default they are located at /var/logs/synth, but this location is configurable.  The log name is in the format [category]___[portname].log.
 
 #### Regular users
 
