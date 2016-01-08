@@ -22,6 +22,8 @@ package body Signals is
          control_c_break := True;
       end if;
       return control_c_break;
+   exception
+      when others => return control_c_break;
    end graceful_shutdown_requested;
 
 
