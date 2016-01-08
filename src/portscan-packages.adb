@@ -714,7 +714,7 @@ package body PortScan.Packages is
          else
             TIO.Put_Line (fail_count'Img & " ports are");
          end if;
-         TIO.Put_Line ("obsolete.  Please update or removed the saved " &
+         TIO.Put_Line ("obsolete.  Please update or remove the saved " &
                          "options and try again.");
          declare
             portsdir : String := JT.USS (PM.configuration.dir_portsdir) &
