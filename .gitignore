@@ -1,6 +1,5 @@
-build
+build/*
 external
-synth.adb.orig
 
 # Object file
 *.o
