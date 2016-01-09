@@ -1,0 +1,510 @@
+.Dd January 8, 2016
+.Dt SYNTH 1
+.Os
+.Sh NAME
+.Nm synth
+.Nd custom package repository builder for FreeBSD and DragonFly
+.Sh SYNOPSIS
+.Nm
+.Op Ar help | configure | version | status | purge-distfiles
+.Nm
+.Op upgrade-system | rebuild-repository
+.Nm
+.Op status-everything | status-everything
+.Nm
+.Op Ar status | build | just-build | install | force | test
+.Op Ar file | port-origin ...
+.Sh DESCRIPTION
+The
+.Nm
+program is an advanced concurrent ports building tool aimed at system
+administrators that prefer or require the building of packages from source
+rather than installing official binary packages.
+.Nm
+will build packages in a clean environment can exactly mirror the system
+that they are built on, it will create local package respositories and install
+.Xr pkg 8
+repository configuration file that causes locally built packages to be used
+with the highest priority, all while allowing the system to to fully upgraded
+with a single command.
+.Ss synth version
+When
+.Nm
+is executed with the
+.Cm version
+command, an unknown command, or no command at all, it will display a short
+block of text containing an identification, summary, version number, copyright,
+usage, and a summary of valid commands.
+.Ss synth help
+The
+.Cm help
+command displays lists each valid command with a short synopsis of the
+command's function. It also elaborates the several commands expect one or more
+port origins to be provided, or a path to a file with the same information.
+.Ss synth configure
+The
+.Cm configure
+command launches an interactive menu for providing the user with a clean method
+to configure
+.Nm .
+It works on the concept of profiles, and the default profile
+.Dq LiveSystem
+is automatically installed with values that are determined by scanning the
+system. Most of the configurable items are directories that are used to
+construct the build environment, but they aren't limited to that.
+.Bl -tag -width ".Ev Compiler cache directory"
+.It Ev Ports directory
+Most systems will have the Ports Collection installed at
+.Pa /usr/ports
+.Po
+.Fx
+.Pc
+or
+.Pa /usr/dports
+.Po
+.Dx
+.Pc
+so those would be the normal value. If the PORTSDIR environment variable
+is set when the initial profile is created, it has the priority when the
+initial value is established.
+.It Ev Packages directory
+This is the location of the local repository metadata and all the packages
+that are built by
+.Nm .
+It clearly must have lots of available disk space. The default value is
+.Pa /var/synth/live_packages
+but it should be altered if the system has a
+.Pa /var
+partition with limited space.
+.It Ev Distfiles directory
+This indicates where all the ports source distribution files are stored, and
+the initial value is determined by scanning the existing configuration. The
+defaults are defined by ports and are
+.Pa /usr/ports/distfiles
+for
+.Po
+.Fx
+.Pc
+and
+.Pa /usr/distfiles
+for
+.Po
+.Dx
+.Pc .
+Most users will want to keep the initial value as that directory should
+already contain distfiles.
+.It Ev Port options directory
+This is the directory where all the selected options for ports are cached.
+The initial value comes from a system scan, so chances are it has the correct
+value. However, if the user would like a separate configuration area for port
+options, they would create the new directory and set this value accordingly
+(but the user would have to ensure the new location is passed to the port
+when configuring port options later in that case).
+.It Ev Build logs directory
+A log is produced for every port built (subsequent builds of the same port
+will overwrite previous logs). This item dictates where those logs are stored,
+which is
+.Pa /var/log/synth
+by default. If the
+.Pa /var
+partition is limited, the user will definitely want to change this location as
+the uncompressed logs can potentially consume gigabyte of space.
+.It Ev Build base directory
+This is the mount point for all the builders. When tmpfs is used, this location
+requires very little space as it contains empty directories that serve as mount
+points. If tmpfs is not used, then this location should have access to a lot
+available diskspace as it will provide the work area and virtual
+.Pa /usr/local
+for each builder. The default location of
+.Pa /usr/obj/synth-live
+should be fine for most users (it generally has lots of space and tmpfs is the
+default build mode).
+.It Ev System root directory
+Most users will use the base system as the basis for the build environment, and
+thus the default setting of
+.Pa /
+is correct. Advanced users may use DESTDIR with installworld to create an
+alternative build base (e.g. i386 cross-build on amd64 architecture or a
+modified base that serves as a fallout test for an upcoming feature). Those
+would be the users that would modify this value.
+.It Ev Compiler cache directory
+If ccache is properly installed on the system, set this value to the location
+of the cache. All the builders will leverage it. It is disabled by default.
+It can be disabled again by entering any invalid path as a new value, e.g.
+.Dq none .
+.It Ev Num. concurrent builders
+The represents the number of ports that can be simultaneously built on the
+system. The selected value is influenced by the number of physical cores and
+hyperthreads the system has, the amount of memory on the system, the amount of
+available swap, and if that swap is a solid-state drive or not. Generally
+memory is the limiting resource when tmpfs is used, so the default value for
+the number of builders is generally 75% of the number of CPUs of the system.
+The user is free to balance jobs versus builders as well.
+.It Ev Max. jobs per builder
+If memory is constrained, it's often a better performance tradeoff to reduce
+the number of builders and increase the number of jobs per builder. The
+default value varies depending on the system, but it will never exceed 5.
+.It Ev Use tmpfs for work area
+If the initial scan shows there is at least 1.25 Gb per builder, this item
+will default to
+.Dq true .
+Building on tmpfs is a big speed spot and it's recommended if the memory
+resources allow it. This item is directed at the work area for building the
+port
+.It Ev Use tmpfs for /usr/local
+Before a port can start building, all the build and library dependencies have
+to be installed into the localbase. Extracting, installing and later
+deinstalling is a lot of work for a disk, so using tmpfs here is another
+performance boost. It is recommended that users with adequate memory leave
+this enabled.
+.It Ev Display using ncurses
+During the concurrent building, the default display is constructed using
+ncurses. It shows a lot of good information and it should be used. The
+display will fall back to a text mode if the terminal doesn't support it.
+This setting forces text mode unconditionally, but few users will want or
+need to use this option.
+.El
+.Pp
+To create alternative profiles, press the
+.Dq >
+key at the prompt. A new menu will appear that provides options to switch
+to another existing profile or create a new one that can be tailored and
+named. Any newly created profile becomes the new default profile, but this
+can be easily changed by repeating the profile selection process.
+.Pp
+Pressing the Alphabetic key associated with each configuration item brings
+up a prompt to change the value. Directory entries must be valid paths
+except in the case of ccache. The boolean values are modified with a single
+keypress
+.Po
+.Dq T
+or
+.Dq F
+.Pc
+and the numeric items require positive integers. After changing the values,
+the old menu returns and altered values are marked with an asterisk.
+Simply entering the
+.Dq Enter
+key
+.Po
+carriage return
+.Pc
+saves the changes while pressing the
+.Dq Escape
+key will discard them.
+.Ss synth upgrade-system
+The
+.Cm upgrade-system
+command automates the full upgrade of the system upon which
+.Nm
+is installed. It is expected that the ports tree has been updated to the
+latest version before the command is executed. Using the ports tree as a
+reference,
+.Nm
+will query
+.Xr pkg 8
+to determine what is currently installed and which software has newer versions
+available. It will rebuild those packages and any package that depends
+libraries they contain or that have a runtime dependency on the rebuild
+packages. In addition, any port that has changed with respect to its options,
+dependencies, or ABI will be rebuilt as well. After analysis, the concurrent
+builder will begin building the set of packages that have been identified as
+requiring a rebuild. When that phase is complete, the local repository will
+be rebuilt without waiting for confirmation. Finally,
+.Nm
+will command
+.Xr pkg 8
+to upgrade the system using the local repository, effectively bringing it
+completely up to date.
+.Ss synth rebuild-repository
+The
+.Cm rebuild-repository
+command has the same functionality of the
+.Cm upgrade-system
+command with the exception that the packages will not be installed. Once the
+local repository is fully rebuilt, the command exits.
+.Ss synth status
+The
+.Cm status
+command with no arguments performs a dry-run of the
+.Cm upgrade-system
+command. It will not delete obsolete packages, nor rebuild the local
+repository. It will list all the ports that will be rebuild along with a
+total, and it also logs the same information to
+.Pa /tmp/synth_status_results.txt
+since the full list is often longer than the terminal height.
+.Ss synth just-build [ file | port-origin ... ]
+The
+.Cm just-build
+command takes a list (one or more) of port origins
+.Po
+an origin is the combination of a category and the port directory,
+e.g. lang/python27
+.Pc
+and it will builds the packages of those ports if necessary. If analysis
+determines the packages are already up to date, nothing is done.
+.Pp
+This is the first of several commands that take arguments. The arguments
+are either an unlimited number of port origins, e.g.
+.Bd -literal -offset -indent
+synth just-build editors/joe editors/nano editors/libreoffice
+
+.Ed
+or they are limited to one, a path to a file, e.g.
+.Bd -literal -offset -indent
+synth just-build /tmp/build.list
+
+.Ed
+A file that is equivalent to the first example would contain:
+.Bd -literal -offset -indent
+editors/joe
+editors/nano
+editors/libreoffice
+
+.Ed
+When the building task is complete,
+.Nm
+exits.
+.Ss synth build [ file | port-origin ... ]
+The
+.Cm build
+command differs from the
+.Cm just-build
+command by asking the user if they wish to rebuild the local repository when
+the building is complete. The answer is usually
+.Dq N
+.Po
+for
+.Dq no
+.Pc
+because rebuilding the repository can take a few minutes to complete, and it
+only makes sense to do when all the building is complete. Should the user opt
+to rebuild the repository,
+.Nm
+will then ask if the user wishes to install the packages that come from the
+ports list on the system.
+.Ss synth install [ file | port-origin ... ]
+The
+.Cm install
+command is similar to the
+.Cm build
+command except that it will not ask permission to rebuild the repository or
+install the resulting packages. It will just do it all in sequence.
+.Ss synth force [ file | port-origin ... ]
+The
+.Cm force
+command is similar to the
+.Cm build
+command except that any packages related to the ports list will be deleted
+first, regardless if they are up to date or not. This results in that every
+port on the given list will build.
+As with the
+.Cm build
+command,
+.Nm
+will request permission to rebuild the repository and possibly install the
+packages when the building phase is complete.
+.Ss synth test [ file | port-origin ... ]
+The
+.Cm test
+command will pre-delete any existing packages related to the ports list
+before rebuilding them with extra DEVELOPER_MODE tests and settings. When the
+building is complete, it will just exit without offering to rebuild the
+repository.
+.Ss synth status [ file | port-origin ... ]
+This version of the
+.Cm status
+command provides a dry-run and reports on what would happen if the
+.Cm just-build command
+was executed with the same arguments. The output and logging is similar to
+the solo
+.Cm status
+command, but the build scope is limited to the given ports list.
+.Ss synth everything
+The
+.Cm everything
+command is not meant for most users. It will attempt to build every port in
+the ports tree, which can take several days depending on the power and
+resources of the building machine. Even downloading the tens of gigabytes
+worth of distfiles consumes significant time!
+.Ss synth status-everything
+The
+.Cm status-everything
+command is just a dry-run for the
+.Cm everything
+command. Since
+.Nm
+works through increment building
+.Po
+that is, it will not build a port if an up to date package already exists
+for it and all the packages dependencies are also in place
+.Pc
+, the resultant build list can be much shorter than the full list of ports in
+the tree. Only those rare users that wish to build the entire set of ports
+would use this command.
+.Ss synth purge-distfiles
+This is a useful command that will first scan the entire ports tree to gather
+a full list of distfiles used by ports, and then it will scan the contents of
+the given distfiles directory. All source distribution files that cannot be
+matched to at least one port will be removed. This can result in gigabytes of
+recovered disk space if significant time has passed since the distfiles
+directory was last cleaned.
+.Sh ENVIRONMENT
+The only environment variable checked is
+.Ev PORTSDIR
+and that only occurs on the very first signficant command of
+.Nm
+.Po
+meaning everything except help and version
+.Pc
+when the default profile is created. It is also checked when adding new
+profiles. The variable dictates the default location of the ports tree with
+a higher priority than the standard locations.
+.Sh FILES
+The following files may be used or created:
+.Bl -tag -width hook_pkg_ignored
+.It synth.ini
+This is the configuration file. It is automatically generated and manipulated
+using the interactive configuration menu. There is no need to touch this file
+other than to remove unwanted profiles as currently that is not possible from
+the program itself. It is normally located at
+.Pa /usr/local/etc/synth/synth.ini
+.It <profile>-make.conf
+This is an optional, user-provided file. If it exits, the builder's
+.Pa /etc/make.conf
+will be appended with the contents of this file. For the default profile, the
+file would normally be located at
+.Pa /usr/local/etc/synth/LiveSystem-make.conf
+.It synth_status_results.txt
+Whenever a status command is run, a list of ports that would build with the
+actual command is produced at
+.Pa /var/synth_status_results.txt
+.It port logs
+Every single attempt at building a port results in a build log. The name of
+the log is always in the form of [category]___[port].log so that subsequent
+builds will overwrite previous attempts. They are created in the directory
+specified by the configuration.
+.It hook_run_start
+If this file exists, and it is executable
+.Po
+or it is a symbolic link that leads to an executable file
+.Pc
+then it will be executed by
+.Nm
+at the start of the build. The same requirement exists for all hooks. This
+hook, and the next five hooks all define the following common environment
+variables:
+.Ev PROFILE ,
+.Ev DIR_PACKAGES ,
+.Ev DIR_REPOSITORY ,
+.Ev DIR_PORTS ,
+.Ev DIR_OPTIONS ,
+.Ev DIR_DISTFILES ,
+.Ev DIR_LOGS ,
+.Ev DIR_BUILDBASE .
+Uniquely, this hook also defines PORTS_QUEUED which is the number of ports that
+.Nm
+will attempt to build. This file must be colated with synth.ini, so that would
+be
+.Pa /usr/local/etc/synth/hook_run_start
+for most installations.
+.It hook_run_end
+This hook is fired when the build completes. In addition to the common
+definitions, it defines
+.Ev PORTS_BUILT ,
+.Ev PORTS_FAILED ,
+.Ev PORTS_IGNORED ,
+and
+.Ev PORTS_SKIPPED
+in the environment,
+which represents the results of the build.
+.It hook_pkg_success
+This hook is fired whenever a builder successfully packages a port. In
+addition to the common definitions, it defines
+.Ev RESULT=success ,
+.Ev ORIGIN ,
+and
+.Ev PKGNAME
+in the environment.
+.It hook_pkg_failure
+This hook is fired whenever a builder fails to package a port. In addition
+to the common definitions, it defines
+.Ev RESULT=failure ,
+.Ev ORIGIN ,
+and
+.Ev PKGNAME
+in the environment.
+.It hook_pkg_ignored
+This hook is fired prior to the start of a build when
+.Nm
+prescans the queue for ports that are to be ignored according to the ports
+tree. Once the build has started, this hook is never fired again. In
+addition to the common definitions, it defines
+.Ev RESULT=ignored ,
+.Ev ORIGIN ,
+and
+.Ev PKGNAME
+in the environment.
+.It hook_pkg_skipped
+This hook is fired whenever a package gets ignored or fails which in turns
+cascades into a number of ports getting removed from the build queue due to
+the dependency's failure. This may fire before the build starts due to
+ignored prescanning, or any time during the build. In addition to the common
+definitions, it defines
+.Ev RESULT=skipped ,
+.Ev ORIGIN ,
+and
+.Ev PKGNAME
+in the environment.
+.El
+.Sh SEE ALSO
+.Xr pkg 8
+.Sh NOTES
+.Ss Graceful exit
+During development, the interrupt signal
+.Po
+SIGINT
+.Pc
+was captured and handled. It turns out this handling extended to the
+builders, so any event resulting in a SIGINT in the build would lock up the
+builder permanently. There's no apparent workaround for this given the design,
+so pressing Control-C is no longer handled. It will stop the build, but it will
+leave everything in bad state. The next significant call to
+.Nm
+will attempt to clean that up though. If a user wants to stop the build, the
+best approach is to hit the Escape key. The program will shut down as soon as
+it can. During the building phase, that mean no new builds will start, but the
+current builds will continue until completion.
+.Ss Unprivileged users
+At this time,
+.Nm
+can only be run by the root user.
+.Ss Supported architectures
+Synth is written in Ada, and thus an Ada compiler or cross-compiler is
+required to build it. For
+.Fx ,
+that means
+.Nm
+is currently limited to amd64 and i386. It is feasible to port GNAT to the
+ARMv7 architecture as this has already been done
+.Po
+See lang/gnatdroid-armv7 port
+.Pc
+but it's not a trivial task to do it. Other architectures would be
+challenging, although not impossible, to support.
+.Sh HISTORY
+.Nm
+was conceived long before coding began in December of 2015. It was designed
+to be system-agnostic from the beginning, and in particular support for
+.Fx
+and
+.Dx
+was added simulaneously. It was hoped that it could fill the void left by
+PostMaster and PortUpgrade as those tools do not handle the current Ports
+Collection adequately due to a lack of a knowledgeable maintainer.
+.Pp
+.Nm
+was written entirely by
+.An John Marino
+.Aq marino@FreeBSD.org
+and released under the Internet Software Consortium license.
