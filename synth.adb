@@ -188,7 +188,8 @@ begin
                  PIL.sanity_check_then_prefail
                then
                   PIL.perform_bulk_run (testmode => False);
-                  if PIL.rebuild_local_respository
+                  if PIL.rebuild_local_respository and then
+                    PIL.write_pkg_repos_configuration_file
                   then
                      PIL.upgrade_system_exactly;
                   end if;
