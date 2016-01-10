@@ -733,6 +733,7 @@ package body PortScan.Pilot is
       sorry   : constant String := "Unfortunately, the system upgraded failed.";
    begin
       portlist.Clear;
+      TIO.Put_Line ("Querying system about current package installations.");
       declare
          comres  : JT.Text;
          topline : JT.Text;
@@ -755,6 +756,8 @@ package body PortScan.Pilot is
             TIO.Put_Line (sorry);
             return;
       end;
+      TIO.Put_Line ("Stand by, comparing installed packages against the " &
+                      "ports tree.");
       if build_pkg8_as_necessary and then
         scan_stack_of_single_ports and then
         sanity_check_then_prefail (delete_first => False, dry_run => dry_run)
