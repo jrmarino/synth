@@ -2,7 +2,7 @@
 --  Reference: ../License.txt
 
 --  GCC 6.0 only (skip Container_Checks until identified need arises)
---  pragma Suppress (Tampering_Check);
+pragma Suppress (Tampering_Check);
 
 with Ada.Text_IO;
 with Ada.Calendar;
