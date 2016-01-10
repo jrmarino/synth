@@ -200,12 +200,8 @@ package body PortScan is
             target_port : port_index := subqueue.Element (cursor);
          begin
             if not aborted then
-               if SIG.graceful_shutdown_requested then
-                  aborted := True;
-               else
-                  populate_port_data (target_port);
-                  mq_progress (lot) := mq_progress (lot) + 1;
-               end if;
+               populate_port_data (target_port);
+               mq_progress (lot) := mq_progress (lot) + 1;
             end if;
          exception
             when issue : others =>
@@ -282,6 +278,9 @@ package body PortScan is
                exit;
             end if;
          end loop;
+         if SIG.graceful_shutdown_requested then
+            aborted := True;
+         end if;
       end loop;
       success := not aborted;
    end parallel_deep_scan;
