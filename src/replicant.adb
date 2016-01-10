@@ -583,6 +583,21 @@ package body Replicant is
 
 
    ------------------------
+   --  create_etc_fstab  --
+   ------------------------
+   procedure create_etc_fstab (path_to_etc : String)
+   is
+      fstab : TIO.File_Type;
+   begin
+      TIO.Create (File => fstab,
+                  Mode => TIO.Out_File,
+                  Name => path_to_etc & "/fstab");
+      TIO.Put_Line (fstab, "linproc /usr/compat/proc linprocfs rw 0 0");
+      TIO.Close (fstab);
+   end create_etc_fstab;
+
+
+   ------------------------
    --  execute_ldconfig  --
    ------------------------
    procedure execute_ldconfig (id : builders)
@@ -633,6 +648,7 @@ package body Replicant is
       slave_base   : constant String := get_slave_mount (id);
       slave_work   : constant String := slave_base & "_work";
       slave_local  : constant String := slave_base & "_localbase";
+      slave_linux  : constant String := slave_base & "_linux";
       dir_system   : constant String := JT.USS (PM.configuration.dir_system);
       live_system  : constant Boolean := (dir_system = "/");
    begin
@@ -679,6 +695,15 @@ package body Replicant is
 
       mount_linprocfs (mount_point => location (slave_base, linproc));
 
+      if flavor = freebsd then
+         if PM.configuration.tmpfs_localbase then
+            mount_tmpfs (slave_base & root_linux, 12 * 1024);
+         else
+            forge_directory (slave_linux);
+            mount_nullfs (slave_linux, slave_base & root_linux, readwrite);
+         end if;
+      end if;
+
       if AD.Exists (root_usr_src) then
          mount_nullfs (root_usr_src, location (slave_base, usr_src));
          if AD.Exists (root_usr_src & "/sys") then
@@ -702,6 +727,7 @@ package body Replicant is
       create_passwd       (location (slave_base, etc));
       create_group        (location (slave_base, etc));
       create_etc_services (location (slave_base, etc));
+      create_etc_fstab    (location (slave_base, etc));
 
       execute_ldconfig (id);
 
@@ -718,6 +744,7 @@ package body Replicant is
       slave_base   : constant String := get_slave_mount (id);
       slave_work   : constant String := slave_base & "_work";
       slave_local  : constant String := slave_base & "_localbase";
+      slave_linux  : constant String := slave_base & "_linux";
    begin
       unmount (slave_base & root_localbase);
       if not PM.configuration.tmpfs_localbase then
@@ -741,6 +768,10 @@ package body Replicant is
 
       if flavor = freebsd then
          unmount (location (slave_base, linproc));
+         unmount (slave_base & root_linux);
+         if not PM.configuration.tmpfs_localbase then
+            annihilate_directory_tree (slave_linux);
+         end if;
       end if;
 
       unmount (location (slave_base, dev));

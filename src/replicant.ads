@@ -80,6 +80,7 @@ private
    root_home        : constant String := "/home";
    root_root        : constant String := "/root";
    root_proc        : constant String := "/proc";
+   root_linux       : constant String := "/compat/linux";
    root_linproc     : constant String := "/compat/linux/proc";
    root_xports      : constant String := "/xports";
    root_options     : constant String := "/options";
@@ -151,6 +152,9 @@ private
 
    --  create minimal /etc/services
    procedure create_etc_services (path_to_etc : String);
+
+   --  create a dummy fstab for linux packages (looks for linprocfs)
+   procedure create_etc_fstab (path_to_etc : String);
 
    --  mount the devices
    procedure mount_devices (path_to_dev : String);
