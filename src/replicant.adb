@@ -48,6 +48,7 @@ package body Replicant is
          when var         => return mount_base & root_var;
          when home        => return mount_base & root_home;
          when proc        => return mount_base & root_proc;
+         when linproc     => return mount_base & root_linproc;
          when root        => return mount_base & root_root;
          when xports      => return mount_base & root_xports;
          when options     => return mount_base & root_options;
@@ -170,6 +171,25 @@ package body Replicant is
       JT.SU.Append (command, " " & mount_point);
       execute (JT.USS (command));
    end mount_nullfs;
+
+
+   -----------------------
+   --  mount_linprocfs  --
+   -----------------------
+   procedure mount_linprocfs (mount_point : String)
+   is
+      cmd_freebsd   : constant String := "/sbin/mount -t linprocfs linproc " &
+                                          mount_point;
+   begin
+      --  DragonFly has lost it's Linux Emulation capability.
+      --  FreeBSD has it for both amd64 and i386
+      --  We should return if FreeBSD arch is not amd64 or i386, but synth
+      --  will not run on any other arches at the moment, so we don't have
+      --  to check (and we don't have that information yet anyway)
+      if flavor = freebsd then
+         execute (cmd_freebsd);
+      end if;
+   end mount_linprocfs;
 
 
    ---------------
@@ -657,6 +677,8 @@ package body Replicant is
          mount_nullfs (slave_local, slave_base & root_localbase, readwrite);
       end if;
 
+      mount_linprocfs (mount_point => location (slave_base, linproc));
+
       if AD.Exists (root_usr_src) then
          mount_nullfs (root_usr_src, location (slave_base, usr_src));
          if AD.Exists (root_usr_src & "/sys") then
@@ -715,6 +737,10 @@ package body Replicant is
 
       if AD.Exists (mount_target (ccache)) then
          unmount (location (slave_base, ccache));
+      end if;
+
+      if flavor = freebsd then
+         unmount (location (slave_base, linproc));
       end if;
 
       unmount (location (slave_base, dev));

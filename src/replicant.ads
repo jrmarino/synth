@@ -55,8 +55,8 @@ private
                    usr_sbin,
                    usr_share,
                    xports, options, packages, distfiles,
-                   dev, etc, etc_mtree, home, proc, root, tmp, var, wrkdirs,
-                   usr_local, usr_src, ccache);
+                   dev, etc, etc_mtree, home, proc, linproc, root, tmp, var,
+                   wrkdirs, usr_local, usr_src, ccache);
    subtype subfolder is folder range bin .. usr_share;
 
    --  home and root need to be set readonly
@@ -80,6 +80,7 @@ private
    root_home        : constant String := "/home";
    root_root        : constant String := "/root";
    root_proc        : constant String := "/proc";
+   root_linproc     : constant String := "/compat/linux/proc";
    root_xports      : constant String := "/xports";
    root_options     : constant String := "/options";
    root_libexec     : constant String := "/libexec";
@@ -90,7 +91,7 @@ private
    root_localbase   : constant String := "/usr/local";
    chroot           : constant String := "/usr/sbin/chroot ";
 
-   flavor         : nullfs_flavor   := unknown;
+   flavor           : nullfs_flavor   := unknown;
 
 
    --  Throws exception if mount attempt was unsuccessful
@@ -162,5 +163,8 @@ private
 
    --  Wrapper for rm -rf <directory>
    procedure annihilate_directory_tree (tree : String);
+
+   --  This is only done for FreeBSD.  For DragonFly, it's a null-op
+   procedure mount_linprocfs (mount_point : String);
 
 end Replicant;
