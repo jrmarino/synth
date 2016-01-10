@@ -424,7 +424,7 @@ package body PortScan.Pilot is
       end if;
       REP.initialize;
       REP.launch_slave (PortScan.scan_slave);
-      build_res := CYC.build_repository (PortScan.scan_slave);
+      build_res := REP.build_repository (PortScan.scan_slave);
       REP.destroy_slave (PortScan.scan_slave);
       REP.finalize;
       if build_res then

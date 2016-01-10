@@ -836,9 +836,12 @@ package body PortScan is
    -------------------
    function get_catport (PR : port_record) return String
    is
-      catport  : JT.Text := portkey_crate.Key (PR.key_cursor);
+      use type portkey_crate.Cursor;
    begin
-      return JT.USS (catport);
+      if PR.key_cursor = portkey_crate.No_Element then
+         return "get_catport: invalid key_cursor";
+      end if;
+      return JT.USS (portkey_crate.Key (PR.key_cursor));
    end get_catport;
 
 

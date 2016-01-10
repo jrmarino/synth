@@ -18,9 +18,6 @@ package PortScan.Buildcycle is
    function elapsed_now return String;
    function elapsed_build (id : builders) return String;
 
-   --  The actual command to build a local repository (Returns True on success)
-   function build_repository (id : builders) return Boolean;
-
    --  Allows other packages to call external commands (e.g. Pilot)
    --  Returns "True" on success
    function external_command (command : String) return Boolean;
@@ -32,10 +29,6 @@ package PortScan.Buildcycle is
    function get_packages_per_hour (packages_done : Natural;
                                    from_when : CAL.Time)
                                    return Natural;
-
-   --  Install pkg-static in specific builder (Returns True on success)
-   --  Expose for pilot
-   function install_pkg8 (id : builders) return Boolean;
 
    --  Compile status of builder for the curses display
    function builder_status (id : builders;

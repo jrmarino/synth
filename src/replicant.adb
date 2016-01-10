@@ -627,6 +627,28 @@ package body Replicant is
    end standalone_pkg8_install;
 
 
+   ------------------------
+   --  build_repository  --
+   ------------------------
+   function build_repository (id : builders) return Boolean
+   is
+      smount  : constant String := get_slave_mount (id);
+      command : constant String := chroot & smount & " " &
+        host_localbase & "/sbin/pkg-static repo /packages";
+   begin
+      if not standalone_pkg8_install (id) then
+         TIO.Put_Line ("Failed to install pkg-static in builder" & id'Img);
+         return False;
+      end if;
+      silent_exec (command);
+      return True;
+   exception
+      when quepaso : others =>
+         TIO.Put_Line (EX.Exception_Message (quepaso));
+         return False;
+   end build_repository;
+
+
    ---------------------------------
    --  annihilate_directory_tree  --
    ---------------------------------

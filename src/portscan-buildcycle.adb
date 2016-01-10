@@ -690,37 +690,6 @@ package body PortScan.Buildcycle is
    end exec_phase;
 
 
-   --------------------
-   --  install_pkg8  --
-   --------------------
-   function install_pkg8 (id : builders) return Boolean
-   is
-      root    : constant String := get_root (id);
-      taropts : constant String := "-C / */pkg-static";
-      command : constant String := chroot & root & environment_override &
-        "/usr/bin/tar -xf /packages/Latest/pkg.txz " & taropts;
-   begin
-      return generic_execute (id, command);
-   end install_pkg8;
-
-
-   ------------------------
-   --  build_repository  --
-   ------------------------
-   function build_repository (id : builders) return Boolean
-   is
-      root    : constant String := get_root (id);
-      command : constant String := chroot & root & environment_override &
-        host_localbase & "/sbin/pkg-static repo /packages";
-   begin
-      if not install_pkg8 (id) then
-         TIO.Put_Line ("Failed to install pkg-static in builder" & id'Img);
-         return False;
-      end if;
-      return generic_execute (id, command);
-   end build_repository;
-
-
    --------------------------
    --  dynamically_linked  --
    --------------------------

@@ -41,6 +41,9 @@ package Replicant is
    --  Returns True on success
    function standalone_pkg8_install (id : builders) return Boolean;
 
+   --  The actual command to build a local repository (Returns True on success)
+   function build_repository (id : builders) return Boolean;
+
 private
 
    type mount_mode is (readonly, readwrite);
