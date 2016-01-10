@@ -94,7 +94,7 @@ private
    --  only time they are checked).  If those pass, query the dependencies,
    --  store the result, and check them.  Set the "deletion" flag as needed.
    --  The dependency check is NOT performed yet.
-   procedure passed_initial_package_scan (repository : String; id : port_id);
+   procedure initial_package_scan (repository : String; id : port_id);
 
    --  The result of the dependency query giving "id" port_id
    function result_of_dependency_query (repository : String; id : port_id)

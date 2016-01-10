@@ -62,7 +62,7 @@ package body PortScan.Packages is
    -----------------------------------
    --  passed_initial_package_scan  --
    -----------------------------------
-   procedure passed_initial_package_scan (repository : String; id : port_id) is
+   procedure initial_package_scan (repository : String; id : port_id) is
    begin
       if id = port_match_failed then
          return;
@@ -93,7 +93,7 @@ package body PortScan.Packages is
       all_ports (id).pkg_dep_query :=
         result_of_dependency_query (repository, id);
 
-   end passed_initial_package_scan;
+   end initial_package_scan;
 
 
    ----------------------------
@@ -359,6 +359,12 @@ package body PortScan.Packages is
          --  If we get this far, the package options must match port options
          return True;
       end;
+   exception
+      when others =>
+         if debug_opt_check then
+            TIO.Put_Line ("option check exception");
+         end if;
+         return False;
    end passed_option_check;
 
 
@@ -472,7 +478,11 @@ package body PortScan.Packages is
          return True;
       end;
    exception
-      when others => return False;
+      when others =>
+         if debug_dep_check then
+            TIO.Put_Line ("Dependency check exception");
+         end if;
+         return False;
    end passed_dependency_check;
 
 
@@ -508,6 +518,8 @@ package body PortScan.Packages is
          return True;
       end if;
       return False;
+   exception
+      when others => return False;
    end passed_abi_check;
 
 
@@ -738,6 +750,7 @@ package body PortScan.Packages is
       finished : array (scanners) of Boolean := (others => False);
       combined_wait : Boolean := True;
       label_shown   : Boolean := False;
+      aborted       : Boolean := False;
 
       task body scan
       is
@@ -746,8 +759,8 @@ package body PortScan.Packages is
          is
             target_port : port_index := subqueue.Element (cursor);
          begin
-            if not SIG.graceful_shutdown_requested then
-               passed_initial_package_scan (repository, target_port);
+            if not aborted then
+               initial_package_scan (repository, target_port);
             end if;
             mq_progress (lot) := mq_progress (lot) + 1;
          end populate;
@@ -804,6 +817,9 @@ package body PortScan.Packages is
                TIO.Put_Line ("Scanning existing packages.");
             end if;
             TIO.Put (scan_progress);
+            if SIG.graceful_shutdown_requested then
+               aborted := True;
+            end if;
          end if;
       end loop;
    end parallel_package_scan;
