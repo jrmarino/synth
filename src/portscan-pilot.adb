@@ -495,6 +495,10 @@ package body PortScan.Pilot is
                return False;
             end if;
 
+            if path1 = "distfiles" then
+               return False;
+            end if;
+
             if JT.contains (port, "/") then
                return False;
             end if;
