@@ -703,13 +703,15 @@ package body PortScan.Pilot is
    ------------------------------------------
    function write_pkg_repos_configuration_file return Boolean
    is
-      target : constant String := host_localbase &
-                                  "/etc/pkg/repos/00_synth.conf";
+      repdir : constant String := host_localbase & "/etc/pkg/repos";
+      target : constant String := repdir & "/00_synth.conf";
       pkgdir : constant String := JT.USS (PM.configuration.dir_packages);
       handle : TIO.File_Type;
    begin
       if AD.Exists (target) then
          AD.Delete_File (target);
+      elsif not AD.Exists (repdir) then
+         AD.Create_Path (repdir);
       end if;
       TIO.Create (File => handle, Mode => TIO.Out_File, Name => target);
       TIO.Put_Line (handle, "# Automatically generated." & LAT.LF);
@@ -721,7 +723,9 @@ package body PortScan.Pilot is
       TIO.Close (handle);
       return True;
    exception
-      when others => return False;
+      when others =>
+         TIO.Put_Line ("Error: failed to create " & target);
+         return False;
    end write_pkg_repos_configuration_file;
 
 
