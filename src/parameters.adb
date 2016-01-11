@@ -6,6 +6,7 @@ with Ada.Text_IO;
 with Ada.Characters.Latin_1;
 with Util.Streams.Pipes;
 with Util.Streams.Buffered;
+with Util.Processes;
 with GNAT.OS_Lib;
 
 package body Parameters is
@@ -27,6 +28,13 @@ package body Parameters is
    begin
       if not AD.Exists (conf_location) then
          declare
+            test : String := determine_portsdirs;
+         begin
+            if test = "" then
+               return False;
+            end if;
+         end;
+         declare
             File_Handle : TIO.File_Type;
          begin
             mkdirp_from_file (conf_location);
@@ -41,16 +49,6 @@ package body Parameters is
          exception
             when Error : others =>
                TIO.Put_Line ("Failed to create " & conf_location);
-               return False;
-         end;
-         declare
-            test : String := determine_portsdirs;
-         begin
-            null;
-         exception
-            when Error : others =>
-               TIO.Put_Line ("Could not find ports directory at standard " &
-                            "location, nor PORTSDIR environment variable.");
                return False;
          end;
       end if;
@@ -106,13 +104,27 @@ package body Parameters is
             end if;
          end if;
       end;
+      declare
+         portsdir : String := query_portsdir;
+      begin
+         if portsdir = "" then
+            TIO.Put_Line ("It seems that an invalid PORTSDIR is defined in " &
+                            "/etc/make.conf");
+            return "";
+         end if;
+         if AD.Exists (portsdir) then
+            return portsdir;
+         end if;
+      end;
       if AD.Exists (std_dports_loc) then
          return std_dports_loc;
       elsif AD.Exists (std_ports_loc) then
          return std_ports_loc;
       end if;
-      raise update_config
-        with "Default ports directory cannot be found";
+      TIO.Put_Line ("PORTSDIR cannot be determined.");
+      TIO.Put_Line ("Please set it to a valid path in then environment or " &
+                    "/etc/make.conf");
+      return "";
    end determine_portsdirs;
 
 
@@ -415,6 +427,16 @@ package body Parameters is
    is
       command  : constant String := "/usr/bin/make -C " & portsdir &
                                     "/ports-mgmt/pkg -V " & value;
+   begin
+      return query_generic_core (command);
+   end query_generic;
+
+
+   --------------------------
+   --  query_generic_core  --
+   --------------------------
+   function query_generic_core (command : String) return String
+   is
       pipe     : aliased STR.Pipes.Pipe_Stream;
       buffer   : STR.Buffered.Buffered_Stream;
       content  : JT.Text;
@@ -422,7 +444,7 @@ package body Parameters is
       CR_loc   : Integer;
       CR       : constant String (1 .. 1) := (1 => Character'Val (10));
    begin
-      pipe.Open (Command => command);
+      pipe.Open (Command => command, Mode => Util.Processes.READ_ALL);
       buffer.Initialize (Output => null,
                          Input  => pipe'Unchecked_Access,
                          Size   => 4096);
@@ -435,7 +457,21 @@ package body Parameters is
       CR_loc := JT.SU.Index (Source => content, Pattern => CR);
 
       return JT.SU.Slice (Source => content, Low => 1, High => CR_loc - 1);
-   end query_generic;
+   end query_generic_core;
+
+
+   ----------------------
+   --  query_portsdir  --
+   ----------------------
+   function query_portsdir return String
+   is
+      command  : constant String := "/usr/bin/make " &
+        "-f /usr/share/mk/bsd.port.mk -V PORTSDIR";
+   begin
+      return query_generic_core (command);
+   exception
+      when others => return "";
+   end query_portsdir;
 
 
    -----------------------------

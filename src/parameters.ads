@@ -132,8 +132,10 @@ private
    function generated_section return String;
    function param_set (profile, field : String) return Boolean;
    function query_generic (portsdir, value : String) return String;
+   function query_generic_core (command : String) return String;
    function query_distfiles (portsdir : String) return String;
    function query_opsys (portsdir : String) return String;
+   function query_portsdir return String;
    function enough_memory (num_builders : builders) return Boolean;
    function determine_portsdirs return String;
    procedure query_physical_memory;
