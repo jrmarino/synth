@@ -54,19 +54,18 @@ system. Most of the configurable items are directories that are used to
 construct the build environment, but they aren't limited to that.
 .Bl -tag -width ".Ev Compiler cache directory"
 .It Ev Ports directory
-Most systems will have the Ports Collection installed at
-.Pa /usr/ports
-.Po
-.Fx
-.Pc
-or
+If the PORTSDIR environment variable is set when the initial profile is
+created, it establishes the initial value. Otherwise,
+.Nm
+will extract the value of PORTSDIR from
+.Pa /usr/share/mk
+and use that.  If neither source points to a valid path,
 .Pa /usr/dports
-.Po
-.Dx
-.Pc
-so those would be the normal value. If the PORTSDIR environment variable
-is set when the initial profile is created, it has the priority when the
-initial value is established.
+and
+.Pa /usr/ports
+will be successfully tried.  If those don't exist either,
+.Nm
+will exit with an error message.
 .It Ev Packages directory
 This is the location of the local repository metadata and all the packages
 that are built by
