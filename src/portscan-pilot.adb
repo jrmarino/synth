@@ -655,6 +655,13 @@ package body PortScan.Pilot is
                     print'Access);
          AD.Search (name, "", (AD.Directory => True, others => False),
                     walkdir'Access);
+      exception
+         when AD.Name_Error =>
+            TIO.Put_Line ("The " & name & " directory does not exist");
+         when AD.Use_Error =>
+            TIO.Put_Line ("Searching " & name & " directory is not supported");
+         when others =>
+            TIO.Put_Line ("purge_distfiles: Unknown error - directory search");
       end walk;
 
       function display_kmg (number : disktype) return String
