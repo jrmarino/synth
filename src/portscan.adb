@@ -636,7 +636,7 @@ package body PortScan is
          declare
             category : constant String := AD.Simple_Name (Dir_Ent);
          begin
-            if category /= "distfiles" then
+            if category /= "distfiles" and then category /= "packages" then
                categories.Append (New_Item => JT.SUS (category));
             end if;
          end;
