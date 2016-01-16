@@ -34,6 +34,7 @@ package body Replicant is
          when usr_bin     => return mount_base & root_usr_bin;
          when usr_include => return mount_base & root_usr_include;
          when usr_lib     => return mount_base & root_usr_lib;
+         when usr_lib32   => return mount_base & root_usr_lib32;
          when usr_libdata => return mount_base & root_usr_libdata;
          when usr_libexec => return mount_base & root_usr_libexec;
          when usr_local   => return mount_base & root_localbase;
@@ -667,12 +668,22 @@ package body Replicant is
    --------------------
    procedure launch_slave  (id : builders)
    is
+      function clean_mount_point (point : folder) return String;
       slave_base   : constant String := get_slave_mount (id);
       slave_work   : constant String := slave_base & "_work";
       slave_local  : constant String := slave_base & "_localbase";
       slave_linux  : constant String := slave_base & "_linux";
       dir_system   : constant String := JT.USS (PM.configuration.dir_system);
       live_system  : constant Boolean := (dir_system = "/");
+
+      function clean_mount_point (point : folder) return String is
+      begin
+         if live_system then
+            return location ("", point);
+         else
+            return location (dir_system, point);
+         end if;
+      end clean_mount_point;
    begin
       forge_directory (slave_base);
       mount_tmpfs (slave_base);
@@ -682,13 +693,8 @@ package body Replicant is
       end loop;
 
       for mnt in subfolder'Range loop
-         if live_system then
-            mount_nullfs (target      => location ("", mnt),
-                          mount_point => location (slave_base, mnt));
-         else
-            mount_nullfs (target      => location (dir_system, mnt),
-                          mount_point => location (slave_base, mnt));
-         end if;
+         mount_nullfs (target      => clean_mount_point (mnt),
+                       mount_point => location (slave_base, mnt));
       end loop;
 
       folder_access (location (slave_base, home), lock);
@@ -724,6 +730,14 @@ package body Replicant is
             forge_directory (slave_linux);
             mount_nullfs (slave_linux, slave_base & root_linux, readwrite);
          end if;
+         declare
+            lib32 : String := clean_mount_point (usr_lib32);
+         begin
+            if AD.Exists (lib32) then
+               mount_nullfs (target      => lib32,
+                             mount_point => location (slave_base, usr_lib32));
+            end if;
+         end;
       end if;
 
       if AD.Exists (root_usr_src) then
@@ -767,6 +781,7 @@ package body Replicant is
       slave_work   : constant String := slave_base & "_work";
       slave_local  : constant String := slave_base & "_localbase";
       slave_linux  : constant String := slave_base & "_linux";
+      dir_system   : constant String := JT.USS (PM.configuration.dir_system);
    begin
       unmount (slave_base & root_localbase);
       if not PM.configuration.tmpfs_localbase then
@@ -793,6 +808,9 @@ package body Replicant is
          unmount (slave_base & root_linux);
          if not PM.configuration.tmpfs_localbase then
             annihilate_directory_tree (slave_linux);
+         end if;
+         if AD.Exists (location (dir_system, usr_lib32)) then
+            unmount (location (slave_base, usr_lib32));
          end if;
       end if;
 

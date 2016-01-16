@@ -57,7 +57,7 @@ private
                    usr_libexec,
                    usr_sbin,
                    usr_share,
-                   xports, options, packages, distfiles,
+                   usr_lib32, xports, options, packages, distfiles,
                    dev, etc, etc_mtree, home, proc, linproc, root, tmp, var,
                    wrkdirs, usr_local, usr_src, ccache);
    subtype subfolder is folder range bin .. usr_share;
@@ -69,6 +69,7 @@ private
    root_usr_bin     : constant String := "/usr/bin";
    root_usr_include : constant String := "/usr/include";
    root_usr_lib     : constant String := "/usr/lib";
+   root_usr_lib32   : constant String := "/usr/lib32";
    root_usr_libdata : constant String := "/usr/libdata";
    root_usr_libexec : constant String := "/usr/libexec";
    root_usr_sbin    : constant String := "/usr/sbin";
