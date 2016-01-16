@@ -121,6 +121,7 @@ package body Replicant is
       AD.Copy_File (etcmp, mm & maspas);
       execute (command);
       create_base_group (mm);
+      cache_port_variables (mm);
 
    end initialize;
 
@@ -515,6 +516,9 @@ package body Replicant is
    procedure create_make_conf (path_to_etc : String)
    is
       makeconf  : TIO.File_Type;
+      profilemc : constant String := PM.synth_confdir & "/" &
+                  JT.USS (PM.configuration.profile) & "-make.conf";
+      varcache  : constant String := get_master_mount & "/varcache.conf";
    begin
       TIO.Create (File => makeconf,
                   Mode => TIO.Out_File,
@@ -538,7 +542,8 @@ package body Replicant is
          TIO.Put_Line (makeconf, "CCACHE_DIR=/ccache");
       end if;
 
-      concatenate_makeconf (makeconf_handle => makeconf);
+      concatenate_makeconf (makeconf, profilemc);
+      concatenate_makeconf (makeconf, varcache);
 
       TIO.Close (makeconf);
 
@@ -978,10 +983,9 @@ package body Replicant is
    ----------------------------
    --  concatenate_makeconf  --
    ----------------------------
-   procedure concatenate_makeconf (makeconf_handle : TIO.File_Type)
+   procedure concatenate_makeconf (makeconf_handle : TIO.File_Type;
+                                   target_name : String)
    is
-      target_name : constant String := PM.synth_confdir & "/" &
-        JT.USS (PM.configuration.profile) & "-make.conf";
       fragment : TIO.File_Type;
    begin
       if AD.Exists (target_name) then
@@ -998,5 +1002,64 @@ package body Replicant is
    exception
       when others => null;
    end concatenate_makeconf;
+
+
+   ----------------------------
+   --  cache_port_variables  --
+   ----------------------------
+   procedure cache_port_variables (path_to_mm : String)
+   is
+      portsdir : constant String := JT.USS (PM.configuration.dir_portsdir);
+      fullport : constant String := portsdir & "/ports-mgmt/pkg";
+      command  : constant String := "/usr/bin/make -C " & fullport &
+                 " -VARCH -VOPSYS -V_OSRELEASE -VOSVERSION -VUID -V_SMP_CPUS" &
+                 " -VHAVE_COMPAT_IA32_KERN -VLINUX_OSRELEASE" &
+                 " -VCONFIGURE_MAX_CMD_LEN";
+      pipe     : aliased STR.Pipes.Pipe_Stream;
+      buffer   : STR.Buffered.Buffered_Stream;
+      content  : JT.Text;
+      topline  : JT.Text;
+      status   : Integer;
+      vconf    : TIO.File_Type;
+
+      type result_range is range 1 .. 9;
+   begin
+      pipe.Open (Command => command);
+      buffer.Initialize (Output => null,
+                         Input  => pipe'Unchecked_Access,
+                         Size   => 4096);
+      buffer.Read (Into => content);
+      pipe.Close;
+
+      status := pipe.Get_Exit_Status;
+      if status /= 0 then
+         raise scenario_unexpected with
+           "cache_port_variables: return code =" & status'Img;
+      end if;
+
+      TIO.Create (File => vconf,
+                  Mode => TIO.Out_File,
+                  Name => path_to_mm & "/varcache.conf");
+
+      for k in result_range loop
+         JT.nextline (lineblock => content, firstline => topline);
+         declare
+            value : constant String := JT.USS (topline);
+         begin
+            case k is
+               when 1 => TIO.Put_Line (vconf, "ARCH=" & value);
+               when 2 => TIO.Put_Line (vconf, "OPSYS=" & value);
+               when 3 => TIO.Put_Line (vconf, "_OSRELEASE=" & value);
+               when 4 => TIO.Put_Line (vconf, "OSVERSION=" & value);
+               when 5 => TIO.Put_Line (vconf, "UID=" & value);
+               when 6 => TIO.Put_Line (vconf, "_SMP_CPUS=" & value);
+               when 7 => TIO.Put_Line (vconf, "HAVE_COMPAT_IA32_KERN=" & value);
+               when 8 => TIO.Put_Line (vconf, "LINUX_OSRELEASE=" & value);
+               when 9 => TIO.Put_Line (vconf, "CONFIGURE_MAX_CMD_LEN=" & value);
+            end case;
+         end;
+      end loop;
+      TIO.Close (vconf);
+   end cache_port_variables;
 
 end Replicant;

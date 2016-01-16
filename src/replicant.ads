@@ -167,12 +167,16 @@ private
    procedure execute_ldconfig (id : builders);
 
    --  Used for per-profile make.conf fragments (if they exist)
-   procedure concatenate_makeconf (makeconf_handle : TIO.File_Type);
+   procedure concatenate_makeconf (makeconf_handle : TIO.File_Type;
+                                   target_name : String);
 
    --  Wrapper for rm -rf <directory>
    procedure annihilate_directory_tree (tree : String);
 
    --  This is only done for FreeBSD.  For DragonFly, it's a null-op
    procedure mount_linprocfs (mount_point : String);
+
+   --  Cache variables that spawn to get populated to extended make.conf
+   procedure cache_port_variables (path_to_mm : String);
 
 end Replicant;
