@@ -683,13 +683,7 @@ package body PortScan.Buildcycle is
                if watchdog (squirrel) = lock_lines then
                   --  Log hasn't advanced in a full cycle so bail out
                   dogbite := True;
-                  declare
-                     killcommand : constant String :=  "/bin/pkill -KILL -g " &
-                       JT.int2str (OSL.Pid_To_Integer (pid));
-                     killres : Boolean;
-                  begin
-                     killres := external_command (killcommand);
-                  end;
+                  kill_process_tree (process_group => pid);
                   delay 5.0;  --  Give some time for error to write to log
                   return False;
                end if;
@@ -1083,6 +1077,24 @@ package body PortScan.Buildcycle is
    exception
       when others => return 0;
    end get_packages_per_hour;
+
+
+   -------------------------
+   --  kill_process_tree  --
+   -------------------------
+   procedure kill_process_tree (process_group : OSL.Process_Id)
+   is
+      pgid : constant String := JT.int2str (OSL.Pid_To_Integer (process_group));
+      dfly_cmd : constant String := "/usr/bin/pkill -KILL -g ";
+      free_cmd : constant String := "/bin/pkill -KILL -g ";
+      killres  : Boolean;
+   begin
+      if JT.equivalent (PM.configuration.operating_sys, "FreeBSD") then
+         killres := external_command (free_cmd & pgid);
+      else
+         killres := external_command (dfly_cmd & pgid);
+      end if;
+   end kill_process_tree;
 
 
    -------------------------------
