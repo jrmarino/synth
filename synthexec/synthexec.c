@@ -20,7 +20,6 @@
 int main (int argc, char *argv[])
 {
   int   fd;
-  int   status;
   pid_t child_pid;
 
   if (argc < 4)
@@ -38,7 +37,11 @@ int main (int argc, char *argv[])
   dup2 (fd, STDERR_FILENO);
   close (fd);
 
+  setpgid (0, 0);
+
 #ifdef USE_FORK
+  int status;
+
   child_pid = fork ();
 
   if (child_pid >= 0)

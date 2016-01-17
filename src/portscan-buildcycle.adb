@@ -684,7 +684,7 @@ package body PortScan.Buildcycle is
                   --  Log hasn't advanced in a full cycle so bail out
                   dogbite := True;
                   declare
-                     killcommand : constant String :=  "/bin/pkill -KILL -P " &
+                     killcommand : constant String :=  "/bin/pkill -KILL -g " &
                        JT.int2str (OSL.Pid_To_Integer (pid));
                      killres : Boolean;
                   begin
