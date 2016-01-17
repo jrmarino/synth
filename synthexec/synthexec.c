@@ -37,11 +37,13 @@ int main (int argc, char *argv[])
   dup2 (fd, STDERR_FILENO);
   close (fd);
 
+/*  Disable watchdog for now
   int result = setpgid (0, 0);
   if (result != 0)
     {
       return (errno);
     }
+*/
 
 #ifdef USE_FORK
   child_pid = fork ();
