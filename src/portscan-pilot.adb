@@ -666,7 +666,7 @@ package body PortScan.Pilot is
 
       function display_kmg (number : disktype) return String
       is
-         type kmgtype is delta 0.01 digits 4;
+         type kmgtype is delta 0.01 digits 6;
          kilo : constant disktype := 1024;
          mega : constant disktype := kilo * kilo;
          giga : constant disktype := kilo * mega;
