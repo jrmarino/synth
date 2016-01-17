@@ -24,8 +24,9 @@ __nohang_waitpid (pid_t process_pid)
     {
       return 0;
     }
-  if (WIFEXITED (status))
+  if (WIFEXITED (status) && (WEXITSTATUS (status) == 0))
     {
+
       return 1;
     }
   else
