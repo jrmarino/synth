@@ -319,7 +319,7 @@ package body PortScan.Pilot is
    begin
       if SIG.graceful_shutdown_requested then
          --  catch previous shutdown request
-         result := False;
+         return False;
       end if;
       TIO.Put ("Would you like to rebuild the local repository (Y/N)? ");
       loop
