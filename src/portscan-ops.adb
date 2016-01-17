@@ -695,7 +695,7 @@ package body PortScan.Ops is
    ------------------------
    function get_instant_load return Float
    is
-      command : String := "/sbin/sysctl vm.loadavg";
+      command : String := "/usr/bin/env LANG=C /sbin/sysctl vm.loadavg";
       comres  : JT.Text;
 
    begin
