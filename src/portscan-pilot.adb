@@ -402,6 +402,10 @@ package body PortScan.Pilot is
       xz_pkgsite : constant String := main & "/packagesite.txz";
       build_res  : Boolean;
    begin
+      if SIG.graceful_shutdown_requested then
+         --  In case it was previously requested
+         return False;
+      end if;
       if use_full_scan then
          if not fully_scan_ports_tree then
             return False;
