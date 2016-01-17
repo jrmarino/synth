@@ -198,11 +198,6 @@ The test mode is not fully implemented yet.  It needs to check leftovers and
 filesystem violations (although for the latter, most of the jail is read-only
 which may cause a build failure)
 
-#### Hanging processes
-
-Right now, Synth does not have a "no-hang" watchdog.  Hanging processes have
-to be killed manually until one is added.
-
 #### Non-curses mode
 
 There is a text mode for the building phase.  It shows much less information
