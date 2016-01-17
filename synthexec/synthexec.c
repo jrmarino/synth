@@ -37,11 +37,13 @@ int main (int argc, char *argv[])
   dup2 (fd, STDERR_FILENO);
   close (fd);
 
-  setpgid (0, 0);
+  int result = setpgid (0, 0);
+  if (result != 0)
+    {
+      return (errno);
+    }
 
 #ifdef USE_FORK
-  int status;
-
   child_pid = fork ();
 
   if (child_pid >= 0)
@@ -54,8 +56,9 @@ int main (int argc, char *argv[])
       else
 	{
 	  /* parent */
-	  waitpid (child_pid, &status, WSTOPPED);
-	  exit (status);
+	  int status;
+	  waitpid (child_pid, &status, 0);
+	  exit (WEXITSTATUS (status));
 	}
     }
   else
