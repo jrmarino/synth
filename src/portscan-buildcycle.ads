@@ -1,10 +1,13 @@
 --  This file is covered by the Internet Software Consortium (ISC) License
 --  Reference: ../License.txt
 
+with GNAT.OS_Lib;
 with JohnnyText;
 with Display;
 
 package PortScan.Buildcycle is
+
+   package OSL renames GNAT.OS_Lib;
 
    cycle_log_error : exception;
    cycle_cmd_error : exception;
@@ -41,11 +44,15 @@ package PortScan.Buildcycle is
 
 private
 
+   type execution_limit is range 1 .. 720;
+
    type phases is (check_sanity, pkg_depends, fetch_depends, fetch, checksum,
                    extract_depends, extract, patch_depends, patch,
                    build_depends, lib_depends, configure, build, run_depends,
                    stage, check_plist, pkg_package, install_mtree, install,
                    deinstall);
+
+   type process_exit is (still_running, exited_normally, exited_with_error);
 
    type trackrec is
       record
@@ -72,8 +79,8 @@ private
    procedure initialize_log (id : builders);
    procedure finalize_log   (id : builders);
 
-   function  exec_phase_generic (id : builders; phase : String) return Boolean;
-   function  exec_phase_depends (id : builders; phase : String) return Boolean;
+   function  exec_phase_generic (id : builders; phase : phases) return Boolean;
+   function  exec_phase_depends (id : builders; phase : phases) return Boolean;
    function  exec_phase_deinstall (id : builders) return Boolean;
 
    function  get_environment (id : builders) return String;
@@ -89,8 +96,12 @@ private
    function  log_section (title : String; header : Boolean) return String;
    procedure log_phase_end (id : builders);
    procedure log_phase_begin (phase : String; id : builders);
-   function  generic_execute (id : builders; command : String) return Boolean;
-   function  exec_phase (id : builders; phase : String; phaseenv : String := "";
+   function  generic_execute (id : builders; command : String;
+                              dogbite : out Boolean;
+                              time_limit : execution_limit) return Boolean;
+   function  exec_phase (id : builders; phase : phases;
+                         time_limit    : execution_limit;
+                         phaseenv      : String := "";
                          depends_phase : Boolean := False;
                          skip_header   : Boolean := False)
                          return Boolean;
@@ -101,5 +112,7 @@ private
    function  environment_override return String;
    function  phase2str (phase : phases) return String;
    function  format_loglines (numlines : Natural) return String;
+   function  max_time_without_output (phase : phases) return execution_limit;
+   function  process_status (pid : OSL.Process_Id) return process_exit;
 
 end PortScan.Buildcycle;

@@ -4,7 +4,6 @@
 with Ada.Calendar.Arithmetic;
 with Ada.Calendar.Formatting;
 with Ada.Direct_IO;
-with GNAT.OS_Lib;
 with Util.Streams.Pipes;
 with Util.Streams.Buffered;
 with Util.Processes;
@@ -13,7 +12,6 @@ package body PortScan.Buildcycle is
 
    package ACA renames Ada.Calendar.Arithmetic;
    package ACF renames Ada.Calendar.Formatting;
-   package OSL renames GNAT.OS_Lib;
    package STR renames Util.Streams;
 
 
@@ -34,15 +32,15 @@ package body PortScan.Buildcycle is
          case phase is
             when check_sanity | fetch | checksum | extract | patch |
                  configure | build | stage | pkg_package =>
-               R := exec_phase_generic (id, phase2str (phase));
+               R := exec_phase_generic (id, phase);
 
             when pkg_depends | fetch_depends | extract_depends |
                  patch_depends | build_depends | lib_depends | run_depends =>
-               R := exec_phase_depends (id, phase2str (phase));
+               R := exec_phase_depends (id, phase);
 
             when install_mtree | install | check_plist =>
                if testing then
-                  R := exec_phase_generic (id, phase2str (phase));
+                  R := exec_phase_generic (id, phase);
                end if;
 
             when deinstall =>
@@ -575,13 +573,15 @@ package body PortScan.Buildcycle is
    --------------------------
    --  exec_phase_generic  --
    --------------------------
-   function exec_phase_generic (id : builders; phase : String) return Boolean is
+   function exec_phase_generic (id : builders; phase : phases) return Boolean
+   is
+      time_limit : execution_limit := max_time_without_output (phase);
    begin
       if testing then
-         return exec_phase (id => id, phase => phase,
+         return exec_phase (id => id, phase => phase, time_limit => time_limit,
                             phaseenv => "DEVELOPER=1");
       else
-         return exec_phase (id => id, phase => phase);
+         return exec_phase (id => id, phase => phase, time_limit => time_limit);
       end if;
    end exec_phase_generic;
 
@@ -589,11 +589,13 @@ package body PortScan.Buildcycle is
    --------------------------
    --  exec_phase_depends  --
    --------------------------
-   function exec_phase_depends (id : builders; phase : String) return Boolean
+   function exec_phase_depends (id : builders; phase : phases) return Boolean
    is
+      time_limit : execution_limit := max_time_without_output (phase);
       phaseenv : String := "USE_PACKAGE_DEPENDS_ONLY=1";
    begin
       return exec_phase (id => id, phase => phase, phaseenv => phaseenv,
+                         time_limit => time_limit,
                          depends_phase => True);
    end exec_phase_depends;
 
@@ -603,41 +605,116 @@ package body PortScan.Buildcycle is
    ----------------------------
    function exec_phase_deinstall (id : builders) return Boolean
    is
-      phase : constant String := "deinstall";
+      time_limit : execution_limit := max_time_without_output (deinstall);
    begin
       --  This is only run during "testing" so assume that.
       if uselog then
-         log_phase_begin (phase, id);
+         log_phase_begin (phase2str (deinstall), id);
          log_linked_libraries (id);
       end if;
-      return exec_phase (id => id, phase => phase, phaseenv => "DEVELOPER=1",
-                         skip_header => True);
+      return exec_phase (id => id, phase => deinstall, time_limit => time_limit,
+                         phaseenv => "DEVELOPER=1", skip_header => True);
    end exec_phase_deinstall;
+
+
+   ----------------------
+   --  process_status  --
+   ----------------------
+   function process_status (pid : OSL.Process_Id) return process_exit
+   is
+      type uInt8 is mod 2 ** 16;
+
+      function nohang_waitpid (pid : OSL.Process_Id) return uInt8;
+      pragma Import (C, nohang_waitpid, "__nohang_waitpid");
+
+      result : uInt8;
+   begin
+      result := nohang_waitpid (pid);
+      case result is
+         when 0 => return still_running;
+         when 1 => return exited_normally;
+         when others => return exited_with_error;
+      end case;
+   end process_status;
 
 
    -----------------------
    --  generic_execute  --
    -----------------------
-   function generic_execute (id : builders; command : String) return Boolean
+   function generic_execute (id : builders; command : String;
+                             dogbite : out Boolean;
+                             time_limit : execution_limit) return Boolean
    is
+      subtype time_cycle is execution_limit range 1 .. time_limit;
+      subtype one_minute is Positive range 1 .. 230;  --  lose 10 in rounding
+      type dim_watchdog is array (time_cycle) of Natural;
+      watchdog    : dim_watchdog;
+      squirrel    : time_cycle := time_cycle'First;
+      cycle_done  : Boolean := False;
       Args        : OSL.Argument_List_Access;
-      Exit_Status : Integer;
+      pid         : OSL.Process_Id;
+      status      : process_exit;
+      lock_lines  : Natural;
+      quartersec  : one_minute := one_minute'First;
       synthexec   : constant String := host_localbase & "/libexec/synthexec";
       truecommand : constant String := synthexec & " " &
                              log_name (trackers (id).seq_id) & " " & command;
    begin
+      dogbite := False;
+      watchdog (squirrel) := trackers (id).loglines;
       Args := OSL.Argument_String_To_List (truecommand);
-      Exit_Status := OSL.Spawn (Program_Name => Args (Args'First).all,
-                                Args => Args (Args'First + 1 .. Args'Last));
+      pid  := OSL.Non_Blocking_Spawn
+        (Program_Name => Args (Args'First).all,
+         Args => Args (Args'First + 1 .. Args'Last));
       OSL.Free (Args);
-      return Exit_Status = 0;
+      loop
+         delay 0.25;
+         if quartersec = one_minute'Last then
+            quartersec := one_minute'First;
+            --  increment squirrel
+            if squirrel = time_cycle'Last then
+               squirrel := time_cycle'First;
+               cycle_done := True;
+            else
+               squirrel := squirrel + 1;
+            end if;
+            lock_lines := trackers (id).loglines;
+            if cycle_done then
+               if watchdog (squirrel) = lock_lines then
+                  --  Log hasn't advanced in a full cycle so bail out
+                  dogbite := True;
+                  declare
+                     killcommand : constant String :=  "/bin/pkill -KILL -P " &
+                       JT.int2str (OSL.Pid_To_Integer (pid));
+                     killres : Boolean;
+                  begin
+                     killres := external_command (killcommand);
+                  end;
+                  delay 5.0;  --  Give some time for error to write to log
+                  return False;
+               end if;
+            end if;
+            watchdog (squirrel) := lock_lines;
+         else
+            quartersec := quartersec + 1;
+         end if;
+         status := process_status (pid);
+         if status = exited_normally then
+            return True;
+         end if;
+         if status = exited_with_error then
+            return False;
+         end if;
+      end loop;
    end generic_execute;
 
 
    ------------------
    --  exec_phase  --
    ------------------
-   function exec_phase (id : builders; phase : String; phaseenv : String := "";
+   function exec_phase (id : builders; phase : phases;
+                        time_limit    : execution_limit;
+                        phaseenv      : String := "";
                         depends_phase : Boolean := False;
                         skip_header   : Boolean := False)
                         return Boolean
@@ -648,6 +725,7 @@ package body PortScan.Buildcycle is
       pid        : port_id := trackers (id).seq_id;
       catport    : constant String := get_catport (all_ports (pid));
       result     : Boolean;
+      timed_out  : Boolean;
    begin
       if testing or else depends_phase
       then
@@ -663,7 +741,7 @@ package body PortScan.Buildcycle is
 
       if uselog then
          if not skip_header then
-            log_phase_begin (phase, id);
+            log_phase_begin (phase2str (phase), id);
          end if;
          TIO.Close (trackers (id).log_handle);
       end if;
@@ -671,9 +749,9 @@ package body PortScan.Buildcycle is
       declare
            command : constant String := chroot & root & environment_override &
            phaseenv & dev_flags & port_flags &
-           "/usr/bin/make -C /xports/" & catport & " " & phase;
+           "/usr/bin/make -C /xports/" & catport & " " & phase2str (phase);
       begin
-         result := generic_execute (id, command);
+         result := generic_execute (id, command, timed_out, time_limit);
       end;
 
       --  Reopen the log.  I guess we can leave off the exception check
@@ -683,6 +761,10 @@ package body PortScan.Buildcycle is
          TIO.Open (File => trackers (id).log_handle,
                    Mode => TIO.Append_File,
                    Name => log_name (trackers (id).seq_id));
+         if timed_out then
+            TIO.Put_Line (trackers (id).log_handle,
+                          "###  Watchdog killed runaway process!  ###");
+         end if;
          log_phase_end (id);
       end if;
 
@@ -1001,6 +1083,35 @@ package body PortScan.Buildcycle is
    exception
       when others => return 0;
    end get_packages_per_hour;
+
+
+   -------------------------------
+   --  max_time_without_output  --
+   -------------------------------
+   function max_time_without_output (phase : phases) return execution_limit is
+   begin
+      case phase is
+         when check_sanity     => return 1;
+         when pkg_depends      => return 3;
+         when fetch_depends    => return 3;
+         when fetch | checksum => return 480;  --  8 hours
+         when extract_depends  => return 3;
+         when extract          => return 30;
+         when patch_depends    => return 3;
+         when patch            => return 3;
+         when build_depends    => return 5;
+         when lib_depends      => return 5;
+         when configure        => return 15;
+         when build            => return 20;
+         when run_depends      => return 5;
+         when stage            => return 20;
+         when check_plist      => return 3;
+         when pkg_package      => return 120;
+         when install_mtree    => return 3;
+         when install          => return 10;
+         when deinstall        => return 10;
+      end case;
+   end max_time_without_output;
 
 
 end PortScan.Buildcycle;
