@@ -7,6 +7,7 @@ with GNAT.String_Split;
 with PortScan.Buildcycle;
 with Replicant;
 with Signals;
+with Unix;
 
 package body PortScan.Ops is
 
@@ -874,7 +875,7 @@ package body PortScan.Ops is
       if not active_hook (hook) then
          return;
       end if;
-      if CYC.external_command (command) then
+      if Unix.external_command (command) then
          null;
       end if;
    end run_hook;

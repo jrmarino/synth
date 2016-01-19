@@ -3,72 +3,39 @@
  * Reference: ../License.txt
  *
  * The first argument is the path to the log
+ * The second argument is "0" or "1", where "1" sets the process group
  * The remaining arguments are passed to the spawn
- * We expect a minimum of 3 arguments
+ * We expect a minimum of 4 arguments
  */
 
 #include <unistd.h>
+#include <string.h>
 #include <fcntl.h>
-#include <errno.h>
-
-#ifdef USE_FORK
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#endif
 
 int main (int argc, char *argv[])
 {
-  int   fd;
-  pid_t child_pid;
-
-  if (argc < 4)
+  if (argc < 5)
     {
       return (-2);
     }
 
-  fd = open (argv[1], O_RDWR | O_APPEND | O_CREAT, 0644);
+  int fd = open (argv[1], O_RDWR | O_APPEND | O_CREAT, 0644);
   if (fd < 0)
     {
-      return (errno);
+      return (-3);
     }
 
   dup2 (fd, STDOUT_FILENO);
   dup2 (fd, STDERR_FILENO);
   close (fd);
 
-/*  Disable watchdog for now
-  int result = setpgid (0, 0);
-  if (result != 0)
-    {
-      return (errno);
-    }
-*/
-
-#ifdef USE_FORK
-  child_pid = fork ();
-
-  if (child_pid >= 0)
-    {
-      if (child_pid == 0)
-	{
-	  /* child */
-	  return execv (argv[2], (argv + 2));
-	}
-      else
-	{
-	  /* parent */
-	  int status;
-	  waitpid (child_pid, &status, 0);
-	  exit (WEXITSTATUS (status));
-	}
-    }
-  else
-    {
-      /* fork failure */
-      exit (-1);
-    }
-#else
-  return execv (argv[2], (argv + 2));
-#endif
+  if (strncmp (argv[2], "1", 1) == 0)
+  {
+    int result = setpgid (0, 0);
+    if (result != 0)
+      {
+        return (-4);
+      }
+  }
+  return execv (argv[3], (argv + 3));
 }

@@ -142,6 +142,7 @@ private
          work_locked   : Boolean              := False;
          pkg_present   : Boolean              := False;
          deletion_due  : Boolean              := False;
+         use_watchdog  : Boolean              := True;
          reverse_score : port_index           := 0;
          librun        : block_crate.Map;
          blocked_by    : block_crate.Map;

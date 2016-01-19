@@ -7,6 +7,7 @@ with Ada.Direct_IO;
 with Util.Streams.Pipes;
 with Util.Streams.Buffered;
 with Util.Processes;
+with Unix;
 
 package body PortScan.Buildcycle is
 
@@ -617,27 +618,6 @@ package body PortScan.Buildcycle is
    end exec_phase_deinstall;
 
 
-   ----------------------
-   --  process_status  --
-   ----------------------
-   function process_status (pid : OSL.Process_Id) return process_exit
-   is
-      type uInt8 is mod 2 ** 16;
-
-      function nohang_waitpid (pid : OSL.Process_Id) return uInt8;
-      pragma Import (C, nohang_waitpid, "__nohang_waitpid");
-
-      result : uInt8;
-   begin
-      result := nohang_waitpid (pid);
-      case result is
-         when 0 => return still_running;
-         when 1 => return exited_normally;
-         when others => return exited_with_error;
-      end case;
-   end process_status;
-
-
    -----------------------
    --  generic_execute  --
    -----------------------
@@ -648,25 +628,26 @@ package body PortScan.Buildcycle is
       subtype time_cycle is execution_limit range 1 .. time_limit;
       subtype one_minute is Positive range 1 .. 230;  --  lose 10 in rounding
       type dim_watchdog is array (time_cycle) of Natural;
+      use type Unix.process_exit;
       watchdog    : dim_watchdog;
       squirrel    : time_cycle := time_cycle'First;
       cycle_done  : Boolean := False;
-      Args        : OSL.Argument_List_Access;
-      pid         : OSL.Process_Id;
-      status      : process_exit;
+      pid         : Unix.pid_t;
+      status      : Unix.process_exit;
       lock_lines  : Natural;
       quartersec  : one_minute := one_minute'First;
       synthexec   : constant String := host_localbase & "/libexec/synthexec";
       truecommand : constant String := synthexec & " " &
-                             log_name (trackers (id).seq_id) & " " & command;
+                             log_name (trackers (id).seq_id) & " " &
+                             watchdog_setting (trackers (id).seq_id) & command;
    begin
       dogbite := False;
       watchdog (squirrel) := trackers (id).loglines;
-      Args := OSL.Argument_String_To_List (truecommand);
-      pid  := OSL.Non_Blocking_Spawn
-        (Program_Name => Args (Args'First).all,
-         Args => Args (Args'First + 1 .. Args'Last));
-      OSL.Free (Args);
+
+      pid := Unix.launch_process (truecommand);
+      if Unix.fork_failed (pid) then
+         return False;
+      end if;
       loop
          delay 0.25;
          if quartersec = one_minute'Last then
@@ -683,7 +664,7 @@ package body PortScan.Buildcycle is
                if watchdog (squirrel) = lock_lines then
                   --  Log hasn't advanced in a full cycle so bail out
                   dogbite := True;
-                  kill_process_tree (process_group => pid);
+                  Unix.kill_process_tree (process_group => pid);
                   delay 5.0;  --  Give some time for error to write to log
                   return False;
                end if;
@@ -692,11 +673,11 @@ package body PortScan.Buildcycle is
          else
             quartersec := quartersec + 1;
          end if;
-         status := process_status (pid);
-         if status = exited_normally then
+         status := Unix.process_status (pid);
+         if status = Unix.exited_normally then
             return True;
          end if;
-         if status = exited_with_error then
+         if status = Unix.exited_with_error then
             return False;
          end if;
       end loop;
@@ -858,22 +839,6 @@ package body PortScan.Buildcycle is
    exception
       when others => null;
    end log_linked_libraries;
-
-
-   ------------------------
-   --  external_command  --
-   ------------------------
-   function external_command (command : String) return Boolean
-   is
-      Args        : OSL.Argument_List_Access;
-      Exit_Status : Integer;
-   begin
-      Args := OSL.Argument_String_To_List (command);
-      Exit_Status := OSL.Spawn (Program_Name => Args (Args'First).all,
-                                Args => Args (Args'First + 1 .. Args'Last));
-      OSL.Free (Args);
-      return Exit_Status = 0;
-   end external_command;
 
 
    ----------------------------
@@ -1079,24 +1044,6 @@ package body PortScan.Buildcycle is
    end get_packages_per_hour;
 
 
-   -------------------------
-   --  kill_process_tree  --
-   -------------------------
-   procedure kill_process_tree (process_group : OSL.Process_Id)
-   is
-      pgid : constant String := JT.int2str (OSL.Pid_To_Integer (process_group));
-      dfly_cmd : constant String := "/usr/bin/pkill -KILL -g ";
-      free_cmd : constant String := "/bin/pkill -KILL -g ";
-      killres  : Boolean;
-   begin
-      if JT.equivalent (PM.configuration.operating_sys, "FreeBSD") then
-         killres := external_command (free_cmd & pgid);
-      else
-         killres := external_command (dfly_cmd & pgid);
-      end if;
-   end kill_process_tree;
-
-
    -------------------------------
    --  max_time_without_output  --
    -------------------------------
@@ -1125,5 +1072,19 @@ package body PortScan.Buildcycle is
       end case;
    end max_time_without_output;
 
+
+   ------------------------
+   --  watchdog_setting  --
+   ------------------------
+   function watchdog_setting (sid : port_id) return String
+   is
+      watchdog : constant Boolean := all_ports (sid).use_watchdog;
+   begin
+      if watchdog then
+         return "1 ";
+      else
+         return "0 ";
+      end if;
+   end watchdog_setting;
 
 end PortScan.Buildcycle;

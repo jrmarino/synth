@@ -134,6 +134,7 @@ package body PortScan is
          PR.work_locked   := False;
          PR.pkg_present   := False;
          PR.deletion_due  := False;
+         PR.use_watchdog  := True;
          PR.reverse_score := 0;
          PR.librun.Clear;
          PR.blocks.Clear;
@@ -402,14 +403,15 @@ package body PortScan is
                  " -VPKGVERSION -VPKGFILE:T -VMAKE_JOBS_NUMBER -VIGNORE" &
                  " -VFETCH_DEPENDS -VEXTRACT_DEPENDS -VPATCH_DEPENDS" &
                  " -VBUILD_DEPENDS -VLIB_DEPENDS -VRUN_DEPENDS" &
-                 " -VSELECTED_OPTIONS -VDESELECTED_OPTIONS";
+                 " -VSELECTED_OPTIONS -VDESELECTED_OPTIONS" &
+                 " -V_INCLUDE_USES_SCONS_MK";
       pipe     : aliased STR.Pipes.Pipe_Stream;
       buffer   : STR.Buffered.Buffered_Stream;
       content  : JT.Text;
       topline  : JT.Text;
       status   : Integer;
 
-      type result_range is range 1 .. 12;
+      type result_range is range 1 .. 13;
 
       --  prototypes
       procedure set_depends (line  : JT.Text; dtype : dependency_type);
@@ -551,6 +553,10 @@ package body PortScan is
             when 10 => set_depends (topline, runtime);
             when 11 => set_options (topline, True);
             when 12 => set_options (topline, False);
+            when 13 =>
+               if JT.equivalent (topline, "yes") then
+                  all_ports (target).use_watchdog := False;
+               end if;
          end case;
       end loop;
       all_ports (target).scanned := True;

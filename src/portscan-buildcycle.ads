@@ -1,13 +1,10 @@
 --  This file is covered by the Internet Software Consortium (ISC) License
 --  Reference: ../License.txt
 
-with GNAT.OS_Lib;
 with JohnnyText;
 with Display;
 
 package PortScan.Buildcycle is
-
-   package OSL renames GNAT.OS_Lib;
 
    cycle_log_error : exception;
    cycle_cmd_error : exception;
@@ -20,10 +17,6 @@ package PortScan.Buildcycle is
    function log_duration (start, stop : CAL.Time) return String;
    function elapsed_now return String;
    function elapsed_build (id : builders) return String;
-
-   --  Allows other packages to call external commands (e.g. Pilot)
-   --  Returns "True" on success
-   function external_command (command : String) return Boolean;
 
    --  Was private, but expose so Pilot can use it.
    function generic_system_command (command : String) return JT.Text;
@@ -51,8 +44,6 @@ private
                    build_depends, lib_depends, configure, build, run_depends,
                    stage, check_plist, pkg_package, install_mtree, install,
                    deinstall);
-
-   type process_exit is (still_running, exited_normally, exited_with_error);
 
    type trackrec is
       record
@@ -108,12 +99,11 @@ private
    function  dynamically_linked (base, filename : String) return Boolean;
    procedure stack_linked_libraries (id : builders; base, filename : String);
    procedure log_linked_libraries (id : builders);
-   procedure kill_process_tree (process_group : OSL.Process_Id);
    function  elapsed_HH_MM_SS (start, stop : CAL.Time) return String;
    function  environment_override return String;
    function  phase2str (phase : phases) return String;
    function  format_loglines (numlines : Natural) return String;
    function  max_time_without_output (phase : phases) return execution_limit;
-   function  process_status (pid : OSL.Process_Id) return process_exit;
+   function  watchdog_setting (sid : port_id) return String;
 
 end PortScan.Buildcycle;

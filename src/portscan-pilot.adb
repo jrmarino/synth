@@ -8,6 +8,7 @@ with PortScan.Packages;
 with PortScan.Buildcycle;
 with Replicant;
 with Signals;
+with Unix;
 
 package body PortScan.Pilot is
 
@@ -797,7 +798,7 @@ package body PortScan.Pilot is
       end if;
       if rebuild_local_respository then
          if not skip_installation then
-            if CYC.external_command (command)
+            if Unix.external_command (command)
             then
                TIO.Put_Line (sorry);
             end if;
@@ -827,7 +828,7 @@ package body PortScan.Pilot is
          command : constant String :=
            base_command & JT.USS (caboose);
       begin
-         if not CYC.external_command (command) then
+         if not Unix.external_command (command) then
             TIO.Put_Line ("Unfortunately, the system upgraded failed.");
          end if;
       end;
