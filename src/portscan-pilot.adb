@@ -754,7 +754,7 @@ package body PortScan.Pilot is
       pkgbin  : constant String := host_localbase & "/sbin/pkg";
       command : constant String := pkgbin & " upgrade --yes --repository Synth";
       query   : constant String := pkgbin & " query -a %o";
-      sorry   : constant String := "Unfortunately, the system upgraded failed.";
+      sorry   : constant String := "Unfortunately, the system upgrade failed.";
    begin
       portlist.Clear;
       TIO.Put_Line ("Querying system about current package installations.");
@@ -798,7 +798,7 @@ package body PortScan.Pilot is
       end if;
       if rebuild_local_respository then
          if not skip_installation then
-            if Unix.external_command (command)
+            if not Unix.external_command (command)
             then
                TIO.Put_Line (sorry);
             end if;
