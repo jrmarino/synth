@@ -176,6 +176,9 @@ private
    --  This is only done for FreeBSD.  For DragonFly, it's a null-op
    procedure mount_linprocfs (mount_point : String);
 
+   --  It turns out at least one major port uses procfs (gnustep)
+   procedure mount_procfs (path_to_proc : String);
+
    --  Cache variables that spawn to get populated to extended make.conf
    procedure cache_port_variables (path_to_mm : String);
 

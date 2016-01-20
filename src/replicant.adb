@@ -258,6 +258,17 @@ package body Replicant is
    end mount_devices;
 
 
+   --------------------
+   --  mount_procfs  --
+   --------------------
+   procedure mount_procfs (path_to_proc : String)
+   is
+      command : constant String := "/sbin/mount -t procfs proc " & path_to_proc;
+   begin
+      execute (command);
+   end mount_procfs;
+
+
    ------------------
    --  get_suffix  --
    ------------------
@@ -726,6 +737,7 @@ package body Replicant is
          mount_nullfs (slave_local, slave_base & root_localbase, readwrite);
       end if;
 
+      mount_procfs (path_to_proc => location (slave_base, proc));
       mount_linprocfs (mount_point => location (slave_base, linproc));
 
       if flavor = freebsd then
@@ -820,6 +832,7 @@ package body Replicant is
       end if;
 
       unmount (location (slave_base, dev));
+      unmount (location (slave_base, proc));
       unmount (location (slave_base, xports));
       unmount (location (slave_base, options));
       unmount (location (slave_base, packages));
