@@ -8,9 +8,6 @@
  *    0 when process is still running
  *    1 when process exited normally
  *    2 when process exited with error
- *
- * __launch_process takes a pointer to an array of null-terminated string
- * pointers are returns the pid of the child process, or -1 upon failure
  */
 
 #include <sys/types.h>
