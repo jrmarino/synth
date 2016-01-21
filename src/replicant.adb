@@ -448,20 +448,20 @@ package body Replicant is
          declare
             line : String := TIO.Get_Line (live_file);
          begin
-            if line'Length > sysgroup'Length then
-               for grpindex in groupset'Range loop
-                  declare
-                     grpcolon : String := JT.trim (users (grpindex)) & ":";
-                  begin
+            for grpindex in groupset'Range loop
+               declare
+                  grpcolon : String := JT.trim (users (grpindex)) & ":";
+               begin
+                  if grpcolon'Length <= line'Length then
                      if grpcolon = line (1 .. grpcolon'Last) then
                         keepit := True;
                         exit;
                      end if;
-                  end;
-               end loop;
-               if keepit then
-                  TIO.Put_Line (group, line);
-               end if;
+                  end if;
+               end;
+            end loop;
+            if keepit then
+               TIO.Put_Line (group, line);
             end if;
          end;
       end loop;
