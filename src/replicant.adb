@@ -489,12 +489,15 @@ package body Replicant is
    procedure create_passwd (path_to_etc : String)
    is
       mm     : constant String := get_master_mount;
+      maspwd : constant String := "/master.passwd";
       passwd : constant String := "/passwd";
       spwd   : constant String := "/spwd.db";
       pwd    : constant String := "/pwd.db";
    begin
       AD.Copy_File (Source_Name => mm & passwd,
                     Target_Name => path_to_etc & passwd);
+      AD.Copy_File (Source_Name => mm & maspwd,
+                    Target_Name => path_to_etc & maspwd);
       AD.Copy_File (Source_Name => mm & spwd,
                     Target_Name => path_to_etc & spwd);
       AD.Copy_File (Source_Name => mm & pwd,
