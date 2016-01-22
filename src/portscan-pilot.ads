@@ -1,7 +1,11 @@
 --  This file is covered by the Internet Software Consortium (ISC) License
 --  Reference: ../License.txt
 
+with Replicant;
+
 package PortScan.Pilot is
+
+   package REP renames Replicant;
 
    --  Called when command line argument counts is known to be 2 or more.
    --  Argument 2 should either be a path to a file or a port origin.
@@ -115,6 +119,7 @@ private
                                       "02_failure_list.log",
                                       "03_ignored_list.log",
                                       "04_skipped_list.log");
+   noprocs : constant REP.slave_options := (others => False);
 
    --  scan given file.  Everything line must be either blank (whitespace
    --  ignored) or a valid port origin, and returns true if it is.

@@ -686,7 +686,7 @@ package body Replicant is
    --------------------
    --  launch_slave  --
    --------------------
-   procedure launch_slave  (id : builders)
+   procedure launch_slave  (id : builders; opts : slave_options)
    is
       function clean_mount_point (point : folder) return String;
       slave_base   : constant String := get_slave_mount (id);
@@ -741,15 +741,19 @@ package body Replicant is
          mount_nullfs (slave_local, slave_base & root_localbase, readwrite);
       end if;
 
-      mount_procfs (path_to_proc => location (slave_base, proc));
-      mount_linprocfs (mount_point => location (slave_base, linproc));
+      if opts.need_procfs then
+         mount_procfs (path_to_proc => location (slave_base, proc));
+      end if;
 
       if flavor = freebsd then
-         if PM.configuration.tmpfs_localbase then
-            mount_tmpfs (slave_base & root_linux, 12 * 1024);
-         else
-            forge_directory (slave_linux);
-            mount_nullfs (slave_linux, slave_base & root_linux, readwrite);
+         if opts.need_linprocfs then
+            mount_linprocfs (mount_point => location (slave_base, linproc));
+            if PM.configuration.tmpfs_localbase then
+               mount_tmpfs (slave_base & root_linux, 12 * 1024);
+            else
+               forge_directory (slave_linux);
+               mount_nullfs (slave_linux, slave_base & root_linux, readwrite);
+            end if;
          end if;
          declare
             lib32 : String := clean_mount_point (usr_lib32);
@@ -796,7 +800,7 @@ package body Replicant is
    ---------------------
    --  destroy_slave  --
    ---------------------
-   procedure destroy_slave (id : builders)
+   procedure destroy_slave (id : builders; opts : slave_options)
    is
       slave_base   : constant String := get_slave_mount (id);
       slave_work   : constant String := slave_base & "_work";
@@ -825,18 +829,23 @@ package body Replicant is
       end if;
 
       if flavor = freebsd then
-         unmount (location (slave_base, linproc));
-         unmount (slave_base & root_linux);
-         if not PM.configuration.tmpfs_localbase then
-            annihilate_directory_tree (slave_linux);
+         if opts.need_linprocfs then
+            unmount (location (slave_base, linproc));
+            unmount (slave_base & root_linux);
+            if not PM.configuration.tmpfs_localbase then
+               annihilate_directory_tree (slave_linux);
+            end if;
          end if;
          if AD.Exists (location (dir_system, usr_lib32)) then
             unmount (location (slave_base, usr_lib32));
          end if;
       end if;
 
+      if opts.need_procfs then
+         unmount (location (slave_base, proc));
+      end if;
+
       unmount (location (slave_base, dev));
-      unmount (location (slave_base, proc));
       unmount (location (slave_base, xports));
       unmount (location (slave_base, options));
       unmount (location (slave_base, packages));

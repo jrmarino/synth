@@ -6,7 +6,6 @@ with Ada.Strings.Fixed;
 with PortScan.Ops;
 with PortScan.Packages;
 with PortScan.Buildcycle;
-with Replicant;
 with Signals;
 with Unix;
 
@@ -17,7 +16,6 @@ package body PortScan.Pilot is
    package OPS renames PortScan.Ops;
    package PKG renames PortScan.Packages;
    package CYC renames PortScan.Buildcycle;
-   package REP renames Replicant;
    package SIG renames Signals;
 
    ---------------------
@@ -66,7 +64,7 @@ package body PortScan.Pilot is
       result    : Boolean := True;
    begin
       REP.initialize;
-      REP.launch_slave (id => PortScan.scan_slave);
+      REP.launch_slave (id => PortScan.scan_slave, opts => noprocs);
       good_scan := PortScan.scan_single_port (catport => pkgng);
 
       if good_scan then
@@ -113,7 +111,7 @@ package body PortScan.Pilot is
          TIO.Put_Line (shutreq);
          result := False;
       end if;
-      REP.destroy_slave (id => PortScan.scan_slave);
+      REP.destroy_slave (id => PortScan.scan_slave, opts => noprocs);
       REP.finalize;
       reset_ports_tree;
       prescan_ports_tree (JT.USS (PM.configuration.dir_portsdir));
@@ -153,7 +151,7 @@ package body PortScan.Pilot is
 
    begin
       REP.initialize;
-      REP.launch_slave (id => PortScan.scan_slave);
+      REP.launch_slave (id => PortScan.scan_slave, opts => noprocs);
       if SIG.graceful_shutdown_requested then
          goto clean_exit;
       end if;
@@ -176,7 +174,7 @@ package body PortScan.Pilot is
          successful := False;
          TIO.Put_Line (shutreq);
       end if;
-      REP.destroy_slave (id => PortScan.scan_slave);
+      REP.destroy_slave (id => PortScan.scan_slave, opts => noprocs);
       REP.finalize;
       return successful;
    end scan_stack_of_single_ports;
@@ -375,10 +373,10 @@ package body PortScan.Pilot is
    begin
       PortScan.reset_ports_tree;
       REP.initialize;
-      REP.launch_slave (PortScan.scan_slave);
+      REP.launch_slave (id => PortScan.scan_slave, opts => noprocs);
       goodresult := PortScan.scan_entire_ports_tree
         (JT.USS (PM.configuration.dir_portsdir));
-      REP.destroy_slave (PortScan.scan_slave);
+      REP.destroy_slave (id => PortScan.scan_slave, opts => noprocs);
       REP.finalize;
       if goodresult then
          PortScan.set_build_priority;
@@ -432,9 +430,9 @@ package body PortScan.Pilot is
          AD.Delete_File (xz_pkgsite);
       end if;
       REP.initialize;
-      REP.launch_slave (PortScan.scan_slave);
+      REP.launch_slave (id => PortScan.scan_slave, opts => noprocs);
       build_res := REP.build_repository (PortScan.scan_slave);
-      REP.destroy_slave (PortScan.scan_slave);
+      REP.destroy_slave (id => PortScan.scan_slave, opts => noprocs);
       REP.finalize;
       if build_res then
          TIO.Put_Line ("Local repository successfully rebuilt");

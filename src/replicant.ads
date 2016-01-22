@@ -12,10 +12,15 @@ package Replicant is
 
    scenario_unexpected : exception;
 
+   type slave_options is record
+      need_procfs    : Boolean := False;
+      need_linprocfs : Boolean := False;
+   end record;
+
    --  For every single port to be built, the build need to first be created
    --  and then destroyed when the build is complete.
-   procedure launch_slave  (id : builders);
-   procedure destroy_slave (id : builders);
+   procedure launch_slave  (id : builders; opts : slave_options);
+   procedure destroy_slave (id : builders; opts : slave_options);
 
    --  This procedure needs to be run once.
    --  It basically sets the operating system "flavor" which affects the

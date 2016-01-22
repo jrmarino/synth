@@ -143,6 +143,8 @@ private
          work_locked   : Boolean              := False;
          pkg_present   : Boolean              := False;
          deletion_due  : Boolean              := False;
+         use_procfs    : Boolean              := False;
+         use_linprocfs : Boolean              := False;
          use_watchdog  : Boolean              := watchdog_active;
          reverse_score : port_index           := 0;
          librun        : block_crate.Map;

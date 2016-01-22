@@ -134,6 +134,8 @@ package body PortScan is
          PR.work_locked   := False;
          PR.pkg_present   := False;
          PR.deletion_due  := False;
+         PR.use_procfs    := False;
+         PR.use_linprocfs := False;
          PR.use_watchdog  := watchdog_active;
          PR.reverse_score := 0;
          PR.librun.Clear;
@@ -404,14 +406,14 @@ package body PortScan is
                  " -VFETCH_DEPENDS -VEXTRACT_DEPENDS -VPATCH_DEPENDS" &
                  " -VBUILD_DEPENDS -VLIB_DEPENDS -VRUN_DEPENDS" &
                  " -VSELECTED_OPTIONS -VDESELECTED_OPTIONS" &
-                 " -V_INCLUDE_USES_SCONS_MK";
+                 " -V_INCLUDE_USES_SCONS_MK -VUSE_LINUX";
       pipe     : aliased STR.Pipes.Pipe_Stream;
       buffer   : STR.Buffered.Buffered_Stream;
       content  : JT.Text;
       topline  : JT.Text;
       status   : Integer;
 
-      type result_range is range 1 .. 13;
+      type result_range is range 1 .. 14;
 
       --  prototypes
       procedure set_depends (line  : JT.Text; dtype : dependency_type);
@@ -557,9 +559,16 @@ package body PortScan is
                if JT.equivalent (topline, "yes") then
                   all_ports (target).use_watchdog := False;
                end if;
+            when 14 =>
+               if not JT.IsBlank (topline) then
+                  all_ports (target).use_linprocfs := True;
+               end if;
          end case;
       end loop;
       all_ports (target).scanned := True;
+      if catport = "x11-toolkits/gnustep-gui" then
+         all_ports (target).use_procfs := True;
+      end if;
    exception
       when issue : others =>
          EX.Reraise_Occurrence (issue);

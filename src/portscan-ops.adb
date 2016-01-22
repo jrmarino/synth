@@ -54,6 +54,7 @@ package body PortScan.Ops is
          package Rand20 is new Ada.Numerics.Discrete_Random (Rand_Draw);
          seed : Rand20.Generator;
          build_result : Boolean;
+         opts : REP.slave_options;
       begin
          if builder <= num_builders then
             if not curses_support then
@@ -65,11 +66,15 @@ package body PortScan.Ops is
                exit when builder_states (builder) = shutdown;
                if builder_states (builder) = tasked then
                   builder_states (builder) := busy;
+                  opts.need_procfs :=
+                    all_ports (instructions (builder)).use_procfs;
+                  opts.need_linprocfs :=
+                    all_ports (instructions (builder)).use_linprocfs;
 
-                  REP.launch_slave (id => builder);
+                  REP.launch_slave (id => builder, opts => opts);
                   build_result := CYC.build_package
                     (id => builder, sequence_id => instructions (builder));
-                  REP.destroy_slave (id => builder);
+                  REP.destroy_slave (id => builder, opts => opts);
                   if build_result then
                      builder_states (builder) := done_success;
                   else
