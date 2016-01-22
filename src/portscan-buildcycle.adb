@@ -636,6 +636,7 @@ package body PortScan.Buildcycle is
       status      : Unix.process_exit;
       lock_lines  : Natural;
       quartersec  : one_minute := one_minute'First;
+      hangmonitor : Boolean := all_ports (trackers (id).seq_id).use_watchdog;
       synthexec   : constant String := host_localbase & "/libexec/synthexec";
       truecommand : constant String := synthexec & " " &
                              log_name (trackers (id).seq_id) & " " &
@@ -659,17 +660,19 @@ package body PortScan.Buildcycle is
             else
                squirrel := squirrel + 1;
             end if;
-            lock_lines := trackers (id).loglines;
-            if cycle_done then
-               if watchdog (squirrel) = lock_lines then
-                  --  Log hasn't advanced in a full cycle so bail out
-                  dogbite := True;
-                  Unix.kill_process_tree (process_group => pid);
-                  delay 5.0;  --  Give some time for error to write to log
-                  return False;
+            if hangmonitor then
+               lock_lines := trackers (id).loglines;
+               if cycle_done then
+                  if watchdog (squirrel) = lock_lines then
+                     --  Log hasn't advanced in a full cycle so bail out
+                     dogbite := True;
+                     Unix.kill_process_tree (process_group => pid);
+                     delay 5.0;  --  Give some time for error to write to log
+                     return False;
+                  end if;
                end if;
+               watchdog (squirrel) := lock_lines;
             end if;
-            watchdog (squirrel) := lock_lines;
          else
             quartersec := quartersec + 1;
          end if;

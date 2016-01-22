@@ -134,7 +134,7 @@ package body PortScan is
          PR.work_locked   := False;
          PR.pkg_present   := False;
          PR.deletion_due  := False;
-         PR.use_watchdog  := True;
+         PR.use_watchdog  := watchdog_active;
          PR.reverse_score := 0;
          PR.librun.Clear;
          PR.blocks.Clear;

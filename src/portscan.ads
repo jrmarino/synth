@@ -61,6 +61,7 @@ private
    max_ports  : constant := 28000;
    scan_slave : constant builders := 9;
    ss_base    : constant String := "/SL09";
+   watchdog_active : constant Boolean := False;  --  not reliable yet, turn off
 
    type port_id   is range -1 .. max_ports - 1;
    subtype port_index is port_id range 0 .. port_id'Last;
@@ -142,7 +143,7 @@ private
          work_locked   : Boolean              := False;
          pkg_present   : Boolean              := False;
          deletion_due  : Boolean              := False;
-         use_watchdog  : Boolean              := True;
+         use_watchdog  : Boolean              := watchdog_active;
          reverse_score : port_index           := 0;
          librun        : block_crate.Map;
          blocked_by    : block_crate.Map;
