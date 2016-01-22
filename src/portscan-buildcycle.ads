@@ -96,9 +96,10 @@ private
                          depends_phase : Boolean := False;
                          skip_header   : Boolean := False)
                          return Boolean;
-   function  dynamically_linked (base, filename : String) return Boolean;
    procedure stack_linked_libraries (id : builders; base, filename : String);
    procedure log_linked_libraries (id : builders);
+   procedure mark_file_system (id : builders; action : String);
+   function  dynamically_linked (base, filename : String) return Boolean;
    function  elapsed_HH_MM_SS (start, stop : CAL.Time) return String;
    function  environment_override return String;
    function  phase2str (phase : phases) return String;

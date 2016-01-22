@@ -122,6 +122,7 @@ package body Replicant is
       execute (command);
       create_base_group (mm);
       cache_port_variables (mm);
+      create_mtree_exc_preinst (mm);
 
    end initialize;
 
@@ -1077,5 +1078,90 @@ package body Replicant is
       end loop;
       TIO.Close (vconf);
    end cache_port_variables;
+
+
+   ---------------------------------------
+   --  write_common_mtree_exclude_base  --
+   ---------------------------------------
+   procedure write_common_mtree_exclude_base (mtreefile : TIO.File_Type) is
+   begin
+      TIO.Put_Line
+        (mtreefile,
+           "bin" & LAT.LF
+         & "ccache" & LAT.LF
+         & "./compat/linux/proc" & LAT.LF
+         & "construction" & LAT.LF
+         & "dev" & LAT.LF
+         & "distfiles" & LAT.LF
+         & "lib" & LAT.LF
+         & "libexec" & LAT.LF
+         & "home" & LAT.LF
+         & "options" & LAT.LF
+         & "packages" & LAT.LF
+         & "proc" & LAT.LF
+         & "root" & LAT.LF
+         & "sbin" & LAT.LF
+         & "tmp" & LAT.LF
+         & "./usr/bin" & LAT.LF
+         & "./usr/include" & LAT.LF
+         & "./usr/lib" & LAT.LF
+         & "./usr/lib32" & LAT.LF
+         & "./usr/libdata" & LAT.LF
+         & "./usr/libexec" & LAT.LF
+         & "./usr/sbin" & LAT.LF
+         & "./usr/share" & LAT.LF
+         & "./usr/src" & LAT.LF
+         & "xports"
+        );
+   end write_common_mtree_exclude_base;
+
+
+   --------------------------------
+   --  write_preinstall_section  --
+   --------------------------------
+   procedure write_preinstall_section (mtreefile : TIO.File_Type) is
+   begin
+      TIO.Put_Line
+        (mtreefile,
+           "./etc/group" & LAT.LF
+         & "./etc/make.conf" & LAT.LF
+         & "./etc/make.conf.bak" & LAT.LF
+         & "./etc/make.nxb.conf" & LAT.LF
+         & "./etc/master.passwd" & LAT.LF
+         & "./etc/passwd" & LAT.LF
+         & "./etc/pwd.db" & LAT.LF
+         & "./etc/shells" & LAT.LF
+         & "./etc/spwd.db" & LAT.LF
+         & "./var/db/freebsd-update" & LAT.LF
+         & "./var/db/pkg" & LAT.LF
+         & "./var/log" & LAT.LF
+         & "./var/mail" & LAT.LF
+         & "./var/run" & LAT.LF
+         & "./var/tmp" & LAT.LF
+         & "./usr/local/etc/gconf/gconf.xml.defaults/%gconf-tree*.xml" & LAT.LF
+         & "./usr/local/lib/gio/modules/giomodule.cache" & LAT.LF
+         & "./usr/local/info/dir" & LAT.LF
+         & "./usr/local/*/info/dir" & LAT.LF
+         & "./usr/local/*/ls-R" & LAT.LF
+         & "./usr/local/share/octave/octave_packages" & LAT.LF
+         & "./usr/local/share/xml/catalog.ports"
+        );
+   end write_preinstall_section;
+
+
+
+   --------------------------------
+   --  create_mtree_exc_preinst  --
+   --------------------------------
+   procedure create_mtree_exc_preinst (path_to_mm : String)
+   is
+      mtreefile : TIO.File_Type;
+      filename  : constant String := path_to_mm & "/mtree.preinstexclude";
+   begin
+      TIO.Create (File => mtreefile, Mode => TIO.Out_File, Name => filename);
+      write_common_mtree_exclude_base (mtreefile);
+      write_preinstall_section (mtreefile);
+      TIO.Close (mtreefile);
+   end create_mtree_exc_preinst;
 
 end Replicant;

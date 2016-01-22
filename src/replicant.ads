@@ -182,4 +182,9 @@ private
    --  Cache variables that spawn to get populated to extended make.conf
    procedure cache_port_variables (path_to_mm : String);
 
+   --  Used to generic mtree exclusion files
+   procedure write_common_mtree_exclude_base (mtreefile : TIO.File_Type);
+   procedure write_preinstall_section (mtreefile : TIO.File_Type);
+   procedure create_mtree_exc_preinst (path_to_mm : String);
+
 end Replicant;

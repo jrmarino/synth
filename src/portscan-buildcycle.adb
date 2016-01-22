@@ -39,8 +39,14 @@ package body PortScan.Buildcycle is
                  patch_depends | build_depends | lib_depends | run_depends =>
                R := exec_phase_depends (id, phase);
 
-            when install_mtree | install | check_plist =>
+            when install_mtree | check_plist =>
                if testing then
+                  R := exec_phase_generic (id, phase);
+               end if;
+
+            when install =>
+               if testing then
+                  mark_file_system (id, "preinst");
                   R := exec_phase_generic (id, phase);
                end if;
 
@@ -1089,5 +1095,33 @@ package body PortScan.Buildcycle is
          return "0 ";
       end if;
    end watchdog_setting;
+
+
+   ------------------------
+   --  mark_file_system  --
+   ------------------------
+   procedure mark_file_system (id : builders; action : String)
+   is
+      path_mm  : String := JT.USS (PM.configuration.dir_buildbase) & "/Base";
+      path_sm  : String := JT.USS (PM.configuration.dir_buildbase) & "/SL" &
+                           JT.zeropad (Natural (id), 2);
+      mtfile   : constant String := path_mm & "/mtree." & action & "exclude";
+      command  : constant String := "/usr/sbin/mtree -X " & mtfile &
+                          " -cn -k uid,gid,mode,md5digest -p " & path_sm;
+      filename : constant String := path_sm & "/tmp/mtree." & action;
+      result   : JT.Text;
+      resfile  : TIO.File_Type;
+   begin
+      result := generic_system_command (command);
+      TIO.Create (File => resfile, Mode => TIO.Out_File, Name => filename);
+      TIO.Put (resfile, JT.USS (result));
+      TIO.Close (resfile);
+   exception
+      when cycle_cmd_error => null;
+      when others =>
+         if TIO.Is_Open (resfile) then
+            TIO.Close (resfile);
+         end if;
+   end mark_file_system;
 
 end PortScan.Buildcycle;
