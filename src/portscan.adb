@@ -560,7 +560,7 @@ package body PortScan is
                   all_ports (target).use_watchdog := False;
                end if;
             when 14 =>
-               if not JT.IsBlank (topline) then
+               if not JT.IsBlank (JT.trim (topline)) then
                   all_ports (target).use_linprocfs := True;
                end if;
          end case;
