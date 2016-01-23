@@ -63,8 +63,8 @@ private
                    usr_sbin,
                    usr_share,
                    usr_lib32, xports, options, packages, distfiles,
-                   dev, etc, etc_mtree, home, proc, linproc, root, tmp, var,
-                   wrkdirs, usr_local, usr_src, ccache);
+                   dev, etc, etc_default, etc_mtree, etc_rcd, home, linproc,
+                   proc, root, tmp, var, wrkdirs, usr_local, usr_src, ccache);
    subtype subfolder is folder range bin .. usr_share;
 
    --  home and root need to be set readonly
@@ -82,7 +82,9 @@ private
    root_usr_src     : constant String := "/usr/src";
    root_dev         : constant String := "/dev";
    root_etc         : constant String := "/etc";
+   root_etc_default : constant String := "/etc/defaults";
    root_etc_mtree   : constant String := "/etc/mtree";
+   root_etc_rcd     : constant String := "/etc/rc.d";
    root_lib         : constant String := "/lib";
    root_tmp         : constant String := "/tmp";
    root_var         : constant String := "/var";
@@ -158,6 +160,9 @@ private
 
    --  copy host's /etc/mtree files to slave
    procedure copy_mtree_files (path_to_mtree : String);
+
+   --  copy host's conf defaults
+   procedure copy_rc_default (path_to_etc : String);
 
    --  create minimal /etc/services
    procedure create_etc_services (path_to_etc : String);

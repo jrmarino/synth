@@ -44,7 +44,9 @@ package body Replicant is
          when lib         => return mount_base & root_lib;
          when dev         => return mount_base & root_dev;
          when etc         => return mount_base & root_etc;
+         when etc_default => return mount_base & root_etc_default;
          when etc_mtree   => return mount_base & root_etc_mtree;
+         when etc_rcd     => return mount_base & root_etc_rcd;
          when tmp         => return mount_base & root_tmp;
          when var         => return mount_base & root_var;
          when home        => return mount_base & root_home;
@@ -580,6 +582,22 @@ package body Replicant is
    end copy_resolv_conf;
 
 
+   -----------------------
+   --  copy_rc_default  --
+   -----------------------
+   procedure copy_rc_default (path_to_etc : String)
+   is
+      rc_default : constant String := "/defaults/rc.conf";
+      etc_rcconf : constant String := "/etc" & rc_default;
+   begin
+      if not AD.Exists (etc_rcconf) then
+         return;
+      end if;
+      AD.Copy_File (Source_Name => etc_rcconf,
+                    Target_Name => path_to_etc & rc_default);
+   end copy_rc_default;
+
+
    ---------------------------
    --  create_etc_services  --
    ---------------------------
@@ -783,6 +801,7 @@ package body Replicant is
       populate_var_folder (location (slave_base, var));
       populate_localbase  (location (slave_base, usr_local));
       copy_mtree_files    (location (slave_base, etc_mtree));
+      copy_rc_default     (location (slave_base, etc));
       copy_resolv_conf    (location (slave_base, etc));
       create_make_conf    (location (slave_base, etc));
       create_passwd       (location (slave_base, etc));
