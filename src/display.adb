@@ -57,9 +57,9 @@ package body Display is
    -----------------------------------
    procedure set_full_redraw_next_update is
    begin
-      draw_static_summary_zone;
-      draw_static_builders_zone;
-      draw_static_actions_zone;
+      TIC.Redraw (Win => zone_actions);
+      TIC.Redraw (Win => zone_builders);
+      TIC.Redraw (Win => zone_summary);
    end set_full_redraw_next_update;
 
 
@@ -359,18 +359,6 @@ package body Display is
       end if;
       history (history_arrow) := HR;
    end insert_history;
-
-
-   --------------------------------
-   --  draw_static_actions_zone  --
-   --------------------------------
-   procedure draw_static_actions_zone is
-   begin
-      for z in 0 .. inc (historyheight, -1) loop
-         TIC.Move_Cursor (Win => zone_actions, Line => z, Column => 0);
-         TIC.Add (Win => zone_actions, Str => blank);
-      end loop;
-   end draw_static_actions_zone;
 
 
    ------------------------------

@@ -142,6 +142,5 @@ private
    procedure establish_colors;
    procedure draw_static_summary_zone;
    procedure draw_static_builders_zone;
-   procedure draw_static_actions_zone;
 
 end Display;

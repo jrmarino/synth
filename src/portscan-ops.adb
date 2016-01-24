@@ -35,7 +35,7 @@ package body PortScan.Ops is
    procedure parallel_bulk_run (num_builders : builders; logs : dim_handlers)
    is
       subtype cycle_count is Natural range 1 .. 9;
-      subtype refresh_count is Natural range 1 .. 100;
+      subtype refresh_count is Natural range 1 .. 30;
       instructions   : dim_instruction   := (others => port_match_failed);
       builder_states : dim_builder_state := (others => idle);
       cntcycle       : cycle_count       := cycle_count'First;
