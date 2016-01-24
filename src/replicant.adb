@@ -343,21 +343,6 @@ package body Replicant is
    end populate_var_folder;
 
 
-   --------------------------
-   --  populate_localbase  --
-   --------------------------
-   procedure populate_localbase  (path : String)
-   is
-      command : constant String := "/usr/sbin/mtree -p " & path &
-        " -f /etc/mtree/BSD.local.dist -deqU";
-   begin
-      case flavor is
-         when freebsd | unknown => null;
-         when dragonfly => silent_exec (command);
-      end case;
-   end populate_localbase;
-
-
    ---------------
    --  execute  --
    ---------------
@@ -799,7 +784,6 @@ package body Replicant is
       mount_devices (location (slave_base, dev));
 
       populate_var_folder (location (slave_base, var));
-      populate_localbase  (location (slave_base, usr_local));
       copy_mtree_files    (location (slave_base, etc_mtree));
       copy_rc_default     (location (slave_base, etc));
       copy_resolv_conf    (location (slave_base, etc));
