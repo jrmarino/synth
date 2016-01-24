@@ -125,6 +125,7 @@ package body Replicant is
       create_base_group (mm);
       cache_port_variables (mm);
       create_mtree_exc_preinst (mm);
+      create_mtree_exc_preconfig (mm);
 
    end initialize;
 
@@ -1175,5 +1176,19 @@ package body Replicant is
       write_preinstall_section (mtreefile);
       TIO.Close (mtreefile);
    end create_mtree_exc_preinst;
+
+
+   ----------------------------------
+   --  create_mtree_exc_preconfig  --
+   ----------------------------------
+   procedure create_mtree_exc_preconfig (path_to_mm : String)
+   is
+      mtreefile : TIO.File_Type;
+      filename  : constant String := path_to_mm & "/mtree.preconfig.exclude";
+   begin
+      TIO.Create (File => mtreefile, Mode => TIO.Out_File, Name => filename);
+      write_common_mtree_exclude_base (mtreefile);
+      TIO.Close (mtreefile);
+   end create_mtree_exc_preconfig;
 
 end Replicant;

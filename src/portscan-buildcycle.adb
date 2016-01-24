@@ -32,12 +32,21 @@ package body PortScan.Buildcycle is
          trackers (id).phase := phase;
          case phase is
             when check_sanity | fetch | checksum | extract | patch |
-                 configure | build | pkg_package =>
+                 pkg_package =>
                R := exec_phase_generic (id, phase);
 
             when pkg_depends | fetch_depends | extract_depends |
                  patch_depends | build_depends | lib_depends | run_depends =>
                R := exec_phase_depends (id, phase);
+
+            when configure =>
+               if testing then
+                  mark_file_system (id, "preconfig");
+               end if;
+               R := exec_phase_generic (id, phase);
+
+            when build =>
+               R := exec_phase_build (id);
 
             when stage =>
                if testing then
@@ -607,6 +616,31 @@ package body PortScan.Buildcycle is
    end exec_phase_depends;
 
 
+   ------------------------
+   --  exec_phase_build  --
+   ------------------------
+   function exec_phase_build (id : builders) return Boolean
+   is
+      time_limit : execution_limit := max_time_without_output (build);
+      passed : Boolean;
+   begin
+      passed := exec_phase (id          => id,
+                            phase       => build,
+                            time_limit  => time_limit,
+                            phaseenv    => "DEVELOPER=1",
+                            skip_header => False,
+                            skip_footer => True);
+      if testing and then passed then
+         passed := detect_leftovers_and_MIA
+           (id, "preconfig", "between port configure and build");
+      end if;
+      if uselog then
+         log_phase_end (id);
+      end if;
+      return passed;
+   end exec_phase_build;
+
+
    ----------------------------
    --  exec_phase_deinstall  --
    ----------------------------
@@ -633,7 +667,8 @@ package body PortScan.Buildcycle is
          return False;
       end if;
       if uselog then
-         result := detect_leftovers_and_MIA (id);
+         result := detect_leftovers_and_MIA
+           (id, "prestage", "between staging and package deinstallation");
          log_phase_end (id);
       end if;
       return result;
@@ -1121,12 +1156,24 @@ package body PortScan.Buildcycle is
    ------------------------
    procedure mark_file_system (id : builders; action : String)
    is
+      function attributes (action : String) return String;
+      function attributes (action : String) return String
+      is
+         core : constant String := "uid,gid,mode,md5digest";
+      begin
+         if action = "preconfig" then
+            return core & ",time";
+         else
+            return core;
+         end if;
+      end attributes;
+
       path_mm  : String := JT.USS (PM.configuration.dir_buildbase) & "/Base";
       path_sm  : String := JT.USS (PM.configuration.dir_buildbase) & "/SL" &
                            JT.zeropad (Natural (id), 2);
       mtfile   : constant String := path_mm & "/mtree." & action & ".exclude";
       command  : constant String := "/usr/sbin/mtree -X " & mtfile &
-                          " -cn -k uid,gid,mode,md5digest -p " & path_sm;
+                          " -cn -k " & attributes (action) & " -p " & path_sm;
       filename : constant String := path_sm & "/tmp/mtree." & action;
       result   : JT.Text;
       resfile  : TIO.File_Type;
@@ -1147,7 +1194,8 @@ package body PortScan.Buildcycle is
    --------------------------------
    --  detect_leftovers_and_MIA  --
    --------------------------------
-   function detect_leftovers_and_MIA (id : builders) return Boolean
+   function detect_leftovers_and_MIA (id : builders; action : String;
+                                       description : String) return Boolean
    is
       package crate is new AC.Vectors (Index_Type   => Positive,
                                        Element_Type => JT.Text,
@@ -1158,8 +1206,8 @@ package body PortScan.Buildcycle is
       path_mm  : String := JT.USS (PM.configuration.dir_buildbase) & "/Base";
       path_sm  : String := JT.USS (PM.configuration.dir_buildbase) & "/SL" &
                            JT.zeropad (Natural (id), 2);
-      mtfile   : constant String := path_mm & "/mtree.prestage.exclude";
-      filename : constant String := path_sm & "/tmp/mtree.prestage";
+      mtfile   : constant String := path_mm & "/mtree." & action & ".exclude";
+      filename : constant String := path_sm & "/tmp/mtree." & action;
       command  : constant String := "/usr/sbin/mtree -X " & mtfile & " -f " &
                                     filename & " -p " & path_sm;
       pipe      : aliased STR.Pipes.Pipe_Stream;
@@ -1301,7 +1349,7 @@ package body PortScan.Buildcycle is
       sorter.Sort (Container => leftover);
 
       TIO.Put_Line (trackers (id).log_handle, LAT.LF & "=> Checking for " &
-                      "system changes after package deinstallation");
+                      "system changes " & description);
       if not leftover.Is_Empty then
          passed := False;
          TIO.Put_Line (trackers (id).log_handle, LAT.LF &

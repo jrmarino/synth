@@ -73,6 +73,7 @@ private
    function  exec_phase_generic (id : builders; phase : phases) return Boolean;
    function  exec_phase_depends (id : builders; phase : phases) return Boolean;
    function  exec_phase_deinstall (id : builders) return Boolean;
+   function  exec_phase_build (id : builders) return Boolean;
 
    function  get_environment (id : builders) return String;
    function  get_root (id : builders) return String;
@@ -100,7 +101,6 @@ private
    procedure stack_linked_libraries (id : builders; base, filename : String);
    procedure log_linked_libraries (id : builders);
    procedure mark_file_system (id : builders; action : String);
-   function  detect_leftovers_and_MIA (id : builders) return Boolean;
    function  dynamically_linked (base, filename : String) return Boolean;
    function  elapsed_HH_MM_SS (start, stop : CAL.Time) return String;
    function  environment_override return String;
@@ -108,5 +108,6 @@ private
    function  format_loglines (numlines : Natural) return String;
    function  max_time_without_output (phase : phases) return execution_limit;
    function  watchdog_setting (sid : port_id) return String;
-
+   function  detect_leftovers_and_MIA (id : builders; action : String;
+                                       description : String) return Boolean;
 end PortScan.Buildcycle;

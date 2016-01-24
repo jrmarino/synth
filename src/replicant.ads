@@ -194,6 +194,7 @@ private
    --  Used to generic mtree exclusion files
    procedure write_common_mtree_exclude_base (mtreefile : TIO.File_Type);
    procedure write_preinstall_section (mtreefile : TIO.File_Type);
+   procedure create_mtree_exc_preconfig (path_to_mm : String);
    procedure create_mtree_exc_preinst (path_to_mm : String);
 
 end Replicant;
