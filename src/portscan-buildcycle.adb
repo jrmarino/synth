@@ -32,21 +32,21 @@ package body PortScan.Buildcycle is
          trackers (id).phase := phase;
          case phase is
             when check_sanity | fetch | checksum | extract | patch |
-                 configure | build | stage | pkg_package =>
+                 configure | build | pkg_package =>
                R := exec_phase_generic (id, phase);
 
             when pkg_depends | fetch_depends | extract_depends |
                  patch_depends | build_depends | lib_depends | run_depends =>
                R := exec_phase_depends (id, phase);
 
-            when install_mtree | check_plist =>
+            when stage =>
                if testing then
-                  R := exec_phase_generic (id, phase);
+                  mark_file_system (id, "prestage");
                end if;
+               R := exec_phase_generic (id, phase);
 
-            when install =>
+            when install_mtree | install | check_plist =>
                if testing then
-                  mark_file_system (id, "preinst");
                   R := exec_phase_generic (id, phase);
                end if;
 
@@ -613,14 +613,24 @@ package body PortScan.Buildcycle is
    function exec_phase_deinstall (id : builders) return Boolean
    is
       time_limit : execution_limit := max_time_without_output (deinstall);
+      result     : Boolean;
    begin
       --  This is only run during "testing" so assume that.
       if uselog then
          log_phase_begin (phase2str (deinstall), id);
          log_linked_libraries (id);
       end if;
-      return exec_phase (id => id, phase => deinstall, time_limit => time_limit,
-                         phaseenv => "DEVELOPER=1", skip_header => True);
+      result := exec_phase (id          => id,
+                            phase       => deinstall,
+                            time_limit  => time_limit,
+                            phaseenv    => "DEVELOPER=1",
+                            skip_header => True,
+                            skip_footer => True);
+      if uselog then
+         detect_leftovers_and_MIA (id);
+         log_phase_end (id);
+      end if;
+      return result;
    end exec_phase_deinstall;
 
 
@@ -700,7 +710,8 @@ package body PortScan.Buildcycle is
                         time_limit    : execution_limit;
                         phaseenv      : String := "";
                         depends_phase : Boolean := False;
-                        skip_header   : Boolean := False)
+                        skip_header   : Boolean := False;
+                        skip_footer   : Boolean := False)
                         return Boolean
    is
       root       : constant String := get_root (id);
@@ -749,7 +760,9 @@ package body PortScan.Buildcycle is
             TIO.Put_Line (trackers (id).log_handle,
                           "###  Watchdog killed runaway process!  ###");
          end if;
-         log_phase_end (id);
+         if not skip_footer then
+            log_phase_end (id);
+         end if;
       end if;
 
       return result;
@@ -1105,7 +1118,7 @@ package body PortScan.Buildcycle is
       path_mm  : String := JT.USS (PM.configuration.dir_buildbase) & "/Base";
       path_sm  : String := JT.USS (PM.configuration.dir_buildbase) & "/SL" &
                            JT.zeropad (Natural (id), 2);
-      mtfile   : constant String := path_mm & "/mtree." & action & "exclude";
+      mtfile   : constant String := path_mm & "/mtree." & action & ".exclude";
       command  : constant String := "/usr/sbin/mtree -X " & mtfile &
                           " -cn -k uid,gid,mode,md5digest -p " & path_sm;
       filename : constant String := path_sm & "/tmp/mtree." & action;
@@ -1123,5 +1136,181 @@ package body PortScan.Buildcycle is
             TIO.Close (resfile);
          end if;
    end mark_file_system;
+
+
+   --------------------------------
+   --  detect_leftovers_and_MIA  --
+   --------------------------------
+   procedure detect_leftovers_and_MIA (id : builders)
+   is
+      package crate is new AC.Vectors (Index_Type   => Positive,
+                                       Element_Type => JT.Text,
+                                       "="          => JT.SU."=");
+      package sorter is new crate.Generic_Sorting ("<" => JT.SU."<");
+      procedure print (cursor : crate.Cursor);
+      procedure close_active_modifications;
+      path_mm  : String := JT.USS (PM.configuration.dir_buildbase) & "/Base";
+      path_sm  : String := JT.USS (PM.configuration.dir_buildbase) & "/SL" &
+                           JT.zeropad (Natural (id), 2);
+      mtfile   : constant String := path_mm & "/mtree.prestage.exclude";
+      filename : constant String := path_sm & "/tmp/mtree.prestage";
+      command  : constant String := "/usr/sbin/mtree -X " & mtfile & " -f " &
+                                    filename & " -p " & path_sm;
+      pipe      : aliased STR.Pipes.Pipe_Stream;
+      buffer    : STR.Buffered.Buffered_Stream;
+      comres    : JT.Text;
+      topline   : JT.Text;
+      crlen1    : Natural;
+      crlen2    : Natural;
+      toplen    : Natural;
+      skiprest  : Boolean;
+      activemod : Boolean := False;
+      modport   : JT.Text := JT.blank;
+      reasons   : JT.Text := JT.blank;
+      leftover  : crate.Vector;
+      missing   : crate.Vector;
+      changed   : crate.Vector;
+
+      procedure close_active_modifications is
+      begin
+         if activemod then
+            JT.SU.Append (modport, " [ ");
+            JT.SU.Append (modport, reasons);
+            JT.SU.Append (modport, " ]");
+            if not changed.Contains (modport) then
+               changed.Append (modport);
+            end if;
+         end if;
+         activemod := False;
+         reasons := JT.blank;
+         modport := JT.blank;
+      end close_active_modifications;
+
+      procedure print (cursor : crate.Cursor)
+      is
+         dossier : constant String := JT.USS (crate.Element (cursor));
+      begin
+         TIO.Put_Line (trackers (id).log_handle, LAT.HT & dossier);
+      end print;
+
+   begin
+      --  we can't use generic_system_command because exit code /= 0 normally
+      pipe.Open (Command => command, Mode => Util.Processes.READ_ALL);
+      buffer.Initialize (Output => null,
+                         Input  => pipe'Unchecked_Access,
+                         Size   => 4096);
+      buffer.Read (Into => comres);
+      crlen1 := JT.SU.Length (comres);
+      loop
+         skiprest := False;
+         JT.nextline (lineblock => comres, firstline => topline);
+         crlen2 := JT.SU.Length (comres);
+         exit when crlen1 = crlen2;
+         crlen1 := crlen2;
+         toplen := JT.SU.Length (topline);
+         if not skiprest and then JT.SU.Length (topline) > 6 then
+            declare
+               sx : constant Natural := toplen - 5;
+               caboose  : constant String := JT.SU.Slice (topline, sx, toplen);
+               filename : JT.Text := JT.SUS (JT.SU.Slice (topline, 1, sx - 1));
+            begin
+               if caboose = " extra" then
+                  close_active_modifications;
+                  if not leftover.Contains (filename) then
+                     leftover.Append (filename);
+                  end if;
+                  skiprest := True;
+               end if;
+            end;
+         end if;
+         if not skiprest and then JT.SU.Length (topline) > 7 then
+            declare
+               canopy   : constant String := JT.SU.Slice (topline, 1, 7);
+               filename : JT.Text := JT.SUS (JT.SU.Slice (topline, 8, toplen));
+            begin
+               if canopy = "extra: " then
+                  close_active_modifications;
+                  if not leftover.Contains (filename) then
+                     leftover.Append (filename);
+                  end if;
+                  skiprest := True;
+               end if;
+            end;
+         end if;
+         if not skiprest and then JT.SU.Length (topline) > 10 then
+            declare
+               sx : constant Natural := toplen - 7;
+               caboose  : constant String := JT.SU.Slice (topline, sx, toplen);
+               filename : JT.Text := JT.SUS (JT.SU.Slice (topline, 3, sx - 1));
+            begin
+               if caboose = " missing" then
+                  close_active_modifications;
+                  if not missing.Contains (filename) then
+                     missing.Append (filename);
+                  end if;
+                  skiprest := True;
+               end if;
+            end;
+         end if;
+         if not skiprest then
+            declare
+               line   : constant String := JT.USS (topline);
+               blank8 : constant String := "        ";
+               sx     : constant Natural := toplen - 7;
+            begin
+               if toplen > 5 and then line (1) = LAT.HT then
+                  --  reason, but only valid if modification is active
+                  if activemod then
+                     if JT.IsBlank (reasons) then
+                        reasons := JT.SUS (JT.part_1 (line (2 .. toplen), " "));
+                     else
+                        JT.SU.Append (reasons, " | ");
+                        JT.SU.Append (reasons, JT.part_1
+                                      (line (2 .. toplen), " "));
+                     end if;
+                  end if;
+                  skiprest := True;
+               end if;
+               if not skiprest and then line (toplen) = LAT.Colon then
+                  close_active_modifications;
+                  activemod := True;
+                  modport := JT.SUS (line (1 .. toplen - 1));
+                  skiprest := True;
+               end if;
+               if not skiprest and then
+                 JT.SU.Slice (topline, sx, toplen) = " changed"
+               then
+                  close_active_modifications;
+                  activemod := True;
+                  modport := JT.SUS (line (1 .. toplen - 8));
+                  skiprest := True;
+               end if;
+            end;
+         end if;
+      end loop;
+      close_active_modifications;
+      sorter.Sort (Container => changed);
+      sorter.Sort (Container => missing);
+      sorter.Sort (Container => leftover);
+
+      TIO.Put_Line (trackers (id).log_handle, LAT.LF & "=> Checking for " &
+                      "system changes after package deinstallation");
+      if not leftover.Is_Empty then
+         TIO.Put_Line (trackers (id).log_handle, LAT.LF &
+                      "   Left over files and/or directories:");
+         leftover.Iterate (Process => print'Access);
+      end if;
+      if not missing.Is_Empty then
+         TIO.Put_Line (trackers (id).log_handle, LAT.LF &
+                       "   Missing files and/or directories:");
+         missing.Iterate (Process => print'Access);
+      end if;
+      if not changed.Is_Empty then
+         TIO.Put_Line (trackers (id).log_handle, LAT.LF &
+                       "   Modified files and/or directories:");
+         changed.Iterate (Process => print'Access);
+      end if;
+   end detect_leftovers_and_MIA;
+
 
 end PortScan.Buildcycle;

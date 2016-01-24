@@ -1115,21 +1115,21 @@ package body Replicant is
    begin
       TIO.Put_Line
         (mtreefile,
-           "bin" & LAT.LF
-         & "ccache" & LAT.LF
+           "./bin" & LAT.LF
+         & "./ccache" & LAT.LF
          & "./compat/linux/proc" & LAT.LF
-         & "construction" & LAT.LF
-         & "dev" & LAT.LF
-         & "distfiles" & LAT.LF
-         & "lib" & LAT.LF
-         & "libexec" & LAT.LF
-         & "home" & LAT.LF
-         & "options" & LAT.LF
-         & "packages" & LAT.LF
-         & "proc" & LAT.LF
-         & "root" & LAT.LF
-         & "sbin" & LAT.LF
-         & "tmp" & LAT.LF
+         & "./construction" & LAT.LF
+         & "./dev" & LAT.LF
+         & "./distfiles" & LAT.LF
+         & "./lib" & LAT.LF
+         & "./libexec" & LAT.LF
+         & "./home" & LAT.LF
+         & "./options" & LAT.LF
+         & "./packages" & LAT.LF
+         & "./proc" & LAT.LF
+         & "./root" & LAT.LF
+         & "./sbin" & LAT.LF
+         & "./tmp" & LAT.LF
          & "./usr/bin" & LAT.LF
          & "./usr/include" & LAT.LF
          & "./usr/lib" & LAT.LF
@@ -1139,7 +1139,7 @@ package body Replicant is
          & "./usr/sbin" & LAT.LF
          & "./usr/share" & LAT.LF
          & "./usr/src" & LAT.LF
-         & "xports"
+         & "./xports"
         );
    end write_common_mtree_exclude_base;
 
@@ -1184,7 +1184,7 @@ package body Replicant is
    procedure create_mtree_exc_preinst (path_to_mm : String)
    is
       mtreefile : TIO.File_Type;
-      filename  : constant String := path_to_mm & "/mtree.preinstexclude";
+      filename  : constant String := path_to_mm & "/mtree.prestage.exclude";
    begin
       TIO.Create (File => mtreefile, Mode => TIO.Out_File, Name => filename);
       write_common_mtree_exclude_base (mtreefile);
