@@ -192,12 +192,6 @@ format [category]___[portname].log.
 
 Right now Synth can only be executed by the root user
 
-#### "Test" mode
-
-The test mode is not fully implemented yet.  It needs to check leftovers and
-filesystem violations (although for the latter, most of the jail is read-only
-which may cause a build failure)
-
 #### Non-curses mode
 
 There is a text mode for the building phase.  It shows much less information
