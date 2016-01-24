@@ -626,8 +626,14 @@ package body PortScan.Buildcycle is
                             phaseenv    => "DEVELOPER=1",
                             skip_header => True,
                             skip_footer => True);
+      if not result then
+         if uselog then
+            log_phase_end (id);
+         end if;
+         return False;
+      end if;
       if uselog then
-         detect_leftovers_and_MIA (id);
+         result := detect_leftovers_and_MIA (id);
          log_phase_end (id);
       end if;
       return result;
@@ -1141,7 +1147,7 @@ package body PortScan.Buildcycle is
    --------------------------------
    --  detect_leftovers_and_MIA  --
    --------------------------------
-   procedure detect_leftovers_and_MIA (id : builders)
+   function detect_leftovers_and_MIA (id : builders) return Boolean
    is
       package crate is new AC.Vectors (Index_Type   => Positive,
                                        Element_Type => JT.Text,
@@ -1164,6 +1170,7 @@ package body PortScan.Buildcycle is
       crlen2    : Natural;
       toplen    : Natural;
       skiprest  : Boolean;
+      passed    : Boolean := True;
       activemod : Boolean := False;
       modport   : JT.Text := JT.blank;
       reasons   : JT.Text := JT.blank;
@@ -1296,20 +1303,27 @@ package body PortScan.Buildcycle is
       TIO.Put_Line (trackers (id).log_handle, LAT.LF & "=> Checking for " &
                       "system changes after package deinstallation");
       if not leftover.Is_Empty then
+         passed := False;
          TIO.Put_Line (trackers (id).log_handle, LAT.LF &
-                      "   Left over files and/or directories:");
+                      "   Left over files/directories:");
          leftover.Iterate (Process => print'Access);
       end if;
       if not missing.Is_Empty then
+         passed := False;
          TIO.Put_Line (trackers (id).log_handle, LAT.LF &
-                       "   Missing files and/or directories:");
+                       "   Missing files/directories:");
          missing.Iterate (Process => print'Access);
       end if;
       if not changed.Is_Empty then
+         passed := False;
          TIO.Put_Line (trackers (id).log_handle, LAT.LF &
-                       "   Modified files and/or directories:");
+                       "   Modified files/directories:");
          changed.Iterate (Process => print'Access);
       end if;
+      if passed then
+         TIO.Put_Line (trackers (id).log_handle, "Everything is fine.");
+      end if;
+      return passed;
    end detect_leftovers_and_MIA;
 
 
