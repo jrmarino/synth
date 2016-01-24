@@ -413,12 +413,12 @@ package body PortScan.Pilot is
          if not fully_scan_ports_tree then
             return False;
          end if;
-      end if;
-      PKG.clean_repository (repo);
-      PKG.limited_sanity_check (repo, False);
-      if SIG.graceful_shutdown_requested then
-         TIO.Put_Line (shutreq);
-         return False;
+         PKG.clean_repository (repo);
+         PKG.limited_sanity_check (repo, False);
+         if SIG.graceful_shutdown_requested then
+            TIO.Put_Line (shutreq);
+            return False;
+         end if;
       end if;
       if AD.Exists (xz_meta) then
          AD.Delete_File (xz_meta);

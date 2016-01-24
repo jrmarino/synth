@@ -296,12 +296,9 @@ begin
                  PIL.sanity_check_then_prefail
                then
                   PIL.perform_bulk_run (testmode => False);
-                  --  Stop after building, it's been wiping out all 25,000
-                  --  packages after successful completion!
-                  --  Disable until it's figured out.
---                    if PIL.rebuild_local_respository (use_full_scan => False) then
---                       null;
---                    end if;
+                  if PIL.rebuild_local_respository (use_full_scan => False) then
+                     null;
+                  end if;
                end if;
             when status_everything =>
                if PIL.build_pkg8_as_necessary and then
