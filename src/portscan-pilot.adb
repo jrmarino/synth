@@ -717,7 +717,7 @@ package body PortScan.Pilot is
    ------------------------------------------
    function write_pkg_repos_configuration_file return Boolean
    is
-      repdir : constant String := host_localbase & "/etc/pkg/repos";
+      repdir : constant String := get_repos_dir;
       target : constant String := repdir & "/00_synth.conf";
       pkgdir : constant String := JT.USS (PM.configuration.dir_packages);
       handle : TIO.File_Type;
@@ -1040,6 +1040,33 @@ package body PortScan.Pilot is
          TIO.Put_Line ("The complete list can also be found at " & filename);
       end if;
    end display_results_of_dry_run;
+
+
+   ---------------------
+   --  get_repos_dir  --
+   ---------------------
+   function get_repos_dir return String
+   is
+      command : String := host_localbase & "/sbin/pkg config repos_dir";
+      content : JT.Text;
+      topline : JT.Text;
+      crlen1  : Natural;
+      crlen2  : Natural;
+   begin
+      content := CYC.generic_system_command (command);
+      crlen1 := JT.SU.Length (content);
+      loop
+         JT.nextline (lineblock => content, firstline => topline);
+         crlen2 := JT.SU.Length (content);
+         exit when crlen1 = crlen2;
+         crlen1 := crlen2;
+         if not JT.equivalent (topline, "/etc/pkg/") then
+            return JT.USS (topline);
+         end if;
+      end loop;
+      --  fallback, use default
+      return host_localbase & "/etc/pkg/repos";
+   end get_repos_dir;
 
 
 end PortScan.Pilot;

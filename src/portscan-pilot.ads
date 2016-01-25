@@ -143,4 +143,7 @@ private
    function Get_PID return Integer;
    pragma Import (C, Get_PID, "getpid");
 
+   --  Query pkg(8)'s repos_dir configuration instead of assuming default
+   function get_repos_dir return String;
+
 end PortScan.Pilot;
