@@ -1,4 +1,4 @@
-.Dd January 8, 2016
+.Dd January 25, 2016
 .Dt SYNTH 1
 .Os
 .Sh NAME
@@ -162,6 +162,15 @@ ncurses. It shows a lot of good information and it should be used. The
 display will fall back to a text mode if the terminal doesn't support it.
 This setting forces text mode unconditionally, but few users will want or
 need to use this option.
+.It Ev Fetch prebuilt packages
+When active, this option will scan the external repository for suitable
+prebuilt packages to satisfy build requirements.  To be considered suitable,
+the ABI, options, and dependencies of the remote package must all match
+requirements.  If a package is located, it will be fetched and placed in
+the packages directory and later incorporated into the local repository.
+This option is not active by default, meaning that
+.Nm
+will normally build everything from source and ignore external repositories.
 .El
 .Pp
 To create alternative profiles, press the
