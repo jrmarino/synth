@@ -1043,8 +1043,7 @@ package body Replicant is
       fullport : constant String := portsdir & "/ports-mgmt/pkg";
       command  : constant String := "/usr/bin/make -C " & fullport &
                  " -VARCH -VOPSYS -V_OSRELEASE -VOSVERSION -VUID -V_SMP_CPUS" &
-                 " -VHAVE_COMPAT_IA32_KERN -VLINUX_OSRELEASE" &
-                 " -VCONFIGURE_MAX_CMD_LEN";
+                 " -VHAVE_COMPAT_IA32_KERN -VCONFIGURE_MAX_CMD_LEN";
       pipe     : aliased STR.Pipes.Pipe_Stream;
       buffer   : STR.Buffered.Buffered_Stream;
       content  : JT.Text;
@@ -1052,7 +1051,7 @@ package body Replicant is
       status   : Integer;
       vconf    : TIO.File_Type;
 
-      type result_range is range 1 .. 9;
+      type result_range is range 1 .. 8;
    begin
       pipe.Open (Command => command);
       buffer.Initialize (Output => null,
@@ -1084,8 +1083,7 @@ package body Replicant is
                when 5 => TIO.Put_Line (vconf, "UID=" & value);
                when 6 => TIO.Put_Line (vconf, "_SMP_CPUS=" & value);
                when 7 => TIO.Put_Line (vconf, "HAVE_COMPAT_IA32_KERN=" & value);
-               when 8 => TIO.Put_Line (vconf, "LINUX_OSRELEASE=" & value);
-               when 9 => TIO.Put_Line (vconf, "CONFIGURE_MAX_CMD_LEN=" & value);
+               when 8 => TIO.Put_Line (vconf, "CONFIGURE_MAX_CMD_LEN=" & value);
             end case;
          end;
       end loop;
