@@ -387,6 +387,11 @@ file would normally be located at
 Whenever a status command is run, a list of ports that would build with the
 actual command is produced at
 .Pa /tmp/synth_status_results.txt
+.It synth_prefetch_list.txt
+Whenever a status command is run, and the option to use suitable prebuilt
+packages has been selected, a list of packages that will be fetched as a
+result will be written to
+.Pa /tmp/synth_prefetch_list.txt
 .It port logs
 Every single attempt at building a port results in a build log. The name of
 the log is always in the form of [category]___[port].log so that subsequent
