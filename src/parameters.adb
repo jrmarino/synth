@@ -194,10 +194,11 @@ package body Parameters is
            (profile, Field_12, query_opsys (JT.USS (res.dir_portsdir)));
       end if;
 
-      res.dir_options  := extract_string (profile, Field_13, std_options);
-      res.dir_system   := extract_string (profile, Field_14, std_sysbase);
-      res.avec_ncurses := extract_boolean (profile, Field_15, True);
-      res.profile      := JT.SUS (profile);
+      res.dir_options    := extract_string (profile, Field_13, std_options);
+      res.dir_system     := extract_string (profile, Field_14, std_sysbase);
+      res.avec_ncurses   := extract_boolean (profile, Field_15, True);
+      res.defer_prebuilt := extract_boolean (profile, Field_16, False);
+      res.profile        := JT.SUS (profile);
       return res;
    end load_specific_profile;
 
@@ -341,7 +342,8 @@ package body Parameters is
         param_set (profile, Field_12) and then
         param_set (profile, Field_13) and then
         param_set (profile, Field_14) and then
-        param_set (profile, Field_15);
+        param_set (profile, Field_15) and then
+        param_set (profile, Field_16);
    end all_params_present;
 
 
@@ -398,7 +400,8 @@ package body Parameters is
         Field_09 & BDS (configuration.jobs_limit) &
         Field_10 & TFS (configuration.tmpfs_workdir) &
         Field_11 & TFS (configuration.tmpfs_localbase) &
-        Field_15 & TFS (configuration.avec_ncurses);
+        Field_15 & TFS (configuration.avec_ncurses) &
+        Field_16 & TFS (configuration.defer_prebuilt);
    end generated_section;
 
 
@@ -605,6 +608,7 @@ package body Parameters is
       result.tmpfs_workdir   := enough_memory (result.num_builders);
       result.tmpfs_localbase := enough_memory (result.num_builders);
       result.avec_ncurses    := True;
+      result.defer_prebuilt  := False;
 
       write_blank_section (section => new_profile);
 

@@ -120,7 +120,7 @@ package body Actions is
       dashes : constant String (1 .. 79) := (others => LAT.Equals_Sign);
       indent : constant String (1 ..  3) := (others => LAT.Space);
       subtype ofield is String (1 .. 30);
-      type option is range 1 .. 13;
+      type option is range 1 .. 14;
       type desc_type is array (option) of ofield;
       descriptions : desc_type :=
          (
@@ -137,7 +137,8 @@ package body Actions is
           "[J] Max. jobs per builder     ",
           "[K] Use tmpfs for work area   ",
           "[L] Use tmpfs for /usr/local  ",
-          "[M] Display using ncurses     ");
+          "[M] Display using ncurses     ",
+          "[N] Fetch prebuilt packages   ");
 
       optX1A : constant String := "[>]   Switch/create profiles " &
                                          "(changes discarded)";
@@ -195,13 +196,15 @@ package body Actions is
                        origbool := PM.configuration.tmpfs_localbase;
             when 13 => nextbool := dupe.avec_ncurses;
                        origbool := PM.configuration.avec_ncurses;
+            when 14 => nextbool := dupe.defer_prebuilt;
+                       origbool := PM.configuration.defer_prebuilt;
          end case;
          case opt is
             when 1 .. 8   => equivalent := JT.equivalent (orig, next);
                              show := next;
             when 9 .. 10  => equivalent := (orignat = nextnat);
                              show := JT.int2text (Integer (nextnat));
-            when 11 .. 13 => equivalent := (origbool = nextbool);
+            when 11 .. 14 => equivalent := (origbool = nextbool);
                              show := JT.bool2text (nextbool);
          end case;
          if equivalent then
@@ -261,6 +264,7 @@ package body Actions is
             when 11 => dupe.tmpfs_workdir := new_value;
             when 12 => dupe.tmpfs_localbase := new_value;
             when 13 => dupe.avec_ncurses := new_value;
+            when 14 => dupe.defer_prebuilt := new_value;
             when others => raise menu_error
                  with "Illegal value : " & opt'Img;
          end case;
@@ -479,10 +483,10 @@ package body Actions is
                when 'i' .. 'j' =>
                   change_positive_option (option (ascii - 96));
                   exit;
-               when 'K' .. 'M' =>
+               when 'K' .. 'N' =>
                   change_boolean_option (option (ascii - 64));
                   exit;
-               when 'k' .. 'm' =>
+               when 'k' .. 'n' =>
                   change_boolean_option (option (ascii - 96));
                   exit;
                when '>' =>

@@ -31,6 +31,7 @@ package Parameters is
          tmpfs_workdir   : Boolean;
          tmpfs_localbase : Boolean;
          avec_ncurses    : Boolean;
+         defer_prebuilt  : Boolean;
       end record;
 
    configuration  : configuration_record;
@@ -111,6 +112,7 @@ private
    Field_13 : constant String := "Directory_options";
    Field_14 : constant String := "Directory_system";
    Field_15 : constant String := "Display_with_ncurses";
+   Field_16 : constant String := "leverage_prebuilt";
 
    global_01 : constant String := "profile_selected";
 
