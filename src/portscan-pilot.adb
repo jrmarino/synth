@@ -81,7 +81,7 @@ package body PortScan.Pilot is
 
       PKG.limited_sanity_check
         (repository => JT.USS (PM.configuration.dir_repository),
-         dry_run    => False);
+         dry_run    => False, suppress_remote => True);
 
       if PKG.queue_is_empty then
          goto clean_exit;
@@ -190,6 +190,10 @@ package body PortScan.Pilot is
       procedure force_delete (plcursor : portkey_crate.Cursor);
       ptid : PortScan.port_id;
       num_skipped : Natural;
+      block_remote : Boolean := True;
+      update_external_repo : constant String := host_pkg8 & " update --quiet";
+      no_packages : constant String :=
+                    "No prebuilt packages will be used as a result.";
 
       procedure force_delete (plcursor : portkey_crate.Cursor)
       is
@@ -214,10 +218,32 @@ package body PortScan.Pilot is
          return False;
       end if;
 
+      if PM.configuration.defer_prebuilt then
+         --  Before any remote operations, find the external repo
+         if PKG.located_external_repository then
+            block_remote := False;
+            --  We're going to use prebuilt packages if available, so let's
+            --  prepare for that case by updating the external repository
+            TIO.Put ("Stand by, updating external repository catalogs ... ");
+            if not Unix.external_command (update_external_repo) then
+               TIO.Put_Line ("Failed!");
+               TIO.Put_Line ("The external repository could not be updated.");
+               TIO.Put_Line (no_packages);
+               block_remote := True;
+            else
+               TIO.Put_Line ("done.");
+            end if;
+         else
+            TIO.Put_Line ("The external repository does not seem to be " &
+                            "configured.");
+            TIO.Put_Line (no_packages);
+         end if;
+      end if;
+
       OPS.initialize_hooks;
       PKG.limited_sanity_check
         (repository => JT.USS (PM.configuration.dir_repository),
-         dry_run    => dry_run);
+         dry_run    => dry_run, suppress_remote => block_remote);
       bld_counter := (OPS.queue_length, 0, 0, 0, 0);
       if dry_run then
          return True;
@@ -414,7 +440,9 @@ package body PortScan.Pilot is
             return False;
          end if;
          PKG.clean_repository (repo);
-         PKG.limited_sanity_check (repo, False);
+         PKG.limited_sanity_check (repository      => repo,
+                                   dry_run         => False,
+                                   suppress_remote => True);
          if SIG.graceful_shutdown_requested then
             TIO.Put_Line (shutreq);
             return False;
@@ -749,9 +777,9 @@ package body PortScan.Pilot is
    procedure upgrade_system_everything (skip_installation : Boolean := False;
                                         dry_run : Boolean := False)
    is
-      pkgbin  : constant String := host_localbase & "/sbin/pkg";
-      command : constant String := pkgbin & " upgrade --yes --repository Synth";
-      query   : constant String := pkgbin & " query -a %o";
+      command : constant String := host_pkg8 &
+                                   " upgrade --yes --repository Synth";
+      query   : constant String := host_pkg8 & " query -a %o";
       sorry   : constant String := "Unfortunately, the system upgrade failed.";
    begin
       portlist.Clear;
@@ -811,8 +839,8 @@ package body PortScan.Pilot is
    procedure upgrade_system_exactly
    is
       procedure build_train (plcursor : portkey_crate.Cursor);
-      base_command : constant String :=
-        host_localbase & "/sbin/pkg install --yes --repository Synth";
+      base_command : constant String := host_pkg8 &
+                                        " install --yes --repository Synth";
       caboose : JT.Text;
 
       procedure build_train (plcursor : portkey_crate.Cursor) is
@@ -1037,7 +1065,8 @@ package body PortScan.Pilot is
                       rank_queue.Length'Img);
       if goodlog then
          TIO.Close (listlog);
-         TIO.Put_Line ("The complete list can also be found at " & filename);
+         TIO.Put_Line ("The complete build list can also be found at:"
+                       & LAT.LF & filename);
       end if;
    end display_results_of_dry_run;
 
@@ -1047,7 +1076,7 @@ package body PortScan.Pilot is
    ---------------------
    function get_repos_dir return String
    is
-      command : String := host_localbase & "/sbin/pkg config repos_dir";
+      command : String := host_pkg8 & " config repos_dir";
       content : JT.Text;
       topline : JT.Text;
       crlen1  : Natural;

@@ -5,6 +5,7 @@ with Util.Streams.Pipes;
 with Util.Streams.Buffered;
 with PortScan.Ops;
 with Signals;
+with Unix;
 
 package body PortScan.Packages is
 
@@ -59,9 +60,9 @@ package body PortScan.Packages is
    end remove_queue_packages;
 
 
-   -----------------------------------
-   --  passed_initial_package_scan  --
-   -----------------------------------
+   ----------------------------
+   --  initial_package_scan  --
+   ----------------------------
    procedure initial_package_scan (repository : String; id : port_id) is
    begin
       if id = port_match_failed then
@@ -92,43 +93,85 @@ package body PortScan.Packages is
       end;
       all_ports (id).pkg_dep_query :=
         result_of_dependency_query (repository, id);
-
    end initial_package_scan;
+
+
+   ---------------------------
+   --  remote_package_scan  --
+   ---------------------------
+   procedure remote_package_scan (id : port_id) is
+   begin
+      if passed_abi_check (repository => "", id => id,
+                           skip_exist_check => True)
+      then
+         all_ports (id).remote_pkg := True;
+      else
+         return;
+      end if;
+      if not passed_option_check (repository => "", id => id,
+                                  skip_exist_check => True)
+      then
+         all_ports (id).remote_pkg := False;
+         return;
+      end if;
+      all_ports (id).pkg_dep_query :=
+        result_of_dependency_query (repository => "", id => id);
+   end remote_package_scan;
 
 
    ----------------------------
    --  limited_sanity_check  --
    ----------------------------
-   procedure limited_sanity_check (repository : String; dry_run : Boolean)
+   procedure limited_sanity_check (repository : String; dry_run : Boolean;
+                                   suppress_remote : Boolean)
    is
       procedure prune_packages (cursor : ranking_crate.Cursor);
       procedure check_package (cursor : ranking_crate.Cursor);
       procedure prune_queue (cursor : subqueue.Cursor);
+      procedure print (cursor : subqueue.Cursor);
+      procedure fetch (cursor : subqueue.Cursor);
+      procedure check (cursor : subqueue.Cursor);
 
       already_built : subqueue.Vector;
+      fetch_list    : subqueue.Vector;
+      fetch_fail    : Boolean := False;
       clean_pass    : Boolean := False;
+      listlog       : TIO.File_Type;
+      goodlog       : Boolean;
+      filename      : constant String := "/tmp/synth_prefetch_list.txt";
+      package_list  : JT.Text := JT.blank;
 
       procedure check_package (cursor : ranking_crate.Cursor)
       is
-         target  : port_id := ranking_crate.Element (cursor).ap_index;
-         pkgname : String  := JT.USS (all_ports (target).package_name);
+         target    : port_id := ranking_crate.Element (cursor).ap_index;
+         pkgname   : String  := JT.USS (all_ports (target).package_name);
+         available : constant Boolean := all_ports (target).remote_pkg or else
+           (all_ports (target).pkg_present and then
+                not all_ports (target).deletion_due);
       begin
-         if not all_ports (target).pkg_present or else
-           all_ports (target).deletion_due
-         then
+         if not available then
             return;
          end if;
 
-         if not passed_dependency_check
+         if passed_dependency_check
            (query_result => all_ports (target).pkg_dep_query, id => target)
          then
-            TIO.Put_Line (pkgname & " failed dependency check.");
-            all_ports (target).deletion_due := True;
-            clean_pass := False;
-         else
             already_built.Append (New_Item => target);
+            if all_ports (target).remote_pkg then
+               fetch_list.Append (New_Item => target);
+            end if;
+         else
+            if all_ports (target).remote_pkg then
+               --  silently fail, remote packages are a bonus anyway
+               all_ports (target).remote_pkg := False;
+            else
+               TIO.Put_Line (pkgname & " failed dependency check.");
+               all_ports (target).deletion_due := True;
+            end if;
+            clean_pass := False;
          end if;
       end check_package;
+
       procedure prune_queue (cursor : subqueue.Cursor)
       is
          id : constant port_index := subqueue.Element (cursor);
@@ -149,26 +192,120 @@ package body PortScan.Packages is
       exception
          when others => null;
       end prune_packages;
+
+      procedure print (cursor : subqueue.Cursor)
+      is
+         id   : constant port_index := subqueue.Element (cursor);
+         line : constant String := JT.USS (all_ports (id).package_name) &
+                 " (" & get_catport (all_ports (id)) & ")";
+      begin
+         TIO.Put_Line ("  => " & line);
+         if goodlog then
+            TIO.Put_Line (listlog, line);
+         end if;
+      end print;
+
+      procedure fetch (cursor : subqueue.Cursor)
+      is
+         id  : constant port_index := subqueue.Element (cursor);
+      begin
+         JT.SU.Append (package_list, " " & id2pkgname (id));
+      end fetch;
+
+      procedure check (cursor : subqueue.Cursor)
+      is
+         id  : constant port_index := subqueue.Element (cursor);
+         loc : constant String := JT.USS (PM.configuration.dir_packages) &
+                                   "/" & JT.USS (all_ports (id).package_name);
+      begin
+         if not AD.Exists (loc) then
+            fetch_fail := True;
+         end if;
+      end check;
    begin
       establish_package_architecture;
       original_queue_len := rank_queue.Length;
       for m in scanners'Range loop
          mq_progress (m) := 0;
       end loop;
-      parallel_package_scan (repository);
+      parallel_package_scan (repository, False);
+
+      if SIG.graceful_shutdown_requested then
+         return;
+      end if;
 
       while not clean_pass loop
-         if SIG.graceful_shutdown_requested then
-            return;
-         end if;
          clean_pass := True;
          already_built.Clear;
          rank_queue.Iterate (check_package'Access);
       end loop;
-      if not dry_run then
-         rank_queue.Iterate (prune_packages'Access);
+      if not suppress_remote and then PM.configuration.defer_prebuilt then
+         --  The defer_prebuilt options has been elected, so check all the
+         --  missing and to-be-pruned ports for suitable prebuilt packages
+         --  So we need to an incremental scan (skip valid, present packages)
+         for m in scanners'Range loop
+            mq_progress (m) := 0;
+         end loop;
+
+         parallel_package_scan (repository, True);
+
+         if SIG.graceful_shutdown_requested then
+            return;
+         end if;
+
+         clean_pass := False;
+         while not clean_pass loop
+            clean_pass := True;
+            already_built.Clear;
+            fetch_list.Clear;
+            rank_queue.Iterate (check_package'Access);
+         end loop;
       end if;
-      already_built.Iterate (prune_queue'Access);
+      if SIG.graceful_shutdown_requested then
+         return;
+      end if;
+      if dry_run then
+         if not fetch_list.Is_Empty then
+            declare
+
+            begin
+               TIO.Create (File => listlog, Mode => TIO.Out_File,
+                           Name => filename);
+               goodlog := True;
+            exception
+               when others => goodlog := False;
+            end;
+            TIO.Put_Line ("These are the packages that would be fetched:");
+            fetch_list.Iterate (print'Access);
+            TIO.Put_Line ("Total packages that would be fetched:" &
+                            fetch_list.Length'Img);
+            if goodlog then
+               TIO.Close (listlog);
+               TIO.Put_Line ("The complete build list can also be found at:"
+                             & LAT.LF & filename);
+            end if;
+         end if;
+      else
+         rank_queue.Iterate (prune_packages'Access);
+         fetch_list.Iterate (fetch'Access);
+         if not JT.equivalent (package_list, JT.blank) then
+            declare
+               cmd : constant String := host_pkg8 & " fetch -U -y --output " &
+                 JT.USS (PM.configuration.dir_packages) & JT.USS (package_list);
+            begin
+               if Unix.external_command (cmd) then
+                  null;
+               end if;
+            end;
+            fetch_list.Iterate (check'Access);
+         end if;
+      end if;
+      if fetch_fail then
+         TIO.Put_Line ("At least one package failed to fetch, aborting build!");
+         rank_queue.Clear;
+      else
+         already_built.Iterate (prune_queue'Access);
+      end if;
    end limited_sanity_check;
 
 
@@ -275,9 +412,13 @@ package body PortScan.Packages is
          return False;
       end if;
       declare
+         pkg_base : constant String := id2pkgname (id);
          pkg_name : constant String := JT.USS (all_ports (id).package_name);
          fullpath : constant String := repository & "/" & pkg_name;
-         command  : constant String := "pkg query -F " & fullpath & " %Ok:%Ov";
+         command  : constant String := host_pkg8 & " query -F " & fullpath &
+                                       " %Ok:%Ov";
+         remocmd  : constant String := host_pkg8 & " rquery -U %Ok:%Ov -r " &
+                    JT.USS (external_repository) & " " & pkg_base;
          content  : JT.Text;
          topline  : JT.Text;
          colon    : Natural;
@@ -288,7 +429,16 @@ package body PortScan.Packages is
          then
             return False;
          end if;
-         content := generic_system_command (command);
+         declare
+         begin
+            if repository = "" then
+               content := generic_system_command (remocmd);
+            else
+               content := generic_system_command (command);
+            end if;
+         exception
+            when pkgng_execution => return False;
+         end;
          loop
             JT.nextline (lineblock => content, firstline => topline);
             exit when JT.IsBlank (topline);
@@ -374,11 +524,19 @@ package body PortScan.Packages is
    function result_of_dependency_query (repository : String; id : port_id)
                                         return JT.Text
    is
-      fullpath : constant String := repository & "/" &
-                 JT.USS (all_ports (id).package_name);
-      command  : constant String := "pkg query -F " & fullpath & " %do:%dn-%dv";
+      pkg_base : constant String := id2pkgname (id);
+      pkg_name : constant String := JT.USS (all_ports (id).package_name);
+      fullpath : constant String := repository & "/" & pkg_name;
+      command  : constant String := host_pkg8 & " query -F " & fullpath &
+                                    " %do:%dn-%dv";
+      remocmd  : constant String := host_pkg8 & " rquery -U %do:%dn-%dv -r " &
+                 JT.USS (external_repository) & " " & pkg_base;
    begin
-      return generic_system_command (command);
+      if repository = "" then
+         return generic_system_command (remocmd);
+      else
+         return generic_system_command (command);
+      end if;
    exception
       when others => return JT.blank;
    end result_of_dependency_query;
@@ -391,11 +549,11 @@ package body PortScan.Packages is
                                      return Boolean is
    begin
       declare
-         content  : JT.Text := query_result;
-         topline  : JT.Text;
-         colon    : Natural;
-         required : Natural := Natural (all_ports (id).librun.Length);
-         counter  : Natural := 0;
+         content   : JT.Text := query_result;
+         topline   : JT.Text;
+         colon     : Natural;
+         required  : Natural := Natural (all_ports (id).librun.Length);
+         counter   : Natural := 0;
       begin
          loop
             JT.nextline (lineblock => content, firstline => topline);
@@ -414,6 +572,10 @@ package body PortScan.Packages is
                                                         High   => colon - 1));
                target_id : port_index := ports_keys.Element (Key => origin);
                target_pkg : JT.Text := all_ports (target_id).package_name;
+               available : constant Boolean :=
+                 all_ports (target_id).remote_pkg or else
+                 (all_ports (target_id).pkg_present and then
+                      not all_ports (target_id).deletion_due);
             begin
                if target_id = port_match_failed then
                   --  package has a dependency that has been removed from
@@ -444,19 +606,17 @@ package body PortScan.Packages is
                   --  The version that the package requires differs from the
                   --  version that the ports tree will now produce
                   if debug_dep_check then
-                     TIO.Put_Line (JT.USS (target_pkg) & " is an older " &
-                        "version, we need " & deppkg);
+                     TIO.Put_Line (deppkg & " is an different " &
+                        "version, we need " & JT.USS (target_pkg));
                   end if;
                   return False;
                end if;
-               if not all_ports (target_id).pkg_present or else
-                 all_ports (target_id).deletion_due
-               then
+               if not available then
                   --  Even if all the versions are matching, we still need
                   --  the package to be in repository.
                   if debug_dep_check then
-                     TIO.Put_Line (JT.USS (target_pkg) & " doesn't exist or " &
-                        " has been slated for deletion");
+                     TIO.Put_Line (JT.USS (target_pkg) & " doesn't exist " &
+                                     "or has been slated for deletion");
                   end if;
                   return False;
                end if;
@@ -486,6 +646,18 @@ package body PortScan.Packages is
    end passed_dependency_check;
 
 
+   ------------------
+   --  id2pkgname  --
+   ------------------
+   function id2pkgname (id : port_id) return String
+   is
+      pkg_name : constant String := JT.USS (all_ports (id).package_name);
+      len      : constant Natural := pkg_name'Length - 4;
+   begin
+      return pkg_name (1 .. len);
+   end id2pkgname;
+
+
    ------------------------
    --  passed_abi_check  --
    ------------------------
@@ -493,9 +665,12 @@ package body PortScan.Packages is
                               skip_exist_check : Boolean := False)
                               return Boolean
    is
-      fullpath : constant String := repository & "/" &
-                 JT.USS (all_ports (id).package_name);
-      command  : constant String := "pkg query -F " & fullpath & " %q";
+      pkg_base : constant String := id2pkgname (id);
+      pkg_name : constant String := JT.USS (all_ports (id).package_name);
+      fullpath : constant String := repository & "/" & pkg_name;
+      command  : constant String := host_pkg8 & " query -F " & fullpath & " %q";
+      remocmd  : constant String := host_pkg8 & " rquery -U %q -r " &
+                          JT.USS (external_repository) & " " & pkg_base;
       content  : JT.Text;
       topline  : JT.Text;
    begin
@@ -503,7 +678,16 @@ package body PortScan.Packages is
       then
          return False;
       end if;
-      content := generic_system_command (command);
+      declare
+      begin
+         if repository = "" then
+            content := generic_system_command (remocmd);
+         else
+            content := generic_system_command (command);
+         end if;
+      exception
+         when pkgng_execution => return False;
+      end;
       JT.nextline (lineblock => content, firstline => topline);
       if JT.equivalent (topline, calculated_abi) then
          return True;
@@ -744,7 +928,7 @@ package body PortScan.Packages is
    -----------------------------
    --  parallel_package_scan  --
    -----------------------------
-   procedure parallel_package_scan (repository : String)
+   procedure parallel_package_scan (repository : String; remote_scan : Boolean)
    is
       task type scan (lot : scanners);
       finished : array (scanners) of Boolean := (others => False);
@@ -758,9 +942,18 @@ package body PortScan.Packages is
          procedure populate (cursor : subqueue.Cursor)
          is
             target_port : port_index := subqueue.Element (cursor);
+            important   : constant Boolean := all_ports (target_port).scanned;
          begin
-            if not aborted then
-               initial_package_scan (repository, target_port);
+            if not aborted and then important then
+               if remote_scan then
+                  if not all_ports (target_port).pkg_present or else
+                    all_ports (target_port).deletion_due
+                  then
+                     remote_package_scan (target_port);
+                  end if;
+               else
+                  initial_package_scan (repository, target_port);
+               end if;
             end if;
             mq_progress (lot) := mq_progress (lot) + 1;
          end populate;
@@ -823,5 +1016,55 @@ package body PortScan.Packages is
          end if;
       end loop;
    end parallel_package_scan;
+
+
+   -----------------------------------
+   --  located_external_repository  --
+   -----------------------------------
+   function located_external_repository return Boolean
+   is
+      command : constant String := host_pkg8 & " -vv";
+      dump    : JT.Text;
+      topline : JT.Text;
+      crlen1  : Natural;
+      crlen2  : Natural;
+      found   : Boolean := False;
+      inspect : Boolean := False;
+   begin
+      declare
+      begin
+         dump := generic_system_command (command);
+      exception
+         when pkgng_execution => return False;
+      end;
+      crlen1 := JT.SU.Length (dump);
+      loop
+         JT.nextline (lineblock => dump, firstline => topline);
+         crlen2 := JT.SU.Length (dump);
+         exit when crlen1 = crlen2;
+         crlen1 := crlen2;
+         if inspect then
+            declare
+               line : constant String := JT.USS (topline);
+               len  : constant Natural := line'Length;
+            begin
+               if len > 7 and then
+                 line (1 .. 2) = "  " and then
+                 line (len - 3 .. len) = ": { " and then
+                 line (3 .. len - 4) /= "Synth"
+               then
+                  found := True;
+                  external_repository := JT.SUS (line (3 .. len - 4));
+                  exit;
+               end if;
+            end;
+         else
+            if JT.equivalent (topline, "Repositories:") then
+               inspect := True;
+            end if;
+         end if;
+      end loop;
+      return found;
+   end located_external_repository;
 
 end PortScan.Packages;

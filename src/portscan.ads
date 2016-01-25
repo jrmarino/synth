@@ -142,6 +142,7 @@ private
          unlist_failed : Boolean              := False;
          work_locked   : Boolean              := False;
          pkg_present   : Boolean              := False;
+         remote_pkg    : Boolean              := False;
          deletion_due  : Boolean              := False;
          use_procfs    : Boolean              := False;
          use_linprocfs : Boolean              := False;

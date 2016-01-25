@@ -133,6 +133,7 @@ package body PortScan is
          PR.unlist_failed := False;
          PR.work_locked   := False;
          PR.pkg_present   := False;
+         PR.remote_pkg    := False;
          PR.deletion_due  := False;
          PR.use_procfs    := False;
          PR.use_linprocfs := False;

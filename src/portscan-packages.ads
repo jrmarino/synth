@@ -15,7 +15,8 @@ package PortScan.Packages is
    --  options changes and dependency changes.  Obsolete packages (related or
    --  unrelated to upcoming build) are not removed; this would occur in
    --  clean_repository().  These old packages will not interfere at this step.
-   procedure limited_sanity_check (repository : String; dry_run : Boolean);
+   procedure limited_sanity_check (repository : String; dry_run : Boolean;
+                                   suppress_remote : Boolean);
 
    --  Iterate through the final build queue to remove any packages that
    --  match the current package names (currently unused)
@@ -42,6 +43,9 @@ package PortScan.Packages is
    --  point the function has failed.
    function limited_cached_options_check return Boolean;
 
+   --  Returns True on success; stores value in global external_repository
+   function located_external_repository return Boolean;
+
 private
 
    stored_packages     : package_crate.Map;
@@ -49,6 +53,7 @@ private
    calculated_alt_abi  : JT.Text;
    calc_abi_noarch     : JT.Text;
    calc_alt_abi_noarch : JT.Text;
+   external_repository : JT.Text;
    original_queue_len  : AC.Count_Type;
 
    --  Debugging purposes only, leave "False" for production
@@ -96,6 +101,9 @@ private
    --  The dependency check is NOT performed yet.
    procedure initial_package_scan (repository : String; id : port_id);
 
+   --  Same as above, but for packages in the external repository
+   procedure remote_package_scan (id : port_id);
+
    --  The result of the dependency query giving "id" port_id
    function result_of_dependency_query (repository : String; id : port_id)
                                         return JT.Text;
@@ -103,6 +111,9 @@ private
    --  Using the same make_queue as was used to scan the ports, use tasks
    --  (up to 32) to do the initial scanning of the ports, including getting
    --  the pkg dependency query.
-   procedure parallel_package_scan (repository : String);
+   procedure parallel_package_scan (repository : String; remote_scan : Boolean);
+
+   --  given a port_id, return the package name (no .txz extension!)
+   function id2pkgname (id : port_id) return String;
 
 end PortScan.Packages;
