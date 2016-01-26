@@ -214,11 +214,13 @@ package body PortScan.Packages is
 
       procedure check (cursor : subqueue.Cursor)
       is
-         id  : constant port_index := subqueue.Element (cursor);
-         loc : constant String := JT.USS (PM.configuration.dir_packages) &
-                                   "/" & JT.USS (all_ports (id).package_name);
+         id   : constant port_index := subqueue.Element (cursor);
+         name : constant String := JT.USS (all_ports (id).package_name);
+         loc  : constant String := JT.USS (PM.configuration.dir_packages) &
+                                   "/" & name;
       begin
          if not AD.Exists (loc) then
+            TIO.Put_Line ("Download failed: " & name);
             fetch_fail := True;
          end if;
       end check;
