@@ -63,7 +63,7 @@ private
                    usr_sbin,
                    usr_share,
                    usr_lib32, xports, options, packages, distfiles,
-                   dev, etc, etc_default, etc_mtree, etc_rcd, home, linproc,
+                   dev, etc, etc_default, etc_mtree, etc_rcd, home, linux,
                    proc, root, tmp, var, wrkdirs, usr_local, usr_src, ccache);
    subtype subfolder is folder range bin .. usr_share;
 

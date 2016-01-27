@@ -51,7 +51,7 @@ package body Replicant is
          when var         => return mount_base & root_var;
          when home        => return mount_base & root_home;
          when proc        => return mount_base & root_proc;
-         when linproc     => return mount_base & root_linproc;
+         when linux       => return mount_base & root_linux;
          when root        => return mount_base & root_root;
          when xports      => return mount_base & root_xports;
          when options     => return mount_base & root_options;
@@ -751,13 +751,14 @@ package body Replicant is
 
       if flavor = freebsd then
          if opts.need_linprocfs then
-            mount_linprocfs (mount_point => location (slave_base, linproc));
             if PM.configuration.tmpfs_localbase then
                mount_tmpfs (slave_base & root_linux, 12 * 1024);
             else
                forge_directory (slave_linux);
                mount_nullfs (slave_linux, slave_base & root_linux, readwrite);
             end if;
+            forge_directory (slave_base & root_linproc);
+            mount_linprocfs (mount_point => slave_base & root_linproc);
          end if;
          declare
             lib32 : String := clean_mount_point (usr_lib32);
@@ -834,7 +835,7 @@ package body Replicant is
 
       if flavor = freebsd then
          if opts.need_linprocfs then
-            unmount (location (slave_base, linproc));
+            unmount (slave_base & root_linproc);
             unmount (slave_base & root_linux);
             if not PM.configuration.tmpfs_localbase then
                annihilate_directory_tree (slave_linux);
