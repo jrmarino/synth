@@ -314,11 +314,13 @@ package body PortScan.Pilot is
          OPS.initialize_display (num_builders);
          OPS.parallel_bulk_run (num_builders, Flog);
          REP.finalize;
-         stop_time := CAL.Clock;
-         stop_logging (total);
-         stop_logging (success);
-         stop_logging (failure);
-         stop_logging (skipped);
+      end if;
+      stop_time := CAL.Clock;
+      stop_logging (total);
+      stop_logging (success);
+      stop_logging (failure);
+      stop_logging (skipped);
+      if not PKG.queue_is_empty then
          TIO.Put_Line (LAT.LF & LAT.LF);
          TIO.Put_Line ("The task is complete.  Final tally:");
          TIO.Put_Line ("Initial queue size:" & bld_counter (total)'Img);
