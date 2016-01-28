@@ -216,7 +216,7 @@ package body PortScan.Packages is
       is
          id   : constant port_index := subqueue.Element (cursor);
          name : constant String := JT.USS (all_ports (id).package_name);
-         loc  : constant String := JT.USS (PM.configuration.dir_packages) &
+         loc  : constant String := JT.USS (PM.configuration.dir_repository) &
                                    "/" & name;
       begin
          if not AD.Exists (loc) then
