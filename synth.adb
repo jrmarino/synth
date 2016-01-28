@@ -31,8 +31,6 @@ begin
       first  : constant String := CLI.Argument (1);
       comerr : constant String := "Synth command error: ";
       badcfg : constant String := "Configuration failed to load.";
-      baddir : constant String := "At least one directory in the " &
-                                  "configuration is invalid";
       regjoe : constant String := "Only the root user can execute that.";
       holdon : constant String := "Synth is already running on this system.";
       badmnt : constant String := "Builder mounts detected; attempting to " &
@@ -93,7 +91,6 @@ begin
          end if;
 
          if not Parameters.all_paths_valid then
-            TIO.Put_Line (baddir);
             return;
          end if;
 
@@ -246,8 +243,8 @@ begin
             return;
          end if;
 
-         if not Parameters.all_paths_valid then
-            TIO.Put_Line (baddir);
+         if not (mandate = configure) and then not Parameters.all_paths_valid
+         then
             return;
          end if;
 

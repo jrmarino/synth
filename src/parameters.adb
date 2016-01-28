@@ -636,29 +636,44 @@ package body Parameters is
    function all_paths_valid return Boolean
    is
       use type AD.File_Kind;
-      function invalid_directory (folder : JT.Text) return Boolean;
-      function invalid_directory (folder : JT.Text) return Boolean
+      function invalid_directory (folder : JT.Text; desc : String)
+                                  return Boolean;
+      function invalid_directory (folder : JT.Text; desc : String)
+                                  return Boolean
       is
          dossier : constant String := JT.USS (folder);
+         errmsg : constant String := "Configuration invalid: ";
       begin
          if AD.Exists (dossier) and then AD.Kind (dossier) = AD.Directory then
             return False;
          else
+            TIO.Put_Line (errmsg & desc & " directory: " & dossier);
             return True;
          end if;
       end invalid_directory;
    begin
-      if invalid_directory (configuration.dir_system) then
+      if invalid_directory (configuration.dir_system, "[G] System root") then
          return False;
-      elsif invalid_directory (configuration.dir_packages) then
+      elsif invalid_directory (configuration.dir_packages, "[B] Packages") then
          return False;
-      elsif invalid_directory (configuration.dir_portsdir) then
+      elsif invalid_directory (configuration.dir_portsdir, "[A] Ports") then
          return False;
-      elsif invalid_directory (configuration.dir_distfiles) then
+      elsif invalid_directory (configuration.dir_distfiles, "[C] Distfiles")
+      then
+         if JT.equivalent (configuration.dir_distfiles, "/usr/ports/distfiles")
+         then
+            TIO.Put_Line
+              ("Rather than manually creating a directory at this location, " &
+                 "consider" & LAT.LF &
+                 "using a location outside of the ports tree.  Don't forget " &
+                 "to set" & LAT.LF &
+              "'DISTDIR' to this new location in /etc/make.conf though.");
+         end if;
          return False;
-      elsif invalid_directory (configuration.dir_logs) then
+      elsif invalid_directory (configuration.dir_logs, "[E] Build logs") then
          return False;
-      elsif invalid_directory (configuration.dir_options) then
+      elsif invalid_directory (configuration.dir_options, "[D] Port options")
+      then
          return False;
       end if;
 
@@ -666,7 +681,8 @@ package body Parameters is
          return True;
       end if;
 
-      return not invalid_directory (configuration.dir_ccache);
+      return not invalid_directory (configuration.dir_ccache,
+                                    "[H] Compiler cache");
 
    end all_paths_valid;
 
