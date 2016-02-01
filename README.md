@@ -168,9 +168,9 @@ name is "LiveSystem" with a space, so that would make the path is
 #### Graceful exits
 
 Do not hit Control-C during the build!  If you want to stop building, hit
-the "Escape" key.  Synth will exit as soon as it can.  If it's hit during
-the building process, it will finish the packages that are currently building
-but it won't start any new ones.
+the Control-Q combination.  Synth will exit as soon as it can.  If it's hit
+during the building process, it will finish the packages that are currently
+building but it won't start any new ones.
 
 #### Port Options
 

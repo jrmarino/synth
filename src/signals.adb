@@ -18,7 +18,10 @@ package body Signals is
       got_one     : Boolean;
    begin
       TIO.Get_Immediate (Item => caught_char, Available => got_one);
-      if got_one and then caught_char = LAT.ESC then
+      --  Although the variable is called control_c, it's control-Q that
+      --  we are catching.  It was the ESCAPE key after control-C, but that
+      --  one was getting triggered by terminal ANSI codes, so we changed again
+      if got_one and then caught_char = LAT.DC1 then
          control_c_break := True;
       end if;
       return control_c_break;
