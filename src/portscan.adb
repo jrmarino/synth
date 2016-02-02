@@ -93,7 +93,15 @@ package body PortScan is
       else
          return False;
       end if;
-      populate_port_data (target);
+      declare
+      begin
+         populate_port_data (target);
+      exception
+         when issue : others =>
+            TIO.Put_Line ("Encountered issue with " & catport &
+                         " or its dependencies");
+            return False;
+      end;
       all_ports (target).blocked_by.Iterate (dig'Access);
       return not aborted;
 
@@ -470,7 +478,7 @@ package body PortScan is
                if deprec = portkey_crate.No_Element then
                   raise nonexistent_port
                     with fulldep (colon1 .. fulldep'Last) &
-                    " (" & catport & ")";
+                    " (required dependency of " & catport & ")";
                end if;
                declare
                   depindex : port_index := portkey_crate.Element (deprec);
