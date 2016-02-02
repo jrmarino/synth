@@ -101,11 +101,17 @@ statistic is the package build rate over the last 500 seconds.  The "Lines"
 column in the builder section is the current length of the build log, updated
 each second.
 
-#### > synth rebuild-repository
+#### > synth prepare-system
 
 This command is similar to the "synth upgrade-system" command except that it
 stops after rebuilding the local repository.  The sysadmin can then upgrade
 the system using pkg(8) at their leisure.
+
+#### > synth rebuild-repository
+
+This command will do a sanity check on all built packages and remove the
+invalid ones.  It will then (re)create a local repository comprised of the
+packages that remain.
 
 #### > synth just-build [ports]
 
