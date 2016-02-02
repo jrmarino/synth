@@ -10,7 +10,7 @@ with Parameters;
 procedure synth
 is
    type mandate_type is (unset, status, help, configure, version, up_system,
-                         up_repo, purge, everything, build, install, force,
+                         prep_system, purge, everything, build, install, force,
                          just_build, test, status_everything);
 
    mandate : mandate_type := unset;
@@ -56,8 +56,8 @@ begin
          mandate := just_build;
       elsif first = "upgrade-system" then
          mandate := up_system;
-      elsif first = "rebuild-repository" then
-         mandate := up_repo;
+      elsif first = "prepare-system" then
+         mandate := prep_system;
       elsif first = "purge-distfiles" then
          mandate := purge;
       elsif first = "everything" then
@@ -75,7 +75,7 @@ begin
                TIO.Put_Line (comerr & "'" & first &
                                "' is not a valid keyword.");
                return;
-            when help | configure | version | up_repo | up_system | purge |
+            when help | configure | version | prep_system | up_system | purge |
                  everything | status_everything =>
                ACT.print_version;
                TIO.Put_Line (comerr & "'" & first &
@@ -133,7 +133,7 @@ begin
          --  Multiple argument commands  --
          ----------------------------------
          case mandate is
-            when help | configure | version | up_repo | up_system | purge |
+            when help | configure | version | prep_system | up_system | purge |
                  everything | status_everything | unset =>
                --  Handled above.  Don't use "others" here;
                --  we don't want to disable full coverage
@@ -283,7 +283,7 @@ begin
                if PIL.write_pkg_repos_configuration_file then
                   PIL.upgrade_system_everything;
                end if;
-            when up_repo =>
+            when prep_system =>
                PIL.upgrade_system_everything (skip_installation => True);
             when purge =>
                PIL.purge_distfiles;

@@ -8,7 +8,7 @@
 .Nm
 .Op Ar help | configure | version | status | purge-distfiles
 .Nm
-.Op upgrade-system | rebuild-repository
+.Op prepare-system | upgrade-system
 .Nm
 .Op everything | status-everything
 .Nm
@@ -224,9 +224,9 @@ will command
 .Xr pkg 8
 to upgrade the system using the local repository, effectively bringing it
 completely up to date.
-.Ss synth rebuild-repository
+.Ss synth prepare-system
 The
-.Cm rebuild-repository
+.Cm prepare-system
 command has the same functionality of the
 .Cm upgrade-system
 command with the exception that the packages will not be installed. Once the
