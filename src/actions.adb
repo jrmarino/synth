@@ -48,7 +48,8 @@ package body Actions is
                       "'version' (this screen),");
       TIO.Put_Line (zp & "'status', 'upgrade-system', 'prepare-system',");
       TIO.Put_Line (zp & "'status-everything', 'everything', " &
-                      "'purge-distfiles'");
+                      "'purge-distfiles',");
+      TIO.Put_Line (zp & "'rebuild-repository'");
       TIO.Put_Line ("list-option includes  'status', 'build', 'just-build', " &
                       "'install', 'force'");
       TIO.Put_Line (zp & "'test'" & LAT.LF);
@@ -67,6 +68,7 @@ package body Actions is
       opt02 : constant ofield := "configure           ";
       opt03 : constant ofield := "upgrade-system      ";
       opt04 : constant ofield := "prepare-system      ";
+      opt16 : constant ofield := "rebuild-repository  ";
       opt05 : constant ofield := "purge-distfiles     ";
       opt15 : constant ofield := "status-everything   ";
       opt06 : constant ofield := "everything          ";
@@ -91,7 +93,8 @@ package body Actions is
          synth & opt03 & "Incremental rebuild of installed packages on system."
                & blank & "Afterwards, the local repository is rebuilt and the"
                & blank & "system packages are automatically upgraded." &
-         synth & opt04 & "Like 'upgrade-system' except system is not upgraded" &
+         synth & opt04 & "Like 'upgrade-system' but ends when repo is rebuilt" &
+         synth & opt16 & "Rebuilds local Synth repository on command" &
          synth & opt05 & "Deletes obsolete source distribution files" &
          synth & opt15 & "Dry-run: Shows what 'everything' would build" &
          synth & opt06 & "Builds entire ports tree and rebuilds repository" &
@@ -108,7 +111,7 @@ package body Actions is
                (LAT.LF & "[ports] is a space-delimited list of origins, " &
                          "e.g. editors/joe editors/emacs." &
                 LAT.LF & "It may also be a path to a file containing one " &
-                         "origin per line." & LAT.LF);
+                         "origin per line.");
    end print_help;
 
 

@@ -8,7 +8,7 @@
 .Nm
 .Op Ar help | configure | version | status | purge-distfiles
 .Nm
-.Op prepare-system | upgrade-system
+.Op rebuild-repository | prepare-system | upgrade-system
 .Nm
 .Op everything | status-everything
 .Nm
@@ -231,6 +231,14 @@ command has the same functionality of the
 .Cm upgrade-system
 command with the exception that the packages will not be installed. Once the
 local repository is fully rebuilt, the command exits.
+.Ss synth rebuild-repository
+The
+.Cm rebuild-repository
+command will perform a full sanity check on all packages present in the
+packages directory and remove the ones which fail the check.  The local
+Synth repository will be created (or recreated) using the remaining
+packages.  This step is also done as part of several other commands, so
+it mainly exists for scripting purposes.
 .Ss synth status
 The
 .Cm status

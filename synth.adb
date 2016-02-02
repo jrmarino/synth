@@ -11,7 +11,7 @@ procedure synth
 is
    type mandate_type is (unset, status, help, configure, version, up_system,
                          prep_system, purge, everything, build, install, force,
-                         just_build, test, status_everything);
+                         just_build, test, status_everything, gen_repo);
 
    mandate : mandate_type := unset;
 
@@ -58,6 +58,8 @@ begin
          mandate := up_system;
       elsif first = "prepare-system" then
          mandate := prep_system;
+      elsif first = "rebuild-repository" then
+         mandate := gen_repo;
       elsif first = "purge-distfiles" then
          mandate := purge;
       elsif first = "everything" then
@@ -134,7 +136,7 @@ begin
          ----------------------------------
          case mandate is
             when help | configure | version | prep_system | up_system | purge |
-                 everything | status_everything | unset =>
+                 everything | status_everything | gen_repo | unset =>
                --  Handled above.  Don't use "others" here;
                --  we don't want to disable full coverage
                null;
@@ -285,6 +287,10 @@ begin
                end if;
             when prep_system =>
                PIL.upgrade_system_everything (skip_installation => True);
+            when gen_repo =>
+               if PIL.rebuild_local_respository then
+                  null;
+               end if;
             when purge =>
                PIL.purge_distfiles;
             when everything =>
