@@ -63,7 +63,16 @@ package body Parameters is
          global_present := False;
       end if;
 
-      sel_profile := extract_string (master_section, global_01, live_system);
+      declare
+         envprofile : String := OSL.Getenv ("SYNTHPROFILE").all;
+      begin
+         sel_profile := extract_string (master_section, global_01, live_system);
+         if envprofile /= "" then
+            if section_exists (envprofile, Field_01) then
+               sel_profile := JT.SUS (envprofile);
+            end if;
+         end if;
+      end;
       declare
          profile : constant String := JT.USS (sel_profile);
       begin

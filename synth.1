@@ -1,4 +1,4 @@
-.Dd January 25, 2016
+.Dd February 2, 2016
 .Dt SYNTH 1
 .Os
 .Sh NAME
@@ -358,9 +358,11 @@ matched to at least one port will be removed. This can result in gigabytes of
 recovered disk space if significant time has passed since the distfiles
 directory was last cleaned.
 .Sh ENVIRONMENT
-The only environment variable checked is
+.Bl -tag -width SYNTHPROFILE
+.It Ev PORTSDIR
+The
 .Ev PORTSDIR
-and that only occurs on the very first signficant command of
+environment variable is only checked on the very first signficant command of
 .Nm
 .Po
 meaning everything except help and version
@@ -368,6 +370,14 @@ meaning everything except help and version
 when the default profile is created. It is also checked when adding new
 profiles. The variable dictates the default location of the ports tree with
 a higher priority than the standard locations.
+.It Ev SYNTHPROFILE
+When this environment variable is set to name of an existing
+.Nm
+profile, that profile will be loaded when
+.Nm
+is launch rather than the active profile.  It is a temporary override;
+removing the variable will allow the default profile to load again.
+.El
 .Sh FILES
 The following files may be used or created:
 .Bl -tag -width hook_pkg_ignored
