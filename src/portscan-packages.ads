@@ -46,6 +46,9 @@ package PortScan.Packages is
    --  Returns True on success; stores value in global external_repository
    function located_external_repository return Boolean;
 
+   --  Returns the value of the stored external repository
+   function top_external_repository return String;
+
 private
 
    stored_packages     : package_crate.Map;

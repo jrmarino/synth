@@ -1069,4 +1069,13 @@ package body PortScan.Packages is
       return found;
    end located_external_repository;
 
+
+   -------------------------------
+   --  top_external_repository  --
+   -------------------------------
+   function top_external_repository return String is
+   begin
+      return JT.USS (external_repository);
+   end top_external_repository;
+
 end PortScan.Packages;

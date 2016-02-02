@@ -191,7 +191,8 @@ package body PortScan.Pilot is
       ptid : PortScan.port_id;
       num_skipped : Natural;
       block_remote : Boolean := True;
-      update_external_repo : constant String := host_pkg8 & " update --quiet";
+      update_external_repo : constant String := host_pkg8 &
+                    " update --quiet --repository ";
       no_packages : constant String :=
                     "No prebuilt packages will be used as a result.";
 
@@ -225,7 +226,9 @@ package body PortScan.Pilot is
             --  We're going to use prebuilt packages if available, so let's
             --  prepare for that case by updating the external repository
             TIO.Put ("Stand by, updating external repository catalogs ... ");
-            if not Unix.external_command (update_external_repo) then
+            if not Unix.external_command (update_external_repo &
+                                            PKG.top_external_repository)
+            then
                TIO.Put_Line ("Failed!");
                TIO.Put_Line ("The external repository could not be updated.");
                TIO.Put_Line (no_packages);
