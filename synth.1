@@ -514,6 +514,18 @@ start, but the current builds will continue until completion.
 At this time,
 .Nm
 can only be run by the root user.
+.Ss Impulse indicator
+A common question is "What does the Impulse indicator on the display mean?"
+It is the package build rate (packages/hour) over the last 500 seconds.  For
+the first roughly ten minutes of a bulk run, the
+.Dq Impulse
+rate and the
+.Dq Pkg/Hour
+rate will be identical. After that, the
+.Dq Impulse
+build rate will differ from the rate averaged over the entire elapsed time,
+often by a great amount.  It's just a way to gauge the package production
+rate over the previous few minutes.
 .Ss Supported architectures
 Synth is written in Ada, and thus an Ada compiler or cross-compiler is
 required to build it. For
