@@ -97,4 +97,14 @@ package body Unix is
    end launch_process;
 
 
+   ----------------------------
+   --  env_variable_defined  --
+   ----------------------------
+   function env_variable_defined (variable : String) return Boolean
+   is
+      test : String := OSL.Getenv (variable).all;
+   begin
+      return (test /= "");
+   end env_variable_defined;
+
 end Unix;

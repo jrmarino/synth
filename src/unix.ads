@@ -25,6 +25,10 @@ package Unix is
    --  Returns True if pid is less than zero
    function fork_failed (pid : pid_t) return Boolean;
 
+   --  Returns True if "variable" is defined in the environment.  The
+   --  value of variable is irrelevant
+   function env_variable_defined (variable : String) return Boolean;
+
 private
 
    type uInt8 is mod 2 ** 16;

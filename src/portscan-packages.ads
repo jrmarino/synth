@@ -59,9 +59,9 @@ private
    external_repository : JT.Text;
    original_queue_len  : AC.Count_Type;
 
-   --  Debugging purposes only, leave "False" for production
-   debug_dep_check : constant Boolean := False;
-   debug_opt_check : constant Boolean := False;
+   --  Debugging purposes only, can be turned on by environment variable
+   debug_dep_check : Boolean := False;
+   debug_opt_check : Boolean := False;
 
    --  This function returns "True" if the scanned options exactly match
    --  the options in the already-built package.  Usually it's already known
@@ -118,5 +118,8 @@ private
 
    --  given a port_id, return the package name (no .txz extension!)
    function id2pkgname (id : port_id) return String;
+
+   --  Turn on option and dependency debug checks programmatically
+   procedure activate_debugging_code;
 
 end PortScan.Packages;

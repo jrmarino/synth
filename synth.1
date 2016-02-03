@@ -385,6 +385,10 @@ profile, that profile will be loaded when
 .Nm
 is launch rather than the active profile.  It is a temporary override;
 removing the variable will allow the default profile to load again.
+.It Ev WHYFAIL
+When this environment variable is defined to any value, the sanity check
+routines will provide more detail on dependency and option check failures
+on a separate output line.
 .El
 .Sh FILES
 The following files may be used or created:

@@ -225,6 +225,9 @@ package body PortScan.Packages is
          end if;
       end check;
    begin
+      if Unix.env_variable_defined ("WHYFAIL") then
+         activate_debugging_code;
+      end if;
       establish_package_architecture;
       original_queue_len := rank_queue.Length;
       for m in scanners'Range loop
@@ -481,10 +484,10 @@ package body PortScan.Packages is
                      if debug_opt_check then
                         if knobval then
                            TIO.Put_Line (pkg_name & " " & JT.USS (namekey) &
-                              " is on but port says it must be off");
+                              " is ON but port says it must be OFF");
                         else
                            TIO.Put_Line (pkg_name & " " & JT.USS (namekey) &
-                              " is off but port says it must be on");
+                              " is OFF but port says it must be ON");
                         end if;
                      end if;
                      return False;
@@ -555,6 +558,7 @@ package body PortScan.Packages is
          topline   : JT.Text;
          colon     : Natural;
          required  : Natural := Natural (all_ports (id).librun.Length);
+         headport  : constant String := get_catport (all_ports (id));
          counter   : Natural := 0;
       begin
          loop
@@ -592,14 +596,12 @@ package body PortScan.Packages is
                if counter > required then
                   --  package has more dependencies than we are looking for
                   if debug_dep_check then
-                     if debug_dep_check then
-                        TIO.Put_Line ("Package has more dependencies than " &
-                                        "the port requires (" &
-                                        JT.int2str (required) & ")");
-                        TIO.Put_Line ("Query: " & JT.USS (query_result));
-                        TIO.Put_Line ("Tripped on: " & JT.USS (target_pkg) &
-                                        ":" & JT.USS (origin));
-                     end if;
+                     TIO.Put_Line
+                       (headport & " package has more dependencies than " &
+                          "the port requires (" & JT.int2str (required) & ")");
+                     TIO.Put_Line ("Query: " & JT.USS (query_result));
+                     TIO.Put_Line ("Tripped on: " & JT.USS (target_pkg) &
+                                     ":" & JT.USS (origin));
                   end if;
                   return False;
                end if;
@@ -608,8 +610,10 @@ package body PortScan.Packages is
                   --  The version that the package requires differs from the
                   --  version that the ports tree will now produce
                   if debug_dep_check then
-                     TIO.Put_Line (deppkg & " is an different " &
-                        "version, we need " & JT.USS (target_pkg));
+                     TIO.Put_Line
+                       ("Current " & headport & " package depends on " &
+                          deppkg & ", but this is a different version than " &
+                          "requirement of " & JT.USS (target_pkg));
                   end if;
                   return False;
                end if;
@@ -617,8 +621,10 @@ package body PortScan.Packages is
                   --  Even if all the versions are matching, we still need
                   --  the package to be in repository.
                   if debug_dep_check then
-                     TIO.Put_Line (JT.USS (target_pkg) & " doesn't exist " &
-                                     "or has been slated for deletion");
+                     TIO.Put_Line
+                       (headport & " package depends on " & JT.USS (target_pkg)
+                        & " which doesn't exist or has been scheduled " &
+                          "for deletion");
                   end if;
                   return False;
                end if;
@@ -628,8 +634,9 @@ package body PortScan.Packages is
             --  The ports tree requires more dependencies than the existing
             --  package does
             if debug_dep_check then
-               TIO.Put_Line ("Package has less dependencies than the port " &
-                               "requires (" & JT.int2str (required) & ")");
+               TIO.Put_Line
+                 (headport & " package has less dependencies than the port " &
+                    "requires (" & JT.int2str (required) & ")");
                TIO.Put_Line ("Query: " & JT.USS (query_result));
             end if;
             return False;
@@ -1077,5 +1084,15 @@ package body PortScan.Packages is
    begin
       return JT.USS (external_repository);
    end top_external_repository;
+
+
+   -------------------------------
+   --  activate_debugging_code  --
+   -------------------------------
+   procedure activate_debugging_code is
+   begin
+      debug_opt_check := True;
+      debug_dep_check := True;
+   end activate_debugging_code;
 
 end PortScan.Packages;
