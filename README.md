@@ -203,3 +203,41 @@ Right now Synth can only be executed by the root user
 There is a text mode for the building phase.  It shows much less information
 than the curses-based screen, but if curses is acting up, the text mode gets
 the job done just fine.
+
+## Testimonials
+
+##### Chris_H - FreeBSD forums member - 25 January 2016
+
+> marino@ regarding: 0.98_5 -- smooth as silk!
+
+> Just completed updating my box, using that version. Everything went flawlessly. Failures were handled gracefully, as well as all other events. Well; save the screen corruption, due to (kernel) messages being sent to it. But I didn't see anything in the Changelog, to indicate there were any changes in that regard -- wishful thinking on my part. ;)
+
+> Thank you very much, John. My dev box thanks you, also. :)
+
+##### garry - FreeBSD forums member - 29 January 2016
+
+> I used synth-0.99_2 to build a new repository, reproducing what I had previously built with ports-mgmt/poudriere using the same general setup (3 jails, 3 jobs, tmpfs for the workdir and data). Synth built my 1800 packages in about 18 hours of wall time with no problems. It had taken more than 24 hours of wall time to build that repository with poudriere(8). It seems that Synth is very efficient in setting up and tearing down builders (chroot(8)s / jail(8)s). I noticed that small packages can be done in 20 seconds by Synth but take a minimum of two minutes with poudriere(8).
+
+> Synth is very pleasant to use. Thanks again.
+
+##### fernandel - 2 February 2016
+
+> I am also using Synth from the first day and after all this years which I "spent" with portmaster I am so happy and thankful that is Synth in the ports and for Marinos help too. Thank you.
+
+> BTW: I start synth-upgrade system before bad time and in the morning is everything done
+
+##### Crivens -  Moderator FreeBSD forum - 1 Feb 2016
+
+> I for one, would take the moment to thank you for some great software!
+
+> This thread is turning into rope, sort of thing. Hopefully it will turn into some chapter of the handbook.
+
+##### protocelt - Moderator FreeBSD forum - 2 Feb 2016
+
+> I have 900+ ports installed on my workstation. Last repository rebuild I did, with the ccache(1) cache fully populated, Synth took around 3.5 hours to rebuild the entire repository. I don't know how long Poudriere took on the same machine but I know it was longer. I thought there was a mistake and ports were not getting rebuilt, but after checking, they were all in fact rebuilt. It is quite fast.
+
+##### PacketMan - FreeBSD forums member - 31 Jan / 3 Feb
+
+> Really liking this synth. Thank you so much Marino. :beer:
+
+> Yes [Synth] a great tool; I can't wait to roll it out to all my machines.
