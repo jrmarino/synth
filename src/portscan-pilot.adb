@@ -144,8 +144,11 @@ package body PortScan.Pilot is
             return;
          end if;
          if not PortScan.scan_single_port (catport => origin) then
-            TIO.Put_Line ("Scan of " & origin & " failed (port deleted?), " &
-                            "it will not be considered.");
+            TIO.Put_Line
+              ("Scan of " & origin & " failed" &
+                 PortScan.obvious_problem
+                 (JT.USS (PM.configuration.dir_portsdir), origin) &
+                 ", it will not be considered.");
          end if;
       end scan;
 

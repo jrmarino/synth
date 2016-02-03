@@ -63,23 +63,36 @@ package body PortScan is
       exception
          when issue : nonexistent_port =>
             aborted := True;
-            TIO.Put_Line (LAT.LF & "Scan aborted because dependency could " &
+            TIO.Put_Line (LAT.LF & get_catport (all_ports (new_target)) &
+                            " scan aborted because dependency could " &
                             "not be located.");
             TIO.Put_Line (EX.Exception_Message (issue));
          when issue : bmake_execution =>
             aborted := True;
-            TIO.Put_Line (LAT.LF & "Scan aborted because 'make' encounted " &
+            TIO.Put_Line (LAT.LF & get_catport (all_ports (new_target)) &
+                            " scan aborted because 'make' encounted " &
                             "an error in the Makefile.");
             TIO.Put_Line (EX.Exception_Message (issue));
          when issue : make_garbage =>
             aborted := True;
-            TIO.Put_Line (LAT.LF & "Scan aborted because dependency is " &
-                            "malformed.");
+            TIO.Put_Line (LAT.LF & get_catport (all_ports (new_target)) &
+                            " scan aborted because dependency is malformed.");
             TIO.Put_Line (EX.Exception_Message (issue));
          when issue : others =>
             aborted := True;
-            TIO.Put_Line (LAT.LF & "Scan aborted for an unknown reason.");
-            TIO.Put_Line (EX.Exception_Message (issue));
+            declare
+               why : constant String := obvious_problem
+                 (xports, get_catport (all_ports (new_target)));
+            begin
+               if why = "" then
+                  TIO.Put_Line (LAT.LF & get_catport (all_ports (new_target)) &
+                                  " scan aborted for an unknown reason.");
+                  TIO.Put_Line (EX.Exception_Message (issue));
+               else
+                  TIO.Put_Line (LAT.LF & get_catport (all_ports (new_target)) &
+                                  " scan aborted" & why);
+               end if;
+            end;
       end dig;
    begin
       if not AD.Exists (xports & "/" & catport & "/Makefile") then
@@ -98,8 +111,9 @@ package body PortScan is
          populate_port_data (target);
       exception
          when issue : others =>
-            TIO.Put_Line ("Encountered issue with " & catport &
-                         " or its dependencies");
+            TIO.Put ("Encountered issue with " & catport &
+                       " or its dependencies" & LAT.LF & "  => ");
+            TIO.Put_Line (EX.Exception_Message (issue));
             return False;
       end;
       all_ports (target).blocked_by.Iterate (dig'Access);
@@ -477,8 +491,8 @@ package body PortScan is
 
                if deprec = portkey_crate.No_Element then
                   raise nonexistent_port
-                    with fulldep (colon1 .. fulldep'Last) &
-                    " (required dependency of " & catport & ")";
+                    with fulldep (colon1 + 8 .. fulldep'Last) &
+                    " (required dependency of " & catport & ") does not exist.";
                end if;
                declare
                   depindex : port_index := portkey_crate.Element (deprec);
@@ -893,5 +907,47 @@ package body PortScan is
       pc := percent (100.0 * Float (complete) / Float (last_port));
       return " progress:" & pc'Img & "%              " & LAT.CR;
    end scan_progress;
+
+
+   -----------------------
+   --  obvious_problem  --
+   -----------------------
+   function obvious_problem (portsdir, catport : String) return String
+   is
+      fullpath : constant String := portsdir & "/" & catport;
+   begin
+      if AD.Exists (fullpath) then
+         declare
+            Search : AD.Search_Type;
+            dirent : AD.Directory_Entry_Type;
+            has_contents : Boolean := False;
+         begin
+            AD.Start_Search (Search    => Search,
+                             Directory => fullpath,
+                             Filter    => (others => True),
+                             Pattern   => "*");
+            while AD.More_Entries (Search => Search) loop
+               AD.Get_Next_Entry (Search => Search, Directory_Entry => dirent);
+               if AD.Simple_Name (dirent) /= "." and then
+                 AD.Simple_Name (dirent) /= ".."
+               then
+                  has_contents := True;
+                  exit;
+               end if;
+            end loop;
+            AD.End_Search (Search => Search);
+            if not has_contents then
+               return " (directory empty)";
+            end if;
+            if AD.Exists (fullpath & "/Makefile") then
+               return "";
+            else
+               return " (Makefile missing)";
+            end if;
+         end;
+      else
+         return " (port deleted)";
+      end if;
+   end obvious_problem;
 
 end PortScan;

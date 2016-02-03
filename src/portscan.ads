@@ -56,6 +56,12 @@ package PortScan is
    procedure set_cores;
    function cores_available return cpu_range;
 
+   --  Return " (port deleted)" if the catport doesn't exist
+   --  Return " (directory empty)" if the directory exists but has no contents
+   --  Return " (Makefile missing)" when makefile is missing
+   --  otherwise return blank string
+   function obvious_problem (portsdir, catport : String) return String;
+
 private
 
    max_ports  : constant := 28000;
