@@ -273,7 +273,8 @@ package body PortScan.Pilot is
          TIO.Put_Line (Flog (total), CYC.elapsed_now & " " &
                          OPS.port_name (ptid) & " has been ignored: " &
                          OPS.ignore_reason (ptid));
-         TIO.Put_Line (Flog (ignored), CYC.elapsed_now & " Reason: " &
+         TIO.Put_Line (Flog (ignored), CYC.elapsed_now & " " &
+                         OPS.port_name (ptid) & ": " &
                          OPS.ignore_reason (ptid));
          OPS.cascade_failed_build (id         => ptid,
                                    numskipped => num_skipped,
