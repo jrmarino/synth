@@ -14,7 +14,7 @@ The version screen appears when Synth is executed with no command, an
 unknown command, or the "version" command.  It displays the current version,
 the copyright, and a summary of valid commands along with the usage.
 
-![synth version](http://downloads.dragonlace.net/misc/synth-img/version.png)
+![synth version](http://downloads.dragonlace.net/misc/synth-img/version2.png)
 
 #### > synth help
 
@@ -23,7 +23,7 @@ It provides a slightly longer explanation of each command Synth recognizes.
 For the most detailed explanation of the Synth commands, please refer the
 manual page, e.g. "man synth".
 
-![synth help](http://downloads.dragonlace.net/misc/synth-img/help.png)
+![synth help](http://downloads.dragonlace.net/misc/synth-img/help2.png)
 
 There are two command forms: commands with no arguments (e.g. help, version)
 and that take a list of port origins (unlimited) or a single path to file
@@ -53,7 +53,7 @@ elsewhere and prefer to create a profile that uses them.  The configuration
 also covers items such as how many builders to spawn during building, whether
 tmpfs should be used, etc.
 
-![synth configure](http://downloads.dragonlace.net/misc/synth-img/configure2.png)
+![synth configure](http://downloads.dragonlace.net/misc/synth-img/configure3.png)
 
 Just press the letter of the item that needs configuring.  All changes will be
 marked with an asterisk, and pressing the Enter key (carriage return) will
