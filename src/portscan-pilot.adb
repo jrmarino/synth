@@ -310,11 +310,13 @@ package body PortScan.Pilot is
    procedure perform_bulk_run (testmode : Boolean)
    is
       num_builders : constant builders := PM.configuration.num_builders;
+      show_tally   : Boolean := True;
    begin
       if PKG.queue_is_empty then
          TIO.Put_Line ("After inspection, it has been determined that there " &
                          "are no packages that");
          TIO.Put_Line ("require rebuilding; the task is therefore complete.");
+         show_tally := False;
       else
          REP.initialize;
          CYC.initialize (testmode);
@@ -327,7 +329,7 @@ package body PortScan.Pilot is
       stop_logging (success);
       stop_logging (failure);
       stop_logging (skipped);
-      if not PKG.queue_is_empty then
+      if show_tally then
          TIO.Put_Line (LAT.LF & LAT.LF);
          TIO.Put_Line ("The task is complete.  Final tally:");
          TIO.Put_Line ("Initial queue size:" & bld_counter (total)'Img);
