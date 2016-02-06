@@ -524,6 +524,14 @@ package body PortScan.Pilot is
    is
       use type AD.File_Kind;
    begin
+      if catport'Length = 0 then
+         return False;
+      end if;
+      if catport (catport'First) = '/' then
+         --  Invalid case where catport starts with "/" will cause an
+         --  exception later as "cat" would be unexpectedly empty.
+         return False;
+      end if;
       if JT.contains (catport, "/") then
          declare
             cat   : constant String := JT.part_1 (catport);
