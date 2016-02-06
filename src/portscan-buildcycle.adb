@@ -622,12 +622,16 @@ package body PortScan.Buildcycle is
    function exec_phase_build (id : builders) return Boolean
    is
       time_limit : execution_limit := max_time_without_output (build);
+      exec_phaseenv : String := "           ";
       passed : Boolean;
    begin
+      if testing then
+         exec_phaseenv := "DEVELOPER=1";
+      end if;
       passed := exec_phase (id          => id,
                             phase       => build,
                             time_limit  => time_limit,
-                            phaseenv    => "DEVELOPER=1",
+                            phaseenv    => exec_phaseenv,
                             skip_header => False,
                             skip_footer => True);
       if testing and then passed then
