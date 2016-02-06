@@ -1169,6 +1169,7 @@ package body PortScan.Pilot is
       TIO.Put_Line ("Stand by, building up to the point requested ...");
 
       REP.initialize (testmode => True);
+      CYC.initialize (test_mode => True);
       REP.launch_slave (id => PortScan.scan_slave, opts => noprocs);
 
       buildres := CYC.build_package (id          => PortScan.scan_slave,
