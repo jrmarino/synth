@@ -593,12 +593,7 @@ package body PortScan.Buildcycle is
    is
       time_limit : execution_limit := max_time_without_output (phase);
    begin
-      if testing then
-         return exec_phase (id => id, phase => phase, time_limit => time_limit,
-                            phaseenv => "DEVELOPER=1");
-      else
-         return exec_phase (id => id, phase => phase, time_limit => time_limit);
-      end if;
+      return exec_phase (id => id, phase => phase, time_limit => time_limit);
    end exec_phase_generic;
 
 
@@ -622,16 +617,11 @@ package body PortScan.Buildcycle is
    function exec_phase_build (id : builders) return Boolean
    is
       time_limit : execution_limit := max_time_without_output (build);
-      exec_phaseenv : String := "           ";
       passed : Boolean;
    begin
-      if testing then
-         exec_phaseenv := "DEVELOPER=1";
-      end if;
       passed := exec_phase (id          => id,
                             phase       => build,
                             time_limit  => time_limit,
-                            phaseenv    => exec_phaseenv,
                             skip_header => False,
                             skip_footer => True);
       if testing and then passed then
@@ -661,7 +651,6 @@ package body PortScan.Buildcycle is
       result := exec_phase (id          => id,
                             phase       => deinstall,
                             time_limit  => time_limit,
-                            phaseenv    => "DEVELOPER=1",
                             skip_header => True,
                             skip_footer => True);
       if not result then
@@ -761,7 +750,6 @@ package body PortScan.Buildcycle is
    is
       root       : constant String := get_root (id);
       port_flags : String := " NO_DEPENDS=yes ";
-      dev_flags  : String := " DEVELOPER_MODE=yes ";
       pid        : port_id := trackers (id).seq_id;
       catport    : constant String := get_catport (all_ports (pid));
       result     : Boolean;
@@ -770,8 +758,6 @@ package body PortScan.Buildcycle is
       if testing or else depends_phase
       then
          port_flags := (others => LAT.Space);
-      else
-         dev_flags := (others => LAT.Space);
       end if;
 
       --  Nasty, we have to switch open and close the log file for each
@@ -788,7 +774,7 @@ package body PortScan.Buildcycle is
 
       declare
            command : constant String := chroot & root & environment_override &
-           phaseenv & dev_flags & port_flags &
+           phaseenv & port_flags &
            "/usr/bin/make -C /xports/" & catport & " " & phase2str (phase);
       begin
          result := generic_execute (id, command, timed_out, time_limit);
@@ -919,8 +905,14 @@ package body PortScan.Buildcycle is
       USER : constant String := "USER=root ";
       HOME : constant String := "HOME=/root ";
       LANG : constant String := "LANG=C ";
+      BASE : constant String := " /usr/bin/env -i " &
+                                USER & HOME & LANG & TERM & PATH;
    begin
-      return " /usr/bin/env -i " & USER & HOME & LANG & TERM & PATH;
+      if testing then
+         return BASE & "DEVELOPER=1 ";
+      else
+         return BASE;
+      end if;
    end environment_override;
 
 
