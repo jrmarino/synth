@@ -531,7 +531,6 @@ package body Replicant is
       TIO.Put_Line (makeconf, "USE_PACKAGE_DEPENDS=yes");
       TIO.Put_Line (makeconf, "PACKAGE_BUILDING=yes");
       TIO.Put_Line (makeconf, "BATCH=yes");
-      TIO.Put_Line (makeconf, "NO_BACKUP=yes");
       TIO.Put_Line (makeconf, "PKG_CREATE_VERBOSE=yes");
       TIO.Put_Line (makeconf, "PORTSDIR=/xports");
       TIO.Put_Line (makeconf, "DISTDIR=/distfiles");
