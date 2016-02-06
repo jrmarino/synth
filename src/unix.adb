@@ -107,4 +107,13 @@ package body Unix is
       return (test /= "");
    end env_variable_defined;
 
+
+   --------------------------
+   --  env_variable_value  --
+   --------------------------
+   function env_variable_value (variable : String) return String is
+   begin
+      return OSL.Getenv (variable).all;
+   end env_variable_value;
+
 end Unix;

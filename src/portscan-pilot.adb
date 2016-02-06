@@ -1117,4 +1117,67 @@ package body PortScan.Pilot is
    end get_repos_dir;
 
 
+   ------------------------------------
+   --  interact_with_single_builder  --
+   ------------------------------------
+   function interact_with_single_builder return Boolean
+   is
+      use type CYC.phases;
+      EA_defined : constant Boolean := Unix.env_variable_defined (brkname);
+   begin
+      if Natural (portlist.Length) /= 1 then
+         return False;
+      end if;
+      if not EA_defined then
+         return False;
+      end if;
+      return CYC.valid_test_phase (Unix.env_variable_value (brkname)) /=
+        CYC.check_sanity;
+   end interact_with_single_builder;
+
+
+   ----------------------------------------------
+   --  bulk_run_then_interact_with_final_port  --
+   ----------------------------------------------
+   procedure bulk_run_then_interact_with_final_port
+   is
+      uscatport : JT.Text := portkey_crate.Key (Position => portlist.First);
+      brkphase : constant CYC.phases := CYC.valid_test_phase
+                                        (Unix.env_variable_value (brkname));
+      buildres : Boolean;
+      ptid     : port_id;
+   begin
+      if ports_keys.Contains (Key => uscatport) then
+         ptid := ports_keys.Element (Key => uscatport);
+      end if;
+
+      OPS.unlist_port (ptid);
+      perform_bulk_run (testmode => True);
+      if SIG.graceful_shutdown_requested then
+         return;
+      end if;
+      if bld_counter (ignored) > 0 or else
+        bld_counter (skipped) > 0 or else
+        bld_counter (failure) > 0
+      then
+         TIO.Put_Line ("It appears a prerequisite failed, so the interactive" &
+                         " build of");
+         TIO.Put_Line (JT.USS (uscatport) & " has been cancelled.");
+         return;
+      end if;
+      TIO.Put_Line ("Starting interactive build of " & JT.USS (uscatport));
+      TIO.Put_Line ("Stand by, building up to the point requested ...");
+
+      REP.initialize (testmode => True);
+      REP.launch_slave (id => PortScan.scan_slave, opts => noprocs);
+
+      buildres := CYC.build_package (id          => PortScan.scan_slave,
+                                     sequence_id => ptid,
+                                     interactive => True,
+                                     interphase  => brkphase);
+
+      REP.destroy_slave (id => PortScan.scan_slave, opts => noprocs);
+      REP.finalize;
+   end bulk_run_then_interact_with_final_port;
+
 end PortScan.Pilot;

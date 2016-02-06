@@ -19,7 +19,10 @@ package body PortScan.Buildcycle is
    ---------------------
    --  build_package  --
    ---------------------
-   function build_package (id : builders; sequence_id : port_id) return Boolean
+   function build_package (id          : builders;
+                           sequence_id : port_id;
+                           interactive : Boolean := False;
+                           interphase  : phases  := fetch) return Boolean
    is
       R : Boolean;
    begin
@@ -65,9 +68,13 @@ package body PortScan.Buildcycle is
                end if;
          end case;
          exit when R = False;
+         exit when interactive and then interphase = phase;
       end loop;
       if uselog then
          finalize_log (id);
+      end if;
+      if interactive then
+         interact_with_builder (id);
       end if;
       return R;
    end build_package;
@@ -1364,5 +1371,46 @@ package body PortScan.Buildcycle is
       return passed;
    end detect_leftovers_and_MIA;
 
+
+   -----------------------------
+   --  interact_with_builder  --
+   -----------------------------
+   procedure interact_with_builder (id : builders)
+   is
+      root      : constant String := get_root (id);
+      command   : constant String :=
+                  chroot & root & environment_override & "/bin/tcsh";
+      result    : Boolean;
+   begin
+      TIO.Put_Line ("Entering interactive test mode at the builder root " &
+                      "directory.");
+      TIO.Put_Line ("Type 'exit' when done exploring.");
+      result := Unix.external_command (command);
+   end interact_with_builder;
+
+
+   ------------------------
+   --  valid_test_phase  --
+   ------------------------
+   function valid_test_phase (afterphase : String) return phases is
+   begin
+      if afterphase = "extract" then
+         return extract;
+      elsif afterphase = "patch" then
+         return patch;
+      elsif afterphase = "configure" then
+         return configure;
+      elsif afterphase = "build" then
+         return build;
+      elsif afterphase = "stage" then
+         return check_plist;
+      elsif afterphase = "install" then
+         return install;
+      elsif afterphase = "deinstall" then
+         return deinstall;
+      else
+         return check_sanity;
+      end if;
+   end valid_test_phase;
 
 end PortScan.Buildcycle;

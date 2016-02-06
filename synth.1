@@ -389,6 +389,40 @@ removing the variable will allow the default profile to load again.
 When this environment variable is defined to any value, the sanity check
 routines will provide more detail on dependency and option check failures
 on a separate output line.
+.It Ev ENTERAFTER
+This environment variable only applies with the
+.Cm test
+command, and then only when a single port is specified.  If both of those
+conditions are satisfied, and the variable has the value of:
+.Bl -dash -compact -width 1
+.It
+extract
+.It
+patch
+.It
+configure
+.It
+build
+.It
+stage
+.It
+install
+.It
+deinstall
+.El
+then an interactive build will be attempted. First, all the port's
+prerequisites are built normally and
+.Nm
+will return to text mode. If everything built successfully, the specified
+port will build up to and including the point specified by ENTERAFTER. At
+that point, control will be given to the user by providing them with a
+tcsh shell with the current directory set at the root of the builder.
+When the user is done, they should terminate the shell with the
+.Cm exit
+command to signal
+.Nm
+to clean up and terminate. This is a developer tool to troubleshoot port
+build problems and it is not intended for the average user.
 .El
 .Sh FILES
 The following files may be used or created:

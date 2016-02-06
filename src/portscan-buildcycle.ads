@@ -9,8 +9,17 @@ package PortScan.Buildcycle is
    cycle_log_error : exception;
    cycle_cmd_error : exception;
 
+   type phases is (check_sanity, pkg_depends, fetch_depends, fetch, checksum,
+                   extract_depends, extract, patch_depends, patch,
+                   build_depends, lib_depends, configure, build, run_depends,
+                   stage, check_plist, pkg_package, install_mtree, install,
+                   deinstall);
+
    procedure initialize (test_mode : Boolean);
-   function build_package (id : builders; sequence_id : port_id) return Boolean;
+   function build_package (id          : builders;
+                           sequence_id : port_id;
+                           interactive : Boolean := False;
+                           interphase  : phases  := fetch) return Boolean;
 
    --  Expose for overall build log
    function timestamp (hack : CAL.Time) return String;
@@ -35,15 +44,16 @@ package PortScan.Buildcycle is
    --  records the current length of the build log.
    procedure set_log_lines (id : builders);
 
+   --  If the afterphase string matches a legal phase name then that phase
+   --  is returned, otherwise the value of check-sanity is returned.  Allowed
+   --  phases are: extract/patch/configure/build/stage/install/deinstall.
+   --  check-sanity is considered a negative response
+   --  stage includes check-plist
+   function valid_test_phase (afterphase : String) return phases;
+
 private
 
    type execution_limit is range 1 .. 720;
-
-   type phases is (check_sanity, pkg_depends, fetch_depends, fetch, checksum,
-                   extract_depends, extract, patch_depends, patch,
-                   build_depends, lib_depends, configure, build, run_depends,
-                   stage, check_plist, pkg_package, install_mtree, install,
-                   deinstall);
 
    type trackrec is
       record
@@ -101,6 +111,7 @@ private
    procedure stack_linked_libraries (id : builders; base, filename : String);
    procedure log_linked_libraries (id : builders);
    procedure mark_file_system (id : builders; action : String);
+   procedure interact_with_builder (id : builders);
    function  dynamically_linked (base, filename : String) return Boolean;
    function  elapsed_HH_MM_SS (start, stop : CAL.Time) return String;
    function  environment_override return String;

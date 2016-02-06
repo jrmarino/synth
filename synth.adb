@@ -200,7 +200,11 @@ begin
                  PIL.scan_stack_of_single_ports (testmode => True) and then
                  PIL.sanity_check_then_prefail (delete_first => True)
                then
-                  PIL.perform_bulk_run (testmode => True);
+                  if PIL.interact_with_single_builder then
+                     PIL.bulk_run_then_interact_with_final_port;
+                  else
+                     PIL.perform_bulk_run (testmode => True);
+                  end if;
                end if;
          end case;
 

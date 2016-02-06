@@ -29,6 +29,10 @@ package Unix is
    --  value of variable is irrelevant
    function env_variable_defined (variable : String) return Boolean;
 
+   --  Return value of "variable" defined in environment.  If it's not
+   --  defined than an empty string is returned;
+   function env_variable_value (variable : String) return String;
+
 private
 
    type uInt8 is mod 2 ** 16;

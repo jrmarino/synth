@@ -36,6 +36,12 @@ package PortScan.Pilot is
    --  continue until everything is complete.
    procedure perform_bulk_run (testmode : Boolean);
 
+   --  This procedure removes the single CLI listed port from the queue,
+   --  executes "perform_bulk_run" and then builds the final port, but
+   --  breaks into the jail at the specified (by ENTERAFTER env) point
+   --  The test mode is always "True" so that's not an argument.
+   procedure bulk_run_then_interact_with_final_port;
+
    --  Return "true" if the user confirms the repository should be re/built.
    function verify_desire_to_rebuild_repository return Boolean;
 
@@ -100,6 +106,10 @@ package PortScan.Pilot is
    --  for the status options
    procedure display_results_of_dry_run;
 
+   --  If ENTERAFTER is defined to valid phase and there's only one port
+   --  given on the command line, then return True
+   function interact_with_single_builder return Boolean;
+
    pilot_log : exception;
 
 private
@@ -114,6 +124,7 @@ private
    shutreq : constant String := "Graceful shutdown requested, exiting ...";
    pkgng   : constant String := "ports-mgmt/pkg";
    pidfile : constant String := "/var/run/synth.pid";
+   brkname : constant String := "ENTERAFTER";
    logname : constant dim_logname := ("00_last_results.log",
                                       "01_success_list.log",
                                       "02_failure_list.log",
