@@ -957,7 +957,7 @@ package body PortScan.Buildcycle is
          when fetch           => return "fetch";
          when checksum        => return "checksum";
          when extract_depends => return "extract-depends";
-         when extract         => return "checksum";
+         when extract         => return "extract";
          when patch_depends   => return "patch-depends";
          when patch           => return "patch";
          when build_depends   => return "build-depends";
