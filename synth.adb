@@ -142,7 +142,7 @@ begin
                null;
             when status =>
                if PIL.build_pkg8_as_necessary and then
-                 PIL.scan_stack_of_single_ports and then
+                 PIL.scan_stack_of_single_ports (testmode => False) and then
                  PIL.sanity_check_then_prefail (delete_first => False,
                                                 dry_run => True)
                then
@@ -150,14 +150,14 @@ begin
                end if;
             when just_build =>
                if PIL.build_pkg8_as_necessary and then
-                 PIL.scan_stack_of_single_ports and then
+                 PIL.scan_stack_of_single_ports (testmode => False) and then
                  PIL.sanity_check_then_prefail
                then
                   PIL.perform_bulk_run (testmode => False);
                end if;
             when build =>
                if PIL.build_pkg8_as_necessary and then
-                 PIL.scan_stack_of_single_ports and then
+                 PIL.scan_stack_of_single_ports (testmode => False) and then
                  PIL.sanity_check_then_prefail
                then
                   PIL.perform_bulk_run (testmode => False);
@@ -171,7 +171,7 @@ begin
                end if;
             when force =>
                if PIL.build_pkg8_as_necessary and then
-                 PIL.scan_stack_of_single_ports and then
+                 PIL.scan_stack_of_single_ports (testmode => False) and then
                  PIL.sanity_check_then_prefail (delete_first => True)
                then
                   PIL.perform_bulk_run (testmode => False);
@@ -185,7 +185,7 @@ begin
                end if;
             when install =>
                if PIL.build_pkg8_as_necessary and then
-                 PIL.scan_stack_of_single_ports and then
+                 PIL.scan_stack_of_single_ports (testmode => False) and then
                  PIL.sanity_check_then_prefail
                then
                   PIL.perform_bulk_run (testmode => False);
@@ -197,7 +197,7 @@ begin
                end if;
             when test =>
                if PIL.build_pkg8_as_necessary and then
-                 PIL.scan_stack_of_single_ports and then
+                 PIL.scan_stack_of_single_ports (testmode => True) and then
                  PIL.sanity_check_then_prefail (delete_first => True)
                then
                   PIL.perform_bulk_run (testmode => True);

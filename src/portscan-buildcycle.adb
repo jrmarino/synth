@@ -905,14 +905,8 @@ package body PortScan.Buildcycle is
       USER : constant String := "USER=root ";
       HOME : constant String := "HOME=/root ";
       LANG : constant String := "LANG=C ";
-      BASE : constant String := " /usr/bin/env -i " &
-                                USER & HOME & LANG & TERM & PATH;
    begin
-      if testing then
-         return BASE & "DEVELOPER=1 ";
-      else
-         return BASE;
-      end if;
+      return " /usr/bin/env -i " & USER & HOME & LANG & TERM & PATH;
    end environment_override;
 
 

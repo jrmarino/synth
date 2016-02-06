@@ -101,7 +101,7 @@ package body Replicant is
    ------------------
    --  initialize  --
    ------------------
-   procedure initialize
+   procedure initialize (testmode : Boolean)
    is
       opsys   : nullfs_flavor   := dragonfly;
       mm      : constant String := get_master_mount;
@@ -110,6 +110,7 @@ package body Replicant is
       command : constant String := "/usr/sbin/pwd_mkdb -p -d " & mm & " " &
                                    mm & maspas;
    begin
+      developer_mode := testmode;
       if JT.equivalent (PM.configuration.operating_sys, "FreeBSD") then
          opsys := freebsd;
       end if;
@@ -540,6 +541,9 @@ package body Replicant is
       TIO.Put_Line (makeconf, "MAKE_JOBS_NUMBER_LIMIT=" &
                       (JT.trim (PM.configuration.jobs_limit'Img)));
 
+      if developer_mode then
+         TIO.Put_Line (makeconf, "DEVELOPER=1");
+      end if;
       if AD.Exists (JT.USS (PM.configuration.dir_ccache)) then
          TIO.Put_Line (makeconf, "WITH_CCACHE_BUILD=yes");
          TIO.Put_Line (makeconf, "CCACHE_DIR=/ccache");

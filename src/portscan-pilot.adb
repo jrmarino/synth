@@ -63,7 +63,7 @@ package body PortScan.Pilot is
       selection : PortScan.port_id;
       result    : Boolean := True;
    begin
-      REP.initialize;
+      REP.initialize (testmode => False);
       REP.launch_slave (id => PortScan.scan_slave, opts => noprocs);
       good_scan := PortScan.scan_single_port (catport => pkgng);
 
@@ -123,7 +123,7 @@ package body PortScan.Pilot is
    ----------------------------------
    --  scan_stack_of_single_ports  --
    ----------------------------------
-   function scan_stack_of_single_ports return Boolean
+   function scan_stack_of_single_ports (testmode : Boolean) return Boolean
    is
       procedure scan (plcursor : portkey_crate.Cursor);
       successful : Boolean := True;
@@ -143,7 +143,7 @@ package body PortScan.Pilot is
             successful := False;
             return;
          end if;
-         if not PortScan.scan_single_port (catport => origin) then
+         if not PortScan.scan_single_port (origin) then
             TIO.Put_Line
               ("Scan of " & origin & " failed" &
                  PortScan.obvious_problem
@@ -153,7 +153,7 @@ package body PortScan.Pilot is
       end scan;
 
    begin
-      REP.initialize;
+      REP.initialize (testmode);
       REP.launch_slave (id => PortScan.scan_slave, opts => noprocs);
       if SIG.graceful_shutdown_requested then
          goto clean_exit;
@@ -318,7 +318,7 @@ package body PortScan.Pilot is
          TIO.Put_Line ("require rebuilding; the task is therefore complete.");
          show_tally := False;
       else
-         REP.initialize;
+         REP.initialize (testmode);
          CYC.initialize (testmode);
          OPS.initialize_display (num_builders);
          OPS.parallel_bulk_run (num_builders, Flog);
@@ -409,7 +409,7 @@ package body PortScan.Pilot is
       goodresult : Boolean;
    begin
       PortScan.reset_ports_tree;
-      REP.initialize;
+      REP.initialize (testmode => False);
       REP.launch_slave (id => PortScan.scan_slave, opts => noprocs);
       goodresult := PortScan.scan_entire_ports_tree
         (JT.USS (PM.configuration.dir_portsdir));
@@ -468,7 +468,7 @@ package body PortScan.Pilot is
       if AD.Exists (xz_pkgsite) then
          AD.Delete_File (xz_pkgsite);
       end if;
-      REP.initialize;
+      REP.initialize (testmode => False);
       REP.launch_slave (id => PortScan.scan_slave, opts => noprocs);
       build_res := REP.build_repository (PortScan.scan_slave);
       REP.destroy_slave (id => PortScan.scan_slave, opts => noprocs);
@@ -828,7 +828,7 @@ package body PortScan.Pilot is
       TIO.Put_Line ("Stand by, comparing installed packages against the " &
                       "ports tree.");
       if build_pkg8_as_necessary and then
-        scan_stack_of_single_ports and then
+        scan_stack_of_single_ports (testmode => False) and then
         sanity_check_then_prefail (delete_first => False, dry_run => dry_run)
       then
          if dry_run then
