@@ -204,6 +204,12 @@ There is a text mode for the building phase.  It shows much less information
 than the curses-based screen, but if curses is acting up, the text mode gets
 the job done just fine.
 
+## Overview Diagrams
+
+![Relationship with ports and pkg(8)](http://downloads.dragonlace.net/misc/synth-img/synth-arch.png)
+
+![Synth configuration summary](http://downloads.dragonlace.net/misc/synth-img/synth-config.png)
+
 ## Testimonials
 
 ##### Chris_H - FreeBSD forums member - 25 January 2016
