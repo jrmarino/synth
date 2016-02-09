@@ -204,7 +204,7 @@ There is a text mode for the building phase.  It shows much less information
 than the curses-based screen, but if curses is acting up, the text mode gets
 the job done just fine.
 
-## Frequent Asked Questions
+## Frequently Asked Questions
 
 ### Synth fails when I run it inside a jail.  What can I do?
 
