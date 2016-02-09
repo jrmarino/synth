@@ -204,6 +204,27 @@ There is a text mode for the building phase.  It shows much less information
 than the curses-based screen, but if curses is acting up, the text mode gets
 the job done just fine.
 
+## Frequent Asked Questions
+
+### Synth fails when I run it inside a jail.  What can I do?
+
+First, there is no benefit to running Synth inside a jail.  It internally
+creates jail-like environments for each builder and to add another layer
+around Synth doesn't provide any extra protection.  It is recommended that
+you don't even bother.
+
+Wait, you don't care about that recommendation?  You demand to be able to
+run Synth in a jail?  Okay, add the following to jail.conf:
+
+```
+enforce_statfs=0
+allow.mount
+allow.mount.nullfs
+allow.mount.tmpfs
+allow.mount.devfs
+```
+(Courtesy of Dewayne Geraghty)
+
 ## Overview Diagrams
 
 ![Relationship with ports and pkg(8)](http://downloads.dragonlace.net/misc/synth-img/synth-arch.png)
