@@ -565,8 +565,15 @@ package body PortScan is
          case k is
             when 1 => all_ports (target).port_version := topline;
             when 2 => all_ports (target).package_name := topline;
-            when 3 => all_ports (target).jobs :=
-                 builders (Integer'Value (JT.USS (topline)));
+            when 3 =>
+               declare
+               begin
+                  all_ports (target).jobs :=
+                    builders (Integer'Value (JT.USS (topline)));
+               exception
+                  when others =>
+                     all_ports (target).jobs := PM.configuration.num_builders;
+               end;
             when 4 =>
                all_ports (target).ignore_reason := topline;
                all_ports (target).ignored := not JT.IsBlank (topline);
