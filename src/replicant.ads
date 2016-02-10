@@ -25,7 +25,7 @@ package Replicant is
    --  This procedure needs to be run once.
    --  It basically sets the operating system "flavor" which affects the
    --  mount command spawning.  It also creates the password database
-   procedure initialize (testmode : Boolean);
+   procedure initialize (testmode : Boolean; num_cores : cpu_range);
 
    --  This removes the password database
    procedure finalize;
@@ -104,6 +104,7 @@ private
    chroot           : constant String := "/usr/sbin/chroot ";
 
    flavor           : nullfs_flavor   := unknown;
+   smp_cores        : cpu_range       := cpu_range'First;
    developer_mode   : Boolean;
 
    --  Throws exception if mount attempt was unsuccessful

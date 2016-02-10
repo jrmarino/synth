@@ -63,7 +63,7 @@ package body PortScan.Pilot is
       selection : PortScan.port_id;
       result    : Boolean := True;
    begin
-      REP.initialize (testmode => False);
+      REP.initialize (testmode => False, num_cores => PortScan.cores_available);
       REP.launch_slave (id => PortScan.scan_slave, opts => noprocs);
       good_scan := PortScan.scan_single_port (catport => pkgng);
 
@@ -153,7 +153,7 @@ package body PortScan.Pilot is
       end scan;
 
    begin
-      REP.initialize (testmode);
+      REP.initialize (testmode, PortScan.cores_available);
       REP.launch_slave (id => PortScan.scan_slave, opts => noprocs);
       if SIG.graceful_shutdown_requested then
          goto clean_exit;
@@ -318,7 +318,7 @@ package body PortScan.Pilot is
          TIO.Put_Line ("require rebuilding; the task is therefore complete.");
          show_tally := False;
       else
-         REP.initialize (testmode);
+         REP.initialize (testmode, PortScan.cores_available);
          CYC.initialize (testmode);
          OPS.initialize_display (num_builders);
          OPS.parallel_bulk_run (num_builders, Flog);
@@ -409,7 +409,7 @@ package body PortScan.Pilot is
       goodresult : Boolean;
    begin
       PortScan.reset_ports_tree;
-      REP.initialize (testmode => False);
+      REP.initialize (testmode => False, num_cores => PortScan.cores_available);
       REP.launch_slave (id => PortScan.scan_slave, opts => noprocs);
       goodresult := PortScan.scan_entire_ports_tree
         (JT.USS (PM.configuration.dir_portsdir));
@@ -468,7 +468,7 @@ package body PortScan.Pilot is
       if AD.Exists (xz_pkgsite) then
          AD.Delete_File (xz_pkgsite);
       end if;
-      REP.initialize (testmode => False);
+      REP.initialize (testmode => False, num_cores => PortScan.cores_available);
       REP.launch_slave (id => PortScan.scan_slave, opts => noprocs);
       build_res := REP.build_repository (PortScan.scan_slave);
       REP.destroy_slave (id => PortScan.scan_slave, opts => noprocs);
@@ -1168,7 +1168,7 @@ package body PortScan.Pilot is
       TIO.Put_Line ("Starting interactive build of " & JT.USS (uscatport));
       TIO.Put_Line ("Stand by, building up to the point requested ...");
 
-      REP.initialize (testmode => True);
+      REP.initialize (testmode => True, num_cores => PortScan.cores_available);
       CYC.initialize (test_mode => True);
       REP.launch_slave (id => PortScan.scan_slave, opts => noprocs);
 

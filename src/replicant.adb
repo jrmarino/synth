@@ -101,7 +101,7 @@ package body Replicant is
    ------------------
    --  initialize  --
    ------------------
-   procedure initialize (testmode : Boolean)
+   procedure initialize (testmode : Boolean; num_cores : cpu_range)
    is
       opsys   : nullfs_flavor   := dragonfly;
       mm      : constant String := get_master_mount;
@@ -110,6 +110,7 @@ package body Replicant is
       command : constant String := "/usr/sbin/pwd_mkdb -p -d " & mm & " " &
                                    mm & maspas;
    begin
+      smp_cores := num_cores;
       developer_mode := testmode;
       if JT.equivalent (PM.configuration.operating_sys, "FreeBSD") then
          opsys := freebsd;
@@ -1046,7 +1047,7 @@ package body Replicant is
       portsdir : constant String := JT.USS (PM.configuration.dir_portsdir);
       fullport : constant String := portsdir & "/ports-mgmt/pkg";
       command  : constant String := "/usr/bin/make -C " & fullport &
-                 " -VARCH -VOPSYS -V_OSRELEASE -VOSVERSION -VUID -V_SMP_CPUS" &
+                 " -VARCH -VOPSYS -V_OSRELEASE -VOSVERSION -VUID" &
                  " -VHAVE_COMPAT_IA32_KERN -VCONFIGURE_MAX_CMD_LEN";
       pipe     : aliased STR.Pipes.Pipe_Stream;
       buffer   : STR.Buffered.Buffered_Stream;
@@ -1055,7 +1056,7 @@ package body Replicant is
       status   : Integer;
       vconf    : TIO.File_Type;
 
-      type result_range is range 1 .. 8;
+      type result_range is range 1 .. 7;
    begin
       pipe.Open (Command => command);
       buffer.Initialize (Output => null,
@@ -1085,12 +1086,12 @@ package body Replicant is
                when 3 => TIO.Put_Line (vconf, "_OSRELEASE=" & value);
                when 4 => TIO.Put_Line (vconf, "OSVERSION=" & value);
                when 5 => TIO.Put_Line (vconf, "UID=" & value);
-               when 6 => TIO.Put_Line (vconf, "_SMP_CPUS=" & value);
-               when 7 => TIO.Put_Line (vconf, "HAVE_COMPAT_IA32_KERN=" & value);
-               when 8 => TIO.Put_Line (vconf, "CONFIGURE_MAX_CMD_LEN=" & value);
+               when 6 => TIO.Put_Line (vconf, "HAVE_COMPAT_IA32_KERN=" & value);
+               when 7 => TIO.Put_Line (vconf, "CONFIGURE_MAX_CMD_LEN=" & value);
             end case;
          end;
       end loop;
+      TIO.Put_Line (vconf, "_SMP_CPUS=" & JT.int2str (Integer (smp_cores)));
       TIO.Close (vconf);
    end cache_port_variables;
 
