@@ -1,4 +1,4 @@
-.Dd February 2, 2016
+.Dd February 10, 2016
 .Dt SYNTH 1
 .Os
 .Sh NAME
@@ -439,6 +439,13 @@ This is an optional, user-provided file. If it exists, the builder's
 will be appended with the contents of this file. For the default profile, the
 file would normally be located at
 .Pa /usr/local/etc/synth/LiveSystem-make.conf
+.It <profile>-environment
+This is an optional, user-provided file. It contains a list of name-value
+pairs joins with an equals sign (e.g. HTTP_PROXY=http://proxyserver:8888),
+one pair per line.  If the file exists, these variables will be defined
+in the builder environment.  For the default profile, the file would
+normally be located at
+.Pa /usr/local/etc/synth/LiveSystem-environment
 .It synth_status_results.txt
 Whenever a status command is run, a list of ports that would build with the
 actual command is produced at
