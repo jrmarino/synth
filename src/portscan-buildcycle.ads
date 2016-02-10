@@ -70,6 +70,7 @@ private
 
    trackers  : dim_trackers;
    uname_mrv : JT.Text;
+   customenv : JT.Text;
    testing   : Boolean;
 
    chroot    : constant String := "/usr/sbin/chroot ";
@@ -112,6 +113,7 @@ private
    procedure log_linked_libraries (id : builders);
    procedure mark_file_system (id : builders; action : String);
    procedure interact_with_builder (id : builders);
+   procedure obtain_custom_environment;
    function  dynamically_linked (base, filename : String) return Boolean;
    function  elapsed_HH_MM_SS (start, stop : CAL.Time) return String;
    function  environment_override return String;

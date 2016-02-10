@@ -537,19 +537,22 @@ package body PortScan.Buildcycle is
    ------------------
    --  initialize  --
    ------------------
-   procedure initialize (test_mode : Boolean)
-   is
-      logdir : constant String := JT.USS (PM.configuration.dir_logs);
+   procedure initialize (test_mode : Boolean) is
    begin
       set_uname_mrv;
       testing := test_mode;
-      if not AD.Exists (logdir) then
-         AD.Create_Path (New_Directory => logdir);
-      end if;
-   exception
+      declare
+         logdir : constant String := JT.USS (PM.configuration.dir_logs);
+      begin
+         if not AD.Exists (logdir) then
+            AD.Create_Path (New_Directory => logdir);
+         end if;
+      exception
          when error : others =>
             raise cycle_log_error
               with "failed to create " & logdir;
+      end;
+      obtain_custom_environment;
    end initialize;
 
 
@@ -912,8 +915,9 @@ package body PortScan.Buildcycle is
       USER : constant String := "USER=root ";
       HOME : constant String := "HOME=/root ";
       LANG : constant String := "LANG=C ";
+      CENV : constant String := JT.USS (customenv);
    begin
-      return " /usr/bin/env -i " & USER & HOME & LANG & TERM & PATH;
+      return " /usr/bin/env -i " & USER & HOME & LANG & TERM & PATH & CENV;
    end environment_override;
 
 
@@ -1412,5 +1416,36 @@ package body PortScan.Buildcycle is
          return check_sanity;
       end if;
    end valid_test_phase;
+
+
+   ---------------------------------
+   --  obtain_custom_environment  --
+   ---------------------------------
+   procedure obtain_custom_environment
+   is
+      target_name : constant String := PM.synth_confdir & "/" &
+                    JT.USS (PM.configuration.profile) & "-environment";
+      fragment : TIO.File_Type;
+   begin
+      customenv := JT.blank;
+      if AD.Exists (target_name) then
+         TIO.Open (File => fragment, Mode => TIO.In_File, Name => target_name);
+         while not TIO.End_Of_File (fragment) loop
+            declare
+               Line : String := TIO.Get_Line (fragment);
+            begin
+               if JT.contains (Line, "=") then
+                  JT.SU.Append (customenv, JT.trim (Line) & " ");
+               end if;
+            end;
+         end loop;
+         TIO.Close (fragment);
+      end if;
+   exception
+      when others =>
+         if TIO.Is_Open (fragment) then
+            TIO.Close (fragment);
+         end if;
+   end obtain_custom_environment;
 
 end PortScan.Buildcycle;
