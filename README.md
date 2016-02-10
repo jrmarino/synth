@@ -225,11 +225,25 @@ allow.mount.devfs
 ```
 (Courtesy of Dewayne Geraghty)
 
+### Synth can't fetch because I use a proxy server.  How can I fix this?
+
+This requires providing custom environment variables.  Create a file named
+/usr/local/etc/synth/<profile>-environment (e.g. LiveSystem-environment) and define
+one variable per line, e.g. 
+
+```
+HTTP_PROXY=http://proxyserver:8888
+http_proxy=http://proxyserver:8888
+ftp_proxy=http://proxyserver:8888
+ftp_proxy=http://proxyserver:8888
+```
+Change the port numbers to match your actual proxy server port, of course.
+
 ## Overview Diagrams
 
 ![Relationship with ports and pkg(8)](http://downloads.dragonlace.net/misc/synth-img/synth-arch.png)
 
-![Synth configuration summary](http://downloads.dragonlace.net/misc/synth-img/synth-config.png)
+![Synth configuration summary](http://downloads.dragonlace.net/misc/synth-img/synth-config2.png)
 
 ## Testimonials
 
