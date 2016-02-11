@@ -1,0 +1,50 @@
+#compdef synth
+
+_synth () {
+
+    local cmds subcmds
+    local context state line
+    typeset -A val_args
+
+    cmds=(
+	'status:Dry-run: What "upgrade-system" or [ports] would build'
+	'configure:Brings up interactive configuration menu'
+	'upgrade-system:Incrementally and fully upgrade host system'
+	'prepare-system:Upgrade Synth repository for host system'
+	'rebuild-repository:Rebuilds local Synth repository on command'
+	'purge-distfiles:Deletes obsolete source distribution files'
+	'status-everything:Dry-run: Shows what "everything" would build'
+	'everything:Builds entire ports tree and rebuilds repository'
+	'version:Displays version, description and usage summary'
+	'help:Displays 1-line summary of each command'
+	'build:Incrementally build [ports] list, offer to install'
+	'just-build:Incrementally build [ports] list'
+	'install:Incrementally build [ports] list and install'
+	'force:Unconditionally build [ports] list, offer to install'
+	'test:Unconditionally build [ports] in Developer mode'
+    )
+
+    subcmds=(
+	':     space-delimited list of port origins'
+	':-or- path to file containing one port origin per line'
+    )
+
+    # we are in second argument
+    if ((CURRENT == 2)); then
+	_describe "Synth commands" cmds
+
+    # the main command has been typed, now we take care of the action
+    elif ((CURRENT >= 3)); then
+	case $words[2] in
+	    help|configure|version|upgrade-system|prepare-system)
+		return ;;
+	    status-everything|everything|purge-distfiles|rebuild-repository)
+		return ;;
+	    status|build|just-build|install|force|test)
+		_describe "ports list" subcmds 
+	        return ;;
+	esac
+    fi
+}
+
+_synth "$@"
