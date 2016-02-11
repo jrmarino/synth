@@ -229,10 +229,6 @@ package body PortScan.Packages is
          activate_debugging_code;
       end if;
       establish_package_architecture;
-      TIO.Put_Line ("calc ABI: " & JT.USS (calculated_abi));
-      TIO.Put_Line ("Alt  ABI: " & JT.USS (calculated_alt_abi));
-      TIO.Put_Line ("   3 ABI: " & JT.USS (calc_abi_noarch));
-      TIO.Put_Line ("   4 ABI: " & JT.USS (calc_alt_abi_noarch));
       original_queue_len := rank_queue.Length;
       for m in scanners'Range loop
          mq_progress (m) := 0;
