@@ -233,8 +233,9 @@ one variable per line, e.g.
 
 ```
 HTTP_PROXY=http://proxyserver:8888
+FTP_PROXY=http://proxyserver:8888
+
 http_proxy=http://proxyserver:8888
-ftp_proxy=http://proxyserver:8888
 ftp_proxy=http://proxyserver:8888
 ```
 Change the urls and port numbers to match your actual proxy server port, of course.
