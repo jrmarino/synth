@@ -2,7 +2,8 @@
 
 _synth () {
 
-    local cmds subcmds
+    local cmds
+    local -a subcmds
     local context state line
     typeset -A val_args
 
@@ -25,8 +26,8 @@ _synth () {
     )
 
     subcmds=(
-	':     space-delimited list of port origins'
-	':-or- path to file containing one port origin per line'
+	'port:port origin:_files -X "%Bports%b" -W "${PORTSDIR:-/usr/ports}" -/'
+	'file:path to file containing one port origin per line:_files'
     )
 
     # we are in second argument
@@ -41,7 +42,7 @@ _synth () {
 	    status-everything|everything|purge-distfiles|rebuild-repository)
 		return ;;
 	    status|build|just-build|install|force|test)
-		_describe "ports list" subcmds 
+		_alternative $subcmds
 	        return ;;
 	esac
     fi
