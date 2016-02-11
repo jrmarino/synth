@@ -237,7 +237,24 @@ http_proxy=http://proxyserver:8888
 ftp_proxy=http://proxyserver:8888
 ftp_proxy=http://proxyserver:8888
 ```
-Change the port numbers to match your actual proxy server port, of course.
+Change the urls and port numbers to match your actual proxy server port, of course.
+
+### Synth is configured to prefetch suitable officially-built packages, but very few are actually retrieved.  What's wrong?
+
+This only happens to FreeBSD users.  On FreeBSD, there are basically two official repositories:
+_Quarterly_ and _Latest_.  The 10.2 Release and later have pkg(8) configured to use the 
+_Quarterly_ packages by default.  Earlier releases are configured to use the _Latest_ packages.
+
+Either repository is fine, but the provided ports tree has to match!  If you decided to continue
+with the _Quarterly_ branch (a fine choice if you don't like constant rebuilding) then you need
+to provide Synth with a SVN version of the ports tree set to the same _Quarterly_ branch. As could
+be deduced from the name, a new SVN branch is created every three months, so Synth users that
+choose the _Quarterly_ ports and packages need to remember to switch branches in January, April,
+July, and October.
+
+If you want the newest versions of software always and still leverage prebuilt packages, then ensure
+pkg(8) is configured for the _Latest_ packages and the ports tree is as well.  Unlikely
+_Quarterly_ users, _Latest_ users never have to change the ports tree configuration.
 
 ## Overview Diagrams
 
