@@ -183,7 +183,7 @@ package body JohnnyText is
       if slash = 0 then
          return S;
       end if;
-      return S (slash + 1 .. S'Last);
+      return S (slash + separator'Length .. S'Last);
    end part_2;
 
 

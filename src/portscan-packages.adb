@@ -229,6 +229,10 @@ package body PortScan.Packages is
          activate_debugging_code;
       end if;
       establish_package_architecture;
+      TIO.Put_Line ("calc ABI: " & JT.USS (calculated_abi));
+      TIO.Put_Line ("Alt  ABI: " & JT.USS (calculated_alt_abi));
+      TIO.Put_Line ("   3 ABI: " & JT.USS (calc_abi_noarch));
+      TIO.Put_Line ("   4 ABI: " & JT.USS (calc_alt_abi_noarch));
       original_queue_len := rank_queue.Length;
       for m in scanners'Range loop
          mq_progress (m) := 0;
@@ -730,83 +734,114 @@ package body PortScan.Packages is
    --------------------------------------
    procedure establish_package_architecture
    is
-      function suffix (arch : String) return String;
-      function even (group : String) return String;
+      function newsuffix (fileinfo : String) return String;
+      function suffix (fileinfo : String) return String;
+      function fbrel (fileinfo : String) return String;
+      function even (fileinfo : String) return String;
 
-      command : constant String := JT.USS (PM.configuration.dir_system) &
-        "/usr/bin/uname -mr";
+      command : constant String := "/usr/bin/file -b " &
+        JT.USS (PM.configuration.dir_system) & "/bin/sh";
       UN : JT.Text;
 
-      function suffix (arch : String) return String is
+      function suffix (fileinfo : String) return String
+      is
+         --  DF: ELF 64-bit LSB executable, x86-64
+         --  FB: ELF 64-bit LSB executable, x86-64
+         --  FB: ELF 32-bit LSB executable, Intel 80386
+         arch : constant String (1 .. 11) :=
+           fileinfo (fileinfo'First + 27 .. fileinfo'First + 37);
       begin
-         if arch = "amd64" or else arch = "x86_64" then
+         if arch (1 .. 6) = "x86-64" then
             return "x86:64";
-         elsif arch = "i386" then
+         elsif arch = "Intel 80386" then
             return "x86:32";
          else
             return "unknown:" & arch;
          end if;
       end suffix;
-      function even (group : String) return String
+
+      function newsuffix (fileinfo : String) return String
       is
-         len : constant Natural := group'Length;
-         zzz : constant String (1 .. len) := group;
-         let : constant Character := zzz (len);
-         res : String := zzz;
+         arch : constant String (1 .. 11) :=
+           fileinfo (fileinfo'First + 27 .. fileinfo'First + 37);
       begin
-         case let is
-         when '1' => res (len) := '2';
-         when '3' => res (len) := '4';
-         when '5' => res (len) := '6';
-         when '7' => res (len) := '8';
-         when '9' => res (len) := '0';
+         if arch (1 .. 6) = "x86-64" then
+            return "amd64";
+         elsif arch = "Intel 80386" then
+            return "i386";
+         else
+            return "unknown:" & arch;
+         end if;
+      end newsuffix;
+
+      function even (fileinfo : String) return String
+      is
+         --  DF: ... DragonFly 4.0.501
+         rest  : constant String := JT.part_2 (fileinfo, "DragonFly ");
+         major : constant String := JT.part_1 (rest, ".");
+         rest2 : constant String := JT.part_2 (rest, ".");
+         minor : constant String := JT.part_1 (rest2, ".");
+         rest3 : constant String := JT.part_2 (rest2, ".");
+         point : constant Character := rest3 (rest3'First);
+         final : Character := point;
+      begin
+         case point is
+         when '1' => final := '2';
+         when '3' => final := '4';
+         when '5' => final := '6';
+         when '7' => final := '8';
+         when '9' => final := '0';
          when others => null;
          end case;
-         return res;
+         if minor = "0" then
+            return major & "." & final;
+         else
+            return major & "." & minor & final;
+         end if;
       end even;
+
+      function fbrel (fileinfo : String) return String
+      is
+         --  FreeBSD 10.2, stripped
+         --  FreeBSD 11.0 (1100093), stripped
+         rest  : constant String := JT.part_2 (fileinfo, "FreeBSD ");
+         major : constant String := JT.part_1 (rest, ".");
+      begin
+         return major;
+      end fbrel;
 
    begin
       UN := generic_system_command (command);
       if JT.equivalent (PM.configuration.operating_sys, "DragonFly") then
          declare
-            dfly    : constant String := "dragonfly:";
-            ndxdot  : constant Natural := JT.SU.Index (UN, ".");
-            ndxspc  : constant Natural := JT.SU.Index (UN, " ");
-            ndxdash : constant Natural := JT.SU.Index (UN, "-");
-            unlen   : constant Natural := JT.SU.Length (UN) - 1;
+            dfly     : constant String := "dragonfly:";
+            unlen    : constant Natural := JT.SU.Length (UN) - 1;
+            fileinfo : constant String := JT.USS (UN)(1 .. unlen);
          begin
             calculated_abi := JT.SUS (dfly);
-            JT.SU.Append (calculated_abi,
-                          JT.SU.Slice (UN, 1, ndxdot - 1) & ".");
-            JT.SU.Append (calculated_abi, even
-                          (JT.SU.Slice (UN, ndxdot + 1, ndxdash - 1)) & ":");
+            JT.SU.Append (calculated_abi, even (fileinfo) & ":");
             calc_abi_noarch := calculated_abi;
-            JT.SU.Append (calculated_abi, suffix
-                          (JT.SU.Slice (UN, ndxspc + 1, unlen)));
+            JT.SU.Append (calculated_abi, suffix (fileinfo));
             JT.SU.Append (calc_abi_noarch, "*");
             calculated_alt_abi  := calculated_abi;
             calc_alt_abi_noarch := calc_abi_noarch;
          end;
       else
          declare
-            fbsd1   : constant String := "FreeBSD:";
-            fbsd2   : constant String := "freebsd:";
-            ndxdot  : Natural := JT.SU.Index (UN, ".");
-            ndxspc  : Natural := JT.SU.Index (UN, " ");
-            unlen   : constant Natural := JT.SU.Length (UN) - 1;
+            fbsd1    : constant String := "FreeBSD:";
+            fbsd2    : constant String := "freebsd:";
+            unlen    : constant Natural := JT.SU.Length (UN) - 1;
+            fileinfo : constant String := JT.USS (UN)(1 .. unlen);
+            release  : constant String := fbrel (fileinfo);
          begin
             calculated_abi     := JT.SUS (fbsd1);
             calculated_alt_abi := JT.SUS (fbsd2);
-            JT.SU.Append (calculated_abi,
-                          JT.SU.Slice (UN, 1, ndxdot - 1) & ":");
-            JT.SU.Append (calculated_alt_abi,
-                          JT.SU.Slice (UN, 1, ndxdot - 1) & ":");
+            JT.SU.Append (calculated_abi, release & ":");
+            JT.SU.Append (calculated_alt_abi, release & ":");
             calc_abi_noarch     := calculated_abi;
             calc_alt_abi_noarch := calculated_alt_abi;
-            JT.SU.Append (calculated_abi,
-                          JT.SU.Slice (UN, ndxspc + 1, unlen));
-            JT.SU.Append (calculated_alt_abi, suffix
-                          (JT.SU.Slice (UN, ndxspc + 1, unlen)));
+            JT.SU.Append (calculated_abi, newsuffix (fileinfo));
+            JT.SU.Append (calculated_alt_abi, suffix (fileinfo));
             JT.SU.Append (calc_abi_noarch, "*");
             JT.SU.Append (calc_alt_abi_noarch, "*");
          end;
