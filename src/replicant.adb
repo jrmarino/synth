@@ -1046,7 +1046,8 @@ package body Replicant is
    is
       portsdir : constant String := JT.USS (PM.configuration.dir_portsdir);
       fullport : constant String := portsdir & "/ports-mgmt/pkg";
-      command  : constant String := "/usr/bin/make -C " & fullport &
+      command  : constant String :=
+                 "/usr/bin/make __MAKE_CONF=/dev/null -C " & fullport &
                  " -VARCH -VOPSYS -V_OSRELEASE -VOSVERSION -VUID" &
                  " -VHAVE_COMPAT_IA32_KERN -VCONFIGURE_MAX_CMD_LEN";
       pipe     : aliased STR.Pipes.Pipe_Stream;
