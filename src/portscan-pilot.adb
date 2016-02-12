@@ -23,6 +23,17 @@ package body PortScan.Pilot is
    ---------------------
    function store_origins return Boolean
    is
+      function trimmed_catport (S : String) return String;
+      function trimmed_catport (S : String) return String
+      is
+         last : constant Natural := S'Last;
+      begin
+         if S (last) = '/' then
+            return S (S'First .. last - 1);
+         else
+            return S (S'First .. last);
+         end if;
+      end trimmed_catport;
    begin
       if CLI.Argument_Count <= 1 then
          return False;
@@ -30,24 +41,32 @@ package body PortScan.Pilot is
       portlist.Clear;
       if CLI.Argument_Count = 2 then
          --  Check if this is a file
-         if AD.Exists (CLI.Argument (2)) then
-            return valid_file (CLI.Argument (2));
-         end if;
-         if valid_catport (catport => CLI.Argument (2)) then
-            plinsert (CLI.Argument (2), 2);
-            return True;
-         else
-            TIO.Put_Line (badport & CLI.Argument (2));
-            return False;
-         end if;
+         declare
+            Arg2 : constant String := trimmed_catport (CLI.Argument (2));
+         begin
+            if AD.Exists (Arg2) then
+               return valid_file (Arg2);
+            end if;
+            if valid_catport (catport => Arg2) then
+               plinsert (Arg2, 2);
+               return True;
+            else
+               TIO.Put_Line (badport & Arg2);
+               return False;
+            end if;
+         end;
       end if;
       for k in 2 .. CLI.Argument_Count loop
-         if valid_catport (catport => CLI.Argument (k)) then
-            plinsert (CLI.Argument (k), k);
-         else
-            TIO.Put_Line (badport & "'" & CLI.Argument (k) & "'" & k'Img);
-            return False;
-         end if;
+         declare
+            Argk : constant String := trimmed_catport (CLI.Argument (k));
+         begin
+            if valid_catport (catport => Argk) then
+               plinsert (Argk, k);
+            else
+               TIO.Put_Line (badport & "'" & Argk & "'" & k'Img);
+               return False;
+            end if;
+         end;
       end loop;
       return True;
    end store_origins;
