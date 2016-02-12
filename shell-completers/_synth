@@ -2,7 +2,7 @@
 
 _synth () {
 
-    local cmds
+    local cmds findorigin portsdir
     local -a subcmds
     local context state line
     typeset -A val_args
@@ -25,8 +25,10 @@ _synth () {
 	'test:Unconditionally build [ports] in Developer mode'
     )
 
+    portsdir=${PORTSDIR:-/usr/ports}
+    findorigin='port:port origin:_files -X "%Bports%b" -W "${portsdir}" -/'
     subcmds=(
-	'port:port origin:_files -X "%Bports%b" -W "${PORTSDIR:-/usr/ports}" -/'
+	${findorigin}
 	'file:path to file containing one port origin per line:_files'
     )
 
@@ -35,16 +37,21 @@ _synth () {
 	_describe "Synth commands" cmds
 
     # the main command has been typed, now we take care of the action
-    elif ((CURRENT >= 3)); then
+    elif ((CURRENT == 3)); then
 	case $words[2] in
-	    help|configure|version|upgrade-system|prepare-system)
-		return ;;
-	    status-everything|everything|purge-distfiles|rebuild-repository)
-		return ;;
 	    status|build|just-build|install|force|test)
 		_alternative $subcmds
-	        return ;;
 	esac
+	return
+    elif ((CURRENT > 3)); then
+        if [ ! -d "${portsdir}/$words[3]" ]; then
+           return;
+        fi
+	case $words[2] in
+	    status|build|just-build|install|force|test)
+		_alternative ${findorigin}
+	esac
+	return
     fi
 }
 
