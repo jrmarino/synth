@@ -1265,7 +1265,7 @@ package body Replicant is
       badres  : constant String := "100000";
       pattern : constant String := get_pattern;
       paramh  : constant String := JT.USS (PM.configuration.dir_system) &
-                                   "usr/include/sys/param.h";
+                                   "/usr/include/sys/param.h";
    begin
       TIO.Open (File => header, Mode => TIO.In_File, Name => paramh);
       while not TIO.End_Of_File (header) loop
