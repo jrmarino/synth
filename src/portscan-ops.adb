@@ -36,10 +36,12 @@ package body PortScan.Ops is
    is
       subtype cycle_count is Natural range 1 .. 9;
       subtype refresh_count is Natural range 1 .. 30;
+      subtype alert_count is Natural range 1 .. 200;
       instructions   : dim_instruction   := (others => port_match_failed);
       builder_states : dim_builder_state := (others => idle);
       cntcycle       : cycle_count       := cycle_count'First;
       cntrefresh     : refresh_count     := refresh_count'First;
+      cntalert       : alert_count       := alert_count'First;
       run_complete   : Boolean           := False;
       available      : Positive          := Integer (num_builders);
       target         : port_id;
@@ -304,6 +306,25 @@ package body PortScan.Ops is
                end loop;
                DPY.refresh_builder_window;
                DPY.refresh_history_window;
+            else
+               --  text mode support, periodic status reports
+               if cntalert = alert_count'Last then
+                  cntalert := alert_count'First;
+                  declare
+                     Remaining : constant Integer := bld_counter (total) -
+                       bld_counter (success) - bld_counter (failure) -
+                       bld_counter (ignored) - bld_counter (skipped);
+                  begin
+                     TIO.Put_Line (CYC.elapsed_now & " =>    " &
+                                     "  Left:" & Remaining'Img &
+                                     "  Succ:" & bld_counter (success)'Img &
+                                     "  Fail:" & bld_counter (failure)'Img &
+                                     "  Skip:" & bld_counter (skipped)'Img &
+                                     "  Ign:"  & bld_counter (ignored)'Img);
+                  end;
+               else
+                  cntalert := cntalert + 1;
+               end if;
             end if;
          else
             cntcycle := cntcycle + 1;
