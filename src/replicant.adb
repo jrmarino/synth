@@ -1044,11 +1044,13 @@ package body Replicant is
    ----------------------------
    procedure cache_port_variables (path_to_mm : String)
    is
+      function create_OSRELEASE (OSRELEASE : String) return String;
+      OSVER    : constant String := get_osversion_from_param_header;
+      ARCH     : constant String := get_arch_from_bourne_shell;
       portsdir : constant String := JT.USS (PM.configuration.dir_portsdir);
       fullport : constant String := portsdir & "/ports-mgmt/pkg";
       command  : constant String :=
                  "/usr/bin/make __MAKE_CONF=/dev/null -C " & fullport &
-                 " -VARCH -VOPSYS -V_OSRELEASE -VOSVERSION -VUID" &
                  " -VHAVE_COMPAT_IA32_KERN -VCONFIGURE_MAX_CMD_LEN";
       pipe     : aliased STR.Pipes.Pipe_Stream;
       buffer   : STR.Buffered.Buffered_Stream;
@@ -1057,7 +1059,44 @@ package body Replicant is
       status   : Integer;
       vconf    : TIO.File_Type;
 
-      type result_range is range 1 .. 7;
+      type result_range is range 1 .. 2;
+
+      function create_OSRELEASE (OSRELEASE : String) return String
+      is
+         --  FreeBSD OSVERSION is 6 or 7 digits
+         --          OSVERSION [M]MNNPPP
+         --  DragonFly OSVERSION is 6 digits
+         --            OSVERSION MNNNPP
+         len : constant Natural := OSRELEASE'Length;
+         FL  : constant Natural := len - 4;
+         OSR : constant String (1 .. len) := OSRELEASE;
+         MM  : String (1 .. 2) := "  ";
+         PP  : String (1 .. 2) := "  ";
+      begin
+         if len < 6 then
+            return "1.0-SYNTH";
+         end if;
+         if len = 6 then
+            MM (2) := OSR (1);
+         else
+            MM := OSR (1 .. 2);
+         end if;
+         if flavor = dragonfly then
+            if OSR (3) = '0' then
+               PP (2) := OSR (4);
+            else
+               PP := OSR (3 .. 4);
+            end if;
+         else
+            if OSR (FL) = '0' then
+               PP (2) := OSR (FL + 1);
+            else
+               PP := OSR (FL .. FL + 1);
+            end if;
+         end if;
+         return JT.trim (MM) & "." & JT.trim (PP) & "-SYNTH";
+      end create_OSRELEASE;
+
    begin
       pipe.Open (Command => command);
       buffer.Initialize (Output => null,
@@ -1082,17 +1121,24 @@ package body Replicant is
             value : constant String := JT.USS (topline);
          begin
             case k is
-               when 1 => TIO.Put_Line (vconf, "ARCH=" & value);
-               when 2 => TIO.Put_Line (vconf, "OPSYS=" & value);
-               when 3 => TIO.Put_Line (vconf, "_OSRELEASE=" & value);
-               when 4 => TIO.Put_Line (vconf, "OSVERSION=" & value);
-               when 5 => TIO.Put_Line (vconf, "UID=" & value);
-               when 6 => TIO.Put_Line (vconf, "HAVE_COMPAT_IA32_KERN=" & value);
-               when 7 => TIO.Put_Line (vconf, "CONFIGURE_MAX_CMD_LEN=" & value);
+               when 1 => TIO.Put_Line (vconf, "HAVE_COMPAT_IA32_KERN=" & value);
+               when 2 => TIO.Put_Line (vconf, "CONFIGURE_MAX_CMD_LEN=" & value);
             end case;
          end;
       end loop;
       TIO.Put_Line (vconf, "_SMP_CPUS=" & JT.int2str (Integer (smp_cores)));
+      TIO.Put_Line (vconf, "UID=0");
+      TIO.Put_Line (vconf, "ARCH=" & ARCH);
+      TIO.Put (vconf, "OPSYS=");
+      case flavor is
+         when freebsd   => TIO.Put_Line (vconf, "FreeBSD");
+                           TIO.Put_Line (vconf, "OSVERSION=" & OSVER);
+         when dragonfly => TIO.Put_Line (vconf, "DragonFly");
+                           TIO.Put_Line (vconf, "DFLYVERSION=" & OSVER);
+                           TIO.Put_Line (vconf, "OSVERSION=9999999");
+         when unknown   => TIO.Put_Line (vconf, "Unknown");
+      end case;
+      TIO.Put_Line (vconf, "_OSRELEASE=" & create_OSRELEASE (OSVER));
       TIO.Close (vconf);
    end cache_port_variables;
 
@@ -1194,5 +1240,98 @@ package body Replicant is
       write_common_mtree_exclude_base (mtreefile);
       TIO.Close (mtreefile);
    end create_mtree_exc_preconfig;
+
+
+   ---------------------------------------
+   --  get_osversion_from_param_header  --
+   ---------------------------------------
+   function get_osversion_from_param_header return String
+   is
+      function get_pattern return String;
+      function get_pattern return String
+      is
+         DFVER  : constant String := "#define __DragonFly_version ";
+         FBVER  : constant String := "#define __FreeBSD_version ";
+         BADVER : constant String := "#define __Unknown_version ";
+      begin
+         case flavor is
+            when freebsd   => return FBVER;
+            when dragonfly => return DFVER;
+            when unknown   => return BADVER;
+         end case;
+      end get_pattern;
+
+      header  : TIO.File_Type;
+      badres  : constant String := "100000";
+      pattern : constant String := get_pattern;
+      paramh  : constant String := JT.USS (PM.configuration.dir_system) &
+                                   "usr/include/sys/param.h";
+   begin
+      TIO.Open (File => header, Mode => TIO.In_File, Name => paramh);
+      while not TIO.End_Of_File (header) loop
+         declare
+            Line : constant String := TIO.Get_Line (header);
+         begin
+            if JT.contains (Line, pattern) then
+               declare
+                  OSVER : constant String := JT.part_2 (Line, pattern);
+                  len   : constant Natural := OSVER'Length;
+               begin
+                  exit when len < 7;
+                  TIO.Close (header);
+                  case OSVER (OSVER'First + 6) is
+                     when '0' .. '9' =>
+                        return JT.trim (OSVER (OSVER'First .. OSVER'First + 6));
+                     when others =>
+                        return JT.trim (OSVER (OSVER'First .. OSVER'First + 5));
+                  end case;
+               end;
+            end if;
+         end;
+      end loop;
+      TIO.Close (header);
+      return badres;
+   exception
+      when others =>
+         if TIO.Is_Open (header) then
+            TIO.Close (header);
+         end if;
+         return badres;
+   end get_osversion_from_param_header;
+
+
+   ----------------------------------
+   --  get_arch_from_bourne_shell  --
+   ----------------------------------
+   function get_arch_from_bourne_shell return String
+   is
+      command : constant String := "/usr/bin/file -b " &
+                JT.USS (PM.configuration.dir_system) & "/bin/sh";
+      badarch : constant String := "BADARCH";
+      comres  : JT.Text;
+   begin
+      comres := internal_system_command (command);
+      declare
+         unlen    : constant Natural := JT.SU.Length (comres) - 1;
+         fileinfo : constant String := JT.USS (comres)(1 .. unlen);
+         arch     : constant String (1 .. 11) :=
+                    fileinfo (fileinfo'First + 27 .. fileinfo'First + 37);
+      begin
+         if arch (1 .. 6) = "x86-64" then
+            case flavor is
+               when freebsd   => return "amd64";
+               when dragonfly => return "x86_64";
+               when unknown   => return badarch;
+            end case;
+         elsif arch = "Intel 80386" then
+            return "i386";
+         else
+            return badarch;
+         end if;
+      end;
+   exception
+      when others =>
+         return badarch;
+   end get_arch_from_bourne_shell;
 
 end Replicant;

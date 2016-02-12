@@ -198,4 +198,10 @@ private
    procedure create_mtree_exc_preconfig (path_to_mm : String);
    procedure create_mtree_exc_preinst (path_to_mm : String);
 
+   --  Get OSVERSION from <sys/param.h>
+   function get_osversion_from_param_header return String;
+
+   --  Derived from /usr/bin/file -b <slave>/bin/sh
+   function get_arch_from_bourne_shell return String;
+
 end Replicant;
