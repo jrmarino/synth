@@ -49,6 +49,10 @@ package Replicant is
    --  The actual command to build a local repository (Returns True on success)
    function build_repository (id : builders) return Boolean;
 
+   --  Returns all the UNAME_x environment variables
+   --  They will be passed to the buildcycle package
+   function jail_environment return JT.Text;
+
 private
 
    type mount_mode is (readonly, readwrite);
@@ -106,6 +110,7 @@ private
    flavor           : nullfs_flavor   := unknown;
    smp_cores        : cpu_range       := cpu_range'First;
    developer_mode   : Boolean;
+   builder_env      : JT.Text;
 
    --  Throws exception if mount attempt was unsuccessful
    procedure mount_nullfs (target, mount_point : String;

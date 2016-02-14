@@ -15,7 +15,7 @@ package PortScan.Buildcycle is
                    stage, check_plist, pkg_package, install_mtree, install,
                    deinstall);
 
-   procedure initialize (test_mode : Boolean);
+   procedure initialize (test_mode : Boolean; jail_env : JT.Text);
    function build_package (id          : builders;
                            sequence_id : port_id;
                            interactive : Boolean := False;
@@ -71,6 +71,7 @@ private
    trackers  : dim_trackers;
    uname_mrv : JT.Text;
    customenv : JT.Text;
+   slave_env : JT.Text;
    testing   : Boolean;
 
    chroot    : constant String := "/usr/sbin/chroot ";
@@ -78,7 +79,7 @@ private
 
    discerr   : constant String := "Discovery error";
 
-   procedure initialize_log (id : builders);
+   function  initialize_log (id : builders) return Boolean;
    procedure finalize_log   (id : builders);
 
    function  exec_phase_generic (id : builders; phase : phases) return Boolean;

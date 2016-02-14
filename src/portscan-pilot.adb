@@ -106,7 +106,7 @@ package body PortScan.Pilot is
          goto clean_exit;
       end if;
 
-      CYC.initialize (test_mode => False);
+      CYC.initialize (test_mode => False, jail_env => REP.jail_environment);
       selection := OPS.top_buildable_port;
       if SIG.graceful_shutdown_requested or else selection = port_match_failed
       then
@@ -338,7 +338,7 @@ package body PortScan.Pilot is
          show_tally := False;
       else
          REP.initialize (testmode, PortScan.cores_available);
-         CYC.initialize (testmode);
+         CYC.initialize (testmode, REP.jail_environment);
          OPS.initialize_display (num_builders);
          OPS.parallel_bulk_run (num_builders, Flog);
          REP.finalize;
@@ -1188,7 +1188,7 @@ package body PortScan.Pilot is
       TIO.Put_Line ("Stand by, building up to the point requested ...");
 
       REP.initialize (testmode => True, num_cores => PortScan.cores_available);
-      CYC.initialize (test_mode => True);
+      CYC.initialize (test_mode => True, jail_env => REP.jail_environment);
       REP.launch_slave (id => PortScan.scan_slave, opts => noprocs);
 
       buildres := CYC.build_package (id          => PortScan.scan_slave,

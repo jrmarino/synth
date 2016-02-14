@@ -1097,7 +1097,10 @@ package body Replicant is
          return JT.trim (MM) & "." & JT.trim (PP) & "-SYNTH";
       end create_OSRELEASE;
 
+      release : constant String := create_OSRELEASE (OSVER);
+
    begin
+      builder_env := JT.blank;
       pipe.Open (Command => command);
       buffer.Initialize (Output => null,
                          Input  => pipe'Unchecked_Access,
@@ -1133,13 +1136,20 @@ package body Replicant is
       case flavor is
          when freebsd   => TIO.Put_Line (vconf, "FreeBSD");
                            TIO.Put_Line (vconf, "OSVERSION=" & OSVER);
+                           JT.SU.Append (builder_env, "UNAME_s=FreeBSD " &
+                                 "UNAME_v=FreeBSD:" & release);
          when dragonfly => TIO.Put_Line (vconf, "DragonFly");
                            TIO.Put_Line (vconf, "DFLYVERSION=" & OSVER);
                            TIO.Put_Line (vconf, "OSVERSION=9999999");
+                           JT.SU.Append (builder_env, "UNAME_s=DragonFly " &
+                                 "UNAME_v=DragonFly:" & release);
          when unknown   => TIO.Put_Line (vconf, "Unknown");
       end case;
-      TIO.Put_Line (vconf, "_OSRELEASE=" & create_OSRELEASE (OSVER));
+      TIO.Put_Line (vconf, "_OSRELEASE=" & release);
       TIO.Close (vconf);
+      JT.SU.Append (builder_env, " UNAME_p=" & ARCH);
+      JT.SU.Append (builder_env, " UNAME_m=" & ARCH);
+      JT.SU.Append (builder_env, " UNAME_r=" & release & " ");
    end cache_port_variables;
 
 
@@ -1333,5 +1343,14 @@ package body Replicant is
       when others =>
          return badarch;
    end get_arch_from_bourne_shell;
+
+
+   ------------------------
+   --  jail_environment  --
+   ------------------------
+   function jail_environment return JT.Text is
+   begin
+      return builder_env;
+   end jail_environment;
 
 end Replicant;

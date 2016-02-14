@@ -29,7 +29,10 @@ package body PortScan.Buildcycle is
       trackers (id).seq_id := sequence_id;
       trackers (id).loglines := 0;
       if uselog then
-         initialize_log (id);
+         if not initialize_log (id) then
+            finalize_log (id);
+            return False;
+         end if;
       end if;
       for phase in phases'Range loop
          trackers (id).phase := phase;
@@ -83,7 +86,7 @@ package body PortScan.Buildcycle is
    ----------------------
    --  initialize_log  --
    ----------------------
-   procedure initialize_log (id : builders)
+   function initialize_log (id : builders) return Boolean
    is
       FA    : access TIO.File_Type;
       H_ENV : constant String := "Environment";
@@ -117,6 +120,11 @@ package body PortScan.Buildcycle is
                       get_catport (all_ports (trackers (id).seq_id)));
       TIO.Put_Line (FA.all, "Started : " & timestamp (trackers (id).head_time));
       TIO.Put      (FA.all, "Platform: " & UNAME);
+      if BENV = discerr then
+         TIO.Put_Line (FA.all, LAT.LF & "Environment definition failed, " &
+                         "aborting entire build");
+         return False;
+      end if;
       TIO.Put_Line (FA.all, LAT.LF & log_section (H_ENV, True));
       TIO.Put      (FA.all, BENV);
       TIO.Put_Line (FA.all, log_section (H_ENV, False) & LAT.LF);
@@ -129,6 +137,7 @@ package body PortScan.Buildcycle is
       TIO.Put_Line (FA.all, log_section (H_CFG, True));
       TIO.Put      (FA.all, MCONF);
       TIO.Put_Line (FA.all, log_section (H_CFG, False) & LAT.LF);
+      return True;
 
    end initialize_log;
 
@@ -537,10 +546,11 @@ package body PortScan.Buildcycle is
    ------------------
    --  initialize  --
    ------------------
-   procedure initialize (test_mode : Boolean) is
+   procedure initialize (test_mode : Boolean; jail_env : JT.Text) is
    begin
       set_uname_mrv;
       testing := test_mode;
+      slave_env := jail_env;
       declare
          logdir : constant String := JT.USS (PM.configuration.dir_logs);
       begin
@@ -916,8 +926,10 @@ package body PortScan.Buildcycle is
       HOME : constant String := "HOME=/root ";
       LANG : constant String := "LANG=C ";
       CENV : constant String := JT.USS (customenv);
+      JENV : constant String := JT.USS (slave_env);
    begin
-      return " /usr/bin/env -i " & USER & HOME & LANG & TERM & PATH & CENV;
+      return " /usr/bin/env -i " &
+        USER & HOME & LANG & TERM & PATH & JENV & CENV;
    end environment_override;
 
 
