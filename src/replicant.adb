@@ -1119,6 +1119,7 @@ package body Replicant is
                                  release & LAT.Quotation);
          when unknown   => TIO.Put_Line (vconf, "Unknown");
       end case;
+      TIO.Put_Line (vconf, "OSREL=" & release (1 .. release'Last - 6));
       TIO.Put_Line (vconf, "_OSRELEASE=" & release);
       TIO.Close (vconf);
       JT.SU.Append (builder_env, " UNAME_p=" & ARCH);
