@@ -1,15 +1,12 @@
 --  This file is covered by the Internet Software Consortium (ISC) License
 --  Reference: ../License.txt
 
-with Util.Streams.Pipes;
-with Util.Streams.Buffered;
 with PortScan.Ops;
 with Signals;
 with Unix;
 
 package body PortScan.Packages is
 
-   package STR renames Util.Streams;
    package OPS renames PortScan.Ops;
    package SIG renames Signals;
 
@@ -385,18 +382,10 @@ package body PortScan.Packages is
    -----------------------------
    function generic_system_command (command : String) return JT.Text
    is
-      pipe    : aliased STR.Pipes.Pipe_Stream;
-      buffer  : STR.Buffered.Buffered_Stream;
       content : JT.Text;
       status  : Integer;
    begin
-      pipe.Open (Command => command);
-      buffer.Initialize (Output => null,
-                         Input  => pipe'Unchecked_Access,
-                         Size   => 4096);
-      buffer.Read (Into => content);
-      pipe.Close;
-      status := pipe.Get_Exit_Status;
+      content := Unix.piped_command (command, status);
       if status /= 0 then
          raise pkgng_execution with "pkg options query cmd: " & command &
            " (return code =" & status'Img & ")";
