@@ -1,18 +1,13 @@
 --  This file is covered by the Internet Software Consortium (ISC) License
 --  Reference: ../License.txt
 
-with Interfaces.C.Strings;
 with GNAT.OS_Lib;
-with JohnnyText;
 with Parameters;
 with System;
 
 package body Unix is
 
-   package IC  renames Interfaces.C;
-   package ICS renames Interfaces.C.Strings;
    package OSL renames GNAT.OS_Lib;
-   package JT  renames JohnnyText;
    package PM  renames Parameters;
 
    ----------------------
@@ -115,5 +110,81 @@ package body Unix is
    begin
       return OSL.Getenv (variable).all;
    end env_variable_value;
+
+
+   ------------------
+   --  pipe_close  --
+   ------------------
+   function pipe_close (OpenFile : CSM.FILEs) return Integer
+   is
+      res : constant CSM.int := pclose (FileStream => OpenFile);
+      u16 : Interfaces.Unsigned_16;
+   begin
+      u16 := Interfaces.Shift_Right (Interfaces.Unsigned_16 (res), 8);
+      return Integer (u16);
+   end pipe_close;
+
+
+   ---------------------
+   --  piped_command  --
+   ---------------------
+   function piped_command (command : String; status : out Integer)
+                           return JT.Text
+   is
+      redirect   : constant String := " 2>&1";
+      filestream : CSM.FILEs;
+      result     : JT.Text;
+   begin
+      filestream := popen (IC.To_C (command & redirect), IC.To_C ("r"));
+      result := pipe_read (OpenFile => filestream);
+      status := pipe_close (OpenFile => filestream);
+      return result;
+   end piped_command;
+
+
+   --------------------------
+   --  piped_mute_command  --
+   --------------------------
+   function piped_mute_command (command : String) return Boolean
+   is
+      redirect   : constant String := " 2>&1";
+      filestream : CSM.FILEs;
+      status     : Integer;
+   begin
+      filestream := popen (IC.To_C (command & redirect), IC.To_C ("r"));
+      status     := pipe_close (OpenFile => filestream);
+      return status = 0;
+   end piped_mute_command;
+
+
+   -----------------
+   --  pipe_read  --
+   -----------------
+   function pipe_read (OpenFile : CSM.FILEs) return JT.Text
+   is
+      --  Allocate 2kb at a time
+      buffer  : String (1 .. 2048) := (others => ' ');
+      result  : JT.Text := JT.blank;
+      charbuf : CSM.int;
+      marker  : Natural := 0;
+   begin
+      loop
+         charbuf := CSM.fgetc (OpenFile);
+         if charbuf = CSM.EOF then
+            if marker >= buffer'First then
+               JT.SU.Append (result, buffer (buffer'First .. marker));
+            end if;
+            exit;
+         end if;
+         if marker = buffer'Last then
+            JT.SU.Append (result, buffer);
+            marker := buffer'First;
+         else
+            marker := marker + 1;
+         end if;
+         buffer (marker) := Character'Val (charbuf);
+      end loop;
+      return result;
+   end pipe_read;
 
 end Unix;

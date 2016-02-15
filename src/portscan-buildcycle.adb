@@ -4,16 +4,12 @@
 with Ada.Calendar.Arithmetic;
 with Ada.Calendar.Formatting;
 with Ada.Direct_IO;
-with Util.Streams.Pipes;
-with Util.Streams.Buffered;
-with Util.Processes;
 with Unix;
 
 package body PortScan.Buildcycle is
 
    package ACA renames Ada.Calendar.Arithmetic;
    package ACF renames Ada.Calendar.Formatting;
-   package STR renames Util.Streams;
 
 
    ---------------------
@@ -315,18 +311,10 @@ package body PortScan.Buildcycle is
    -----------------------------
    function generic_system_command (command : String) return JT.Text
    is
-      pipe    : aliased STR.Pipes.Pipe_Stream;
-      buffer  : STR.Buffered.Buffered_Stream;
       content : JT.Text;
       status  : Integer;
    begin
-      pipe.Open (Command => command, Mode => Util.Processes.READ_ALL);
-      buffer.Initialize (Output => null,
-                         Input  => pipe'Unchecked_Access,
-                         Size   => 4096);
-      buffer.Read (Into => content);
-      pipe.Close;
-      status := pipe.Get_Exit_Status;
+      content := Unix.piped_command (command, status);
       if status /= 0 then
          raise cycle_cmd_error with "cmd: " & command &
            " (return code =" & status'Img & ")";
@@ -1223,8 +1211,7 @@ package body PortScan.Buildcycle is
       filename : constant String := path_sm & "/tmp/mtree." & action;
       command  : constant String := "/usr/sbin/mtree -X " & mtfile & " -f " &
                                     filename & " -p " & path_sm;
-      pipe      : aliased STR.Pipes.Pipe_Stream;
-      buffer    : STR.Buffered.Buffered_Stream;
+      status    : Integer;
       comres    : JT.Text;
       topline   : JT.Text;
       crlen1    : Natural;
@@ -1263,11 +1250,7 @@ package body PortScan.Buildcycle is
 
    begin
       --  we can't use generic_system_command because exit code /= 0 normally
-      pipe.Open (Command => command, Mode => Util.Processes.READ_ALL);
-      buffer.Initialize (Output => null,
-                         Input  => pipe'Unchecked_Access,
-                         Size   => 4096);
-      buffer.Read (Into => comres);
+      comres := Unix.piped_command (command, status);
       crlen1 := JT.SU.Length (comres);
       loop
          skiprest := False;

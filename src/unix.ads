@@ -1,8 +1,15 @@
 --  This file is covered by the Internet Software Consortium (ISC) License
 --  Reference: ../License.txt
 
+with Interfaces.C;
+with Interfaces.C_Streams;
+with JohnnyText;
 
 package Unix is
+
+   package JT  renames JohnnyText;
+   package IC  renames Interfaces.C;
+   package CSM renames Interfaces.C_Streams;
 
    type process_exit is (still_running, exited_normally, exited_with_error);
 
@@ -33,9 +40,31 @@ package Unix is
    --  defined than an empty string is returned;
    function env_variable_value (variable : String) return String;
 
+   --  Execute popen and return stdout+stderr combined
+   --  Also the result status is returned as an "out" variable
+   function piped_command (command : String; status : out Integer)
+                           return JT.Text;
+
+   --  Run external command that is expected to have no output to standard
+   --  out, but catch stdout anyway.  Don't return any output, but do return
+   --  True of the command returns status of zero.
+   function piped_mute_command (command : String) return Boolean;
+
 private
 
    type uInt8 is mod 2 ** 16;
    type Int32 is range -(2 ** 31) .. +(2 ** 31) - 1;
+
+   function popen (Command, Mode : IC.char_array) return CSM.FILEs;
+   pragma Import (C, popen);
+
+   function pclose (FileStream : CSM.FILEs) return CSM.int;
+   pragma Import (C, pclose);
+
+   --  internal pipe close command
+   function pipe_close (OpenFile : CSM.FILEs) return Integer;
+
+   --  internal pipe read command
+   function pipe_read (OpenFile : CSM.FILEs) return JT.Text;
 
 end Unix;

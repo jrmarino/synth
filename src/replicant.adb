@@ -6,11 +6,8 @@ with Ada.Containers.Vectors;
 with Ada.Directories;
 with Ada.Exceptions;
 with GNAT.OS_Lib;
-with Util.Streams.Pipes;
-with Util.Streams.Buffered;
-with Util.Processes;
-
 with Parameters;
+with Unix;
 
 package body Replicant is
 
@@ -19,7 +16,6 @@ package body Replicant is
    package AD  renames Ada.Directories;
    package EX  renames Ada.Exceptions;
    package OSL renames GNAT.OS_Lib;
-   package STR renames Util.Streams;
    package LAT renames Ada.Characters.Latin_1;
 
 
@@ -368,18 +364,11 @@ package body Replicant is
    -------------------
    --  silent_exec  --
    -------------------
-   procedure silent_exec (command : String)
-   is
-      pipe        : aliased STR.Pipes.Pipe_Stream;
-      buffer      : STR.Buffered.Buffered_Stream;
-      Exit_Status : Integer;
+   procedure silent_exec (command : String) is
    begin
-      pipe.Open (Command => command, Mode => Util.Processes.READ_ALL);
-      pipe.Close;
-      Exit_Status := pipe.Get_Exit_Status;
-      if Exit_Status /= 0 then
+      if not Unix.piped_mute_command (command) then
          raise scenario_unexpected with
-           command & " => failed with code" & Exit_Status'Img;
+           command & " => failed (exit code not 0)";
       end if;
    end silent_exec;
 
@@ -389,18 +378,10 @@ package body Replicant is
    ------------------------------
    function internal_system_command (command : String) return JT.Text
    is
-      pipe    : aliased STR.Pipes.Pipe_Stream;
-      buffer  : STR.Buffered.Buffered_Stream;
       content : JT.Text;
       status  : Integer;
    begin
-      pipe.Open (Command => command, Mode => Util.Processes.READ_ALL);
-      buffer.Initialize (Output => null,
-                         Input  => pipe'Unchecked_Access,
-                         Size   => 4096);
-      buffer.Read (Into => content);
-      pipe.Close;
-      status := pipe.Get_Exit_Status;
+      content := Unix.piped_command (command, status);
       if status /= 0 then
          raise scenario_unexpected with "cmd: " & command &
            " (return code =" & status'Img & ")";
@@ -1052,8 +1033,6 @@ package body Replicant is
       command  : constant String :=
                  "/usr/bin/make __MAKE_CONF=/dev/null -C " & fullport &
                  " -VHAVE_COMPAT_IA32_KERN -VCONFIGURE_MAX_CMD_LEN";
-      pipe     : aliased STR.Pipes.Pipe_Stream;
-      buffer   : STR.Buffered.Buffered_Stream;
       content  : JT.Text;
       topline  : JT.Text;
       status   : Integer;
@@ -1101,14 +1080,7 @@ package body Replicant is
 
    begin
       builder_env := JT.blank;
-      pipe.Open (Command => command);
-      buffer.Initialize (Output => null,
-                         Input  => pipe'Unchecked_Access,
-                         Size   => 4096);
-      buffer.Read (Into => content);
-      pipe.Close;
-
-      status := pipe.Get_Exit_Status;
+      content := Unix.piped_command (command, status);
       if status /= 0 then
          raise scenario_unexpected with
            "cache_port_variables: return code =" & status'Img;
@@ -1137,12 +1109,14 @@ package body Replicant is
          when freebsd   => TIO.Put_Line (vconf, "FreeBSD");
                            TIO.Put_Line (vconf, "OSVERSION=" & OSVER);
                            JT.SU.Append (builder_env, "UNAME_s=FreeBSD " &
-                                 "UNAME_v=FreeBSD:" & release);
+                                 "UNAME_v=" & LAT.Quotation & "FreeBSD " &
+                                 release & LAT.Quotation);
          when dragonfly => TIO.Put_Line (vconf, "DragonFly");
                            TIO.Put_Line (vconf, "DFLYVERSION=" & OSVER);
                            TIO.Put_Line (vconf, "OSVERSION=9999999");
                            JT.SU.Append (builder_env, "UNAME_s=DragonFly " &
-                                 "UNAME_v=DragonFly:" & release);
+                                 "UNAME_v=" & LAT.Quotation & "DragonFly " &
+                                 release & LAT.Quotation);
          when unknown   => TIO.Put_Line (vconf, "Unknown");
       end case;
       TIO.Put_Line (vconf, "_OSRELEASE=" & release);
