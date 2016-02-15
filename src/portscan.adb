@@ -297,7 +297,7 @@ package body PortScan is
          TIO.Put (scan_progress);
          combined_wait := False;
          for j in scanners'Range loop
-            if not aborted and then not finished (j) then
+            if not finished (j) then
                combined_wait := True;
                exit;
             end if;

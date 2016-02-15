@@ -18,11 +18,16 @@ package body Signals is
       got_one     : Boolean;
    begin
       TIO.Get_Immediate (Item => caught_char, Available => got_one);
-      --  Although the variable is called control_c, it's control-Q that
+      --  Although the variable is called control_c, it's capital Q that
       --  we are catching.  It was the ESCAPE key after control-C, but that
-      --  one was getting triggered by terminal ANSI codes, so we changed again
-      if got_one and then caught_char = LAT.DC1 then
-         control_c_break := True;
+      --  one was getting triggered by terminal ANSI codes.  Before Q it was
+      --  Control-Q, but that only worked during the ncurses display.
+      --  Apparently raw tty mode is required for control code detection.
+      --  Capital-Q is documented, but Control-Q still works (during ncurses)
+      if got_one then
+         if caught_char = 'Q' or else caught_char = LAT.DC1 then
+            control_c_break := True;
+         end if;
       end if;
       return control_c_break;
    exception
