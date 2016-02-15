@@ -1109,14 +1109,12 @@ package body Replicant is
          when freebsd   => TIO.Put_Line (vconf, "FreeBSD");
                            TIO.Put_Line (vconf, "OSVERSION=" & OSVER);
                            JT.SU.Append (builder_env, "UNAME_s=FreeBSD " &
-                                 "UNAME_v=" & LAT.Quotation & "FreeBSD " &
-                                 release & LAT.Quotation);
+                                 "UNAME_v=FreeBSD\ " & release);
          when dragonfly => TIO.Put_Line (vconf, "DragonFly");
                            TIO.Put_Line (vconf, "DFLYVERSION=" & OSVER);
                            TIO.Put_Line (vconf, "OSVERSION=9999999");
                            JT.SU.Append (builder_env, "UNAME_s=DragonFly " &
-                                 "UNAME_v=" & LAT.Quotation & "DragonFly " &
-                                 release & LAT.Quotation);
+                                 "UNAME_v=DragonFly\ " & release);
          when unknown   => TIO.Put_Line (vconf, "Unknown");
       end case;
       TIO.Put_Line (vconf, "OSREL=" & release (1 .. release'Last - 6));
