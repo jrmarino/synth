@@ -4,16 +4,13 @@
 with Ada.Directories;
 with Ada.Text_IO;
 with Ada.Characters.Latin_1;
-with Util.Streams.Pipes;
-with Util.Streams.Buffered;
-with Util.Processes;
 with GNAT.OS_Lib;
+with Unix;
 
 package body Parameters is
 
    package AD  renames Ada.Directories;
    package TIO renames Ada.Text_IO;
-   package STR renames Util.Streams;
    package LAT renames Ada.Characters.Latin_1;
    package OSL renames GNAT.OS_Lib;
 
@@ -449,20 +446,12 @@ package body Parameters is
    --------------------------
    function query_generic_core (command : String) return String
    is
-      pipe     : aliased STR.Pipes.Pipe_Stream;
-      buffer   : STR.Buffered.Buffered_Stream;
       content  : JT.Text;
       status   : Integer;
       CR_loc   : Integer;
       CR       : constant String (1 .. 1) := (1 => Character'Val (10));
    begin
-      pipe.Open (Command => command, Mode => Util.Processes.READ_ALL);
-      buffer.Initialize (Output => null,
-                         Input  => pipe'Unchecked_Access,
-                         Size   => 4096);
-      buffer.Read (Into => content);
-      pipe.Close;
-      status := pipe.Get_Exit_Status;
+      content := Unix.piped_command (command, status);
       if status /= 0 then
          raise make_query with command;
       end if;
@@ -491,8 +480,6 @@ package body Parameters is
    -----------------------------
    procedure query_physical_memory is
       command : constant String := "/sbin/sysctl hw.physmem";
-      pipe    : aliased STR.Pipes.Pipe_Stream;
-      buffer  : STR.Buffered.Buffered_Stream;
       content : JT.Text;
       status  : Integer;
       CR_loc  : Integer;
@@ -503,13 +490,7 @@ package body Parameters is
       if memory_megs > 0 then
          return;
       end if;
-      pipe.Open (Command => command);
-      buffer.Initialize (Output => null,
-                         Input  => pipe'Unchecked_Access,
-                         Size   => 4096);
-      buffer.Read (Into => content);
-      pipe.Close;
-      status := pipe.Get_Exit_Status;
+      content := Unix.piped_command (command, status);
       if status /= 0 then
          raise make_query with command;
       end if;

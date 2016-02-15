@@ -3,17 +3,15 @@
 
 with Ada.Strings.Hash;
 with GNAT.Regpat;
-with Util.Streams.Pipes;
-with Util.Streams.Buffered;
 with GNAT.String_Split;
 with Ada.Exceptions;
 with Signals;
+with Unix;
 
 package body PortScan is
 
    package EX  renames Ada.Exceptions;
    package RGX renames GNAT.Regpat;
-   package STR renames Util.Streams;
    package GSS renames GNAT.String_Split;
    package SIG renames Signals;
 
@@ -430,8 +428,6 @@ package body PortScan is
                  " -VBUILD_DEPENDS -VLIB_DEPENDS -VRUN_DEPENDS" &
                  " -VSELECTED_OPTIONS -VDESELECTED_OPTIONS" &
                  " -V_INCLUDE_USES_SCONS_MK -VUSE_LINUX";
-      pipe     : aliased STR.Pipes.Pipe_Stream;
-      buffer   : STR.Buffered.Buffered_Stream;
       content  : JT.Text;
       topline  : JT.Text;
       status   : Integer;
@@ -547,14 +543,7 @@ package body PortScan is
       end set_options;
 
    begin
-      pipe.Open (Command => command);
-      buffer.Initialize (Output => null,
-                         Input  => pipe'Unchecked_Access,
-                         Size   => 4096);
-      buffer.Read (Into => content);
-      pipe.Close;
-
-      status := pipe.Get_Exit_Status;
+      content := Unix.piped_command (command, status);
       if status /= 0 then
          raise bmake_execution with catport &
            " (return code =" & status'Img & ")";
@@ -618,18 +607,16 @@ package body PortScan is
    -----------------
    procedure set_cores
    is
-      command  : constant String := "/sbin/sysctl hw.ncpu";
-      pipe     : aliased STR.Pipes.Pipe_Stream;
-      buffer   : STR.Buffered.Buffered_Stream;
-      content  : JT.Text;
+      command : constant String := "/sbin/sysctl hw.ncpu";
+      content : JT.Text;
+      status  : Integer;
    begin
       --  expected output: "hw.ncpu: C" where C is integer
-      pipe.Open (Command => command);
-      buffer.Initialize (Output => null,
-                         Input  => pipe'Unchecked_Access,
-                         Size   => 128);
-      buffer.Read (Into => content);
-      pipe.Close;
+      content := Unix.piped_command (command, status);
+      if status /= 0 then
+         number_cores := cpu_range'First;
+         return;
+      end if;
       declare
          str_content : String := JT.USS (content);
          ncpu        : String := str_content (10 .. str_content'Last - 1);
