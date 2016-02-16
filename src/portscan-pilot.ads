@@ -110,6 +110,10 @@ package PortScan.Pilot is
    --  given on the command line, then return True
    function interact_with_single_builder return Boolean;
 
+   --  The current working directory will cause synth to fail
+   --  Known issue for when cwd is within <system root>/usr/local
+   function synth_launch_clash return Boolean;
+
    pilot_log : exception;
 
 private

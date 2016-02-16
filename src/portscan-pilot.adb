@@ -1210,4 +1210,38 @@ package body PortScan.Pilot is
       REP.finalize;
    end bulk_run_then_interact_with_final_port;
 
+
+   --------------------------
+   --  synth_launch_clash  --
+   --------------------------
+   function synth_launch_clash return Boolean
+   is
+      function get_usrlocal return String;
+      function get_usrlocal return String
+      is
+         ul : constant String  := "/usr/local";
+      begin
+         if JT.equivalent (PM.configuration.dir_system, "/") then
+            return ul;
+         end if;
+         return JT.USS (PM.configuration.dir_system) & ul;
+      end get_usrlocal;
+
+      cwd      : constant String  := AD.Current_Directory;
+      usrlocal : constant String  := get_usrlocal;
+      ullen    : constant Natural := usrlocal'Length;
+   begin
+      if cwd = usrlocal then
+         return True;
+      end if;
+      if cwd'Length > ullen and then
+        cwd (1 .. ullen + 1) = usrlocal & "/"
+      then
+         return True;
+      end if;
+      return False;
+   exception
+      when others => return True;
+   end synth_launch_clash;
+
 end PortScan.Pilot;

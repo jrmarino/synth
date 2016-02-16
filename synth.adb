@@ -38,6 +38,8 @@ begin
                                   "remove them automatically ...";
       badwrk : constant String := "Old work directories detected; attempting " &
                                   "to remove them automatically ...";
+      badcwd : constant String := "Please change the current directory; " &
+                                  "Synth is unable to launch from here.";
    begin
       if first = "help" then
          mandate := help;
@@ -127,6 +129,11 @@ begin
          end if;
 
          if PIL.synthexec_missing then
+            return;
+         end if;
+
+         if PIL.synth_launch_clash then
+            TIO.Put_Line (badcwd);
             return;
          end if;
 
@@ -272,6 +279,11 @@ begin
          end if;
 
          if PIL.synthexec_missing then
+            return;
+         end if;
+
+         if PIL.synth_launch_clash then
+            TIO.Put_Line (badcwd);
             return;
          end if;
 
