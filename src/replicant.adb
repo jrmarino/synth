@@ -1157,6 +1157,7 @@ package body Replicant is
          & "./usr/sbin" & LAT.LF
          & "./usr/share" & LAT.LF
          & "./usr/src" & LAT.LF
+         & "./var/run" & LAT.LF
          & "./xports"
         );
    end write_common_mtree_exclude_base;
@@ -1182,7 +1183,6 @@ package body Replicant is
          & "./var/db/pkg" & LAT.LF
          & "./var/log" & LAT.LF
          & "./var/mail" & LAT.LF
-         & "./var/run" & LAT.LF
          & "./var/tmp" & LAT.LF
          & "./usr/local/etc/gconf/gconf.xml.defaults/%gconf-tree*.xml" & LAT.LF
          & "./usr/local/lib/gio/modules/giomodule.cache" & LAT.LF
