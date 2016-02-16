@@ -6,6 +6,7 @@ with Ada.Text_IO;
 with Actions;
 with PortScan.Pilot;
 with Parameters;
+with Unix;
 
 procedure synth
 is
@@ -130,6 +131,8 @@ begin
          end if;
 
          PIL.create_pidfile;
+
+         Unix.cone_of_silence (deploy => True);
 
          ----------------------------------
          --  Multiple argument commands  --
@@ -273,6 +276,10 @@ begin
          end if;
 
          PIL.create_pidfile;
+
+         if mandate /= configure then
+            Unix.cone_of_silence (deploy => True);
+         end if;
 
          case mandate is
             when build | just_build | install | test | version | help |

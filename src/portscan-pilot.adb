@@ -376,6 +376,7 @@ package body PortScan.Pilot is
          --  catch previous shutdown request
          return False;
       end if;
+      Unix.cone_of_silence (deploy => False);
       TIO.Put ("Would you like to rebuild the local repository (Y/N)? ");
       loop
          TIO.Get_Immediate (YN);
@@ -390,6 +391,7 @@ package body PortScan.Pilot is
          end case;
       end loop;
       TIO.Put (YN & LAT.LF);
+      Unix.cone_of_silence (deploy => True);
       return answer;
    end verify_desire_to_rebuild_repository;
 
@@ -401,6 +403,7 @@ package body PortScan.Pilot is
       answer : Boolean;
       YN : Character;
    begin
+      Unix.cone_of_silence (deploy => False);
       TIO.Put ("Would you like to upgrade your system with the new " &
                "packages now (Y/N)? ");
       loop
@@ -416,6 +419,7 @@ package body PortScan.Pilot is
          end case;
       end loop;
       TIO.Put (YN & LAT.LF);
+      Unix.cone_of_silence (deploy => True);
       return answer;
    end verify_desire_to_install_packages;
 
@@ -841,7 +845,7 @@ package body PortScan.Pilot is
          end loop;
       exception
          when others =>
-            TIO.Put_Line (sorry);
+            TIO.Put_Line (sorry & " (system query)");
             return;
       end;
       TIO.Put_Line ("Stand by, comparing installed packages against the " &
@@ -857,7 +861,12 @@ package body PortScan.Pilot is
             perform_bulk_run (testmode => False);
          end if;
       else
-         TIO.Put_Line (sorry);
+         if not SIG.graceful_shutdown_requested then
+            TIO.Put_Line (sorry);
+         end if;
+         return;
+      end if;
+      if SIG.graceful_shutdown_requested then
          return;
       end if;
       if rebuild_local_respository then
@@ -1191,6 +1200,7 @@ package body PortScan.Pilot is
       CYC.initialize (test_mode => True, jail_env => REP.jail_environment);
       REP.launch_slave (id => PortScan.scan_slave, opts => noprocs);
 
+      Unix.cone_of_silence (deploy => False);
       buildres := CYC.build_package (id          => PortScan.scan_slave,
                                      sequence_id => ptid,
                                      interactive => True,

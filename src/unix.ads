@@ -50,6 +50,10 @@ package Unix is
    --  True of the command returns status of zero.
    function piped_mute_command (command : String) return Boolean;
 
+   --  When the cone of silence is deployed, the terminal does not echo
+   --  and Control-Q/S keystrokes are not captured (and vice-versa)
+   procedure cone_of_silence (deploy : Boolean);
+
 private
 
    type uInt8 is mod 2 ** 16;
@@ -60,6 +64,15 @@ private
 
    function pclose (FileStream : CSM.FILEs) return CSM.int;
    pragma Import (C, pclose);
+
+   function nohang_waitpid (pid : pid_t) return uInt8;
+   pragma Import (C, nohang_waitpid, "__nohang_waitpid");
+
+   function silent_control return uInt8;
+   pragma Import (C, silent_control, "__silent_control");
+
+   function chatty_control return uInt8;
+   pragma Import (C, chatty_control, "__chatty_control");
 
    --  internal pipe close command
    function pipe_close (OpenFile : CSM.FILEs) return Integer;

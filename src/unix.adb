@@ -2,12 +2,14 @@
 --  Reference: ../License.txt
 
 with GNAT.OS_Lib;
+with Ada.Text_IO;
 with Parameters;
 with System;
 
 package body Unix is
 
    package OSL renames GNAT.OS_Lib;
+   package TIO renames Ada.Text_IO;
    package PM  renames Parameters;
 
    ----------------------
@@ -15,18 +17,35 @@ package body Unix is
    ----------------------
    function process_status (pid : pid_t) return process_exit
    is
-      function nohang_waitpid (pid : pid_t) return uInt8;
-      pragma Import (C, nohang_waitpid, "__nohang_waitpid");
-
-      result : uInt8;
+      result : constant uInt8 := nohang_waitpid (pid);
    begin
-      result := nohang_waitpid (pid);
       case result is
          when 0 => return still_running;
          when 1 => return exited_normally;
          when others => return exited_with_error;
       end case;
    end process_status;
+
+
+   -----------------------
+   --  cone_of_silence  --
+   -----------------------
+   procedure cone_of_silence (deploy : Boolean)
+   is
+      result : uInt8;
+   begin
+      if deploy then
+         result := silent_control;
+         if result > 0 then
+            TIO.Put_Line ("Notice: tty echo+control OFF command failed");
+         end if;
+      else
+         result := chatty_control;
+         if result > 0 then
+            TIO.Put_Line ("Notice: tty echo+control ON command failed");
+         end if;
+      end if;
+   end cone_of_silence;
 
 
    -------------------------
