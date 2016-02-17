@@ -138,7 +138,6 @@ begin
          end if;
 
          PIL.create_pidfile;
-
          Unix.cone_of_silence (deploy => True);
 
          ----------------------------------
@@ -338,6 +337,7 @@ begin
       end if;
    end;
 
+   Unix.cone_of_silence (deploy => False);
    PIL.destroy_pidfile;
 
 end synth;

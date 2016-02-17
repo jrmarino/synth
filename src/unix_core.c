@@ -71,10 +71,10 @@ __chatty_control ()
        return 1;
     }
   /* ECHO on, other bits unchanged */
-  tp.c_lflag &= ECHO;
+  tp.c_lflag |= ECHO;
 
   /* Enable output flow control */
-  tp.c_iflag &= IXON;
+  tp.c_iflag |= IXON;
 
   /* update terminal settings */
   if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &tp) == -1)
