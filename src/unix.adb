@@ -34,6 +34,10 @@ package body Unix is
    is
       result : uInt8;
    begin
+      if CSM.isatty (handle => CSM.fileno (CSM.stdin)) = 0 then
+         return;
+      end if;
+
       if deploy then
          result := silent_control;
          if result > 0 then
