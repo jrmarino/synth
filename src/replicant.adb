@@ -48,6 +48,7 @@ package body Replicant is
          when home        => return mount_base & root_home;
          when proc        => return mount_base & root_proc;
          when linux       => return mount_base & root_linux;
+         when boot        => return mount_base & root_boot;
          when root        => return mount_base & root_root;
          when xports      => return mount_base & root_xports;
          when options     => return mount_base & root_options;
@@ -753,6 +754,14 @@ package body Replicant is
                              mount_point => location (slave_base, usr_lib32));
             end if;
          end;
+         declare
+            bootdir : String := clean_mount_point (boot);
+         begin
+            if AD.Exists (bootdir) then
+               mount_nullfs (target      => bootdir,
+                             mount_point => location (slave_base, boot));
+            end if;
+         end;
       end if;
 
       if AD.Exists (root_usr_src) then
@@ -828,6 +837,9 @@ package body Replicant is
          end if;
          if AD.Exists (location (dir_system, usr_lib32)) then
             unmount (location (slave_base, usr_lib32));
+         end if;
+         if AD.Exists (location (dir_system, boot)) then
+            unmount (location (slave_base, boot));
          end if;
       end if;
 
@@ -1134,6 +1146,7 @@ package body Replicant is
       TIO.Put_Line
         (mtreefile,
            "./bin" & LAT.LF
+         & "./boot" & LAT.LF
          & "./ccache" & LAT.LF
          & "./compat/linux/proc" & LAT.LF
          & "./construction" & LAT.LF

@@ -68,7 +68,8 @@ private
                    usr_share,
                    usr_lib32, xports, options, packages, distfiles,
                    dev, etc, etc_default, etc_mtree, etc_rcd, home, linux,
-                   proc, root, tmp, var, wrkdirs, usr_local, usr_src, ccache);
+                   proc, root, tmp, var, wrkdirs, usr_local, usr_src, ccache,
+                   boot);
    subtype subfolder is folder range bin .. usr_share;
 
    --  home and root need to be set readonly
@@ -93,6 +94,7 @@ private
    root_tmp         : constant String := "/tmp";
    root_var         : constant String := "/var";
    root_home        : constant String := "/home";
+   root_boot        : constant String := "/boot";
    root_root        : constant String := "/root";
    root_proc        : constant String := "/proc";
    root_linux       : constant String := "/compat/linux";
