@@ -28,13 +28,22 @@ package body Unix is
 
 
    -----------------------
+   --  screen_attached  --
+   -----------------------
+   function screen_attached return Boolean is
+   begin
+      return CSM.isatty (handle => CSM.fileno (CSM.stdin)) = 1;
+   end screen_attached;
+
+
+   -----------------------
    --  cone_of_silence  --
    -----------------------
    procedure cone_of_silence (deploy : Boolean)
    is
       result : uInt8;
    begin
-      if CSM.isatty (handle => CSM.fileno (CSM.stdin)) = 0 then
+      if not screen_attached then
          return;
       end if;
 

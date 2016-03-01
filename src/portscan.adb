@@ -22,13 +22,14 @@ package body PortScan is
    function scan_entire_ports_tree (portsdir : String) return Boolean
    is
       good_scan  : Boolean;
+      using_screen : constant Boolean := Unix.screen_attached;
    begin
       --  tree must be already mounted in the scan slave.
       --  However, prescan works on the real ports tree, not the mount.
       if not prescanned then
          prescan_ports_tree (portsdir);
       end if;
-      parallel_deep_scan (success => good_scan);
+      parallel_deep_scan (success => good_scan, show_progress => using_screen);
 
       return good_scan;
    end scan_entire_ports_tree;
@@ -209,7 +210,7 @@ package body PortScan is
    --------------------------
    --  parallel_deep_scan  --
    --------------------------
-   procedure parallel_deep_scan (success : out Boolean)
+   procedure parallel_deep_scan (success : out Boolean; show_progress : Boolean)
    is
       finished : array (scanners) of Boolean := (others => False);
       combined_wait : Boolean := True;
@@ -294,7 +295,9 @@ package body PortScan is
       TIO.Put_Line ("Scanning entire ports tree.");
       while combined_wait loop
          delay 1.0;
-         TIO.Put (scan_progress);
+         if show_progress then
+            TIO.Put (scan_progress);
+         end if;
          combined_wait := False;
          for j in scanners'Range loop
             if not finished (j) then

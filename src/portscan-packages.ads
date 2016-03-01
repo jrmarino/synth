@@ -114,7 +114,8 @@ private
    --  Using the same make_queue as was used to scan the ports, use tasks
    --  (up to 32) to do the initial scanning of the ports, including getting
    --  the pkg dependency query.
-   procedure parallel_package_scan (repository : String; remote_scan : Boolean);
+   procedure parallel_package_scan (repository : String; remote_scan : Boolean;
+                                    show_progress : Boolean);
 
    --  given a port_id, return the package name (no .txz extension!)
    function id2pkgname (id : port_id) return String;

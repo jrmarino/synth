@@ -54,6 +54,9 @@ package Unix is
    --  and Control-Q/S keystrokes are not captured (and vice-versa)
    procedure cone_of_silence (deploy : Boolean);
 
+   --  Returns True if a TTY device is detected
+   function screen_attached return Boolean;
+
 private
 
    type uInt8 is mod 2 ** 16;

@@ -188,8 +188,9 @@ private
    procedure prescan_ports_tree (portsdir : String);
    procedure grep_Makefile (portsdir, category : String);
    procedure walk_all_subdirectories (portsdir, category : String);
-   procedure parallel_deep_scan (success : out Boolean);
    procedure wipe_make_queue;
+   procedure parallel_deep_scan (success : out Boolean;
+                                 show_progress : Boolean);
 
    --  some helper routines
    function find_colon (Source : String) return Natural;

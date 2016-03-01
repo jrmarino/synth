@@ -135,6 +135,7 @@ package body PortScan.Packages is
       clean_pass    : Boolean := False;
       listlog       : TIO.File_Type;
       goodlog       : Boolean;
+      using_screen  : constant Boolean := Unix.screen_attached;
       filename      : constant String := "/tmp/synth_prefetch_list.txt";
       package_list  : JT.Text := JT.blank;
 
@@ -230,7 +231,7 @@ package body PortScan.Packages is
       for m in scanners'Range loop
          mq_progress (m) := 0;
       end loop;
-      parallel_package_scan (repository, False);
+      parallel_package_scan (repository, False, using_screen);
 
       if SIG.graceful_shutdown_requested then
          return;
@@ -249,7 +250,7 @@ package body PortScan.Packages is
             mq_progress (m) := 0;
          end loop;
 
-         parallel_package_scan (repository, True);
+         parallel_package_scan (repository, True, using_screen);
 
          if SIG.graceful_shutdown_requested then
             return;
@@ -957,7 +958,8 @@ package body PortScan.Packages is
    -----------------------------
    --  parallel_package_scan  --
    -----------------------------
-   procedure parallel_package_scan (repository : String; remote_scan : Boolean)
+   procedure parallel_package_scan (repository : String; remote_scan : Boolean;
+                                    show_progress : Boolean)
    is
       task type scan (lot : scanners);
       finished : array (scanners) of Boolean := (others => False);
@@ -1038,7 +1040,9 @@ package body PortScan.Packages is
                label_shown := True;
                TIO.Put_Line ("Scanning existing packages.");
             end if;
-            TIO.Put (scan_progress);
+            if show_progress then
+               TIO.Put (scan_progress);
+            end if;
             if SIG.graceful_shutdown_requested then
                aborted := True;
             end if;
