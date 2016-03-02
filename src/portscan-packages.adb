@@ -19,7 +19,6 @@ package body PortScan.Packages is
       pkg_search : AD.Search_Type;
       dirent     : AD.Directory_Entry_Type;
    begin
-      stored_packages.Clear;
       AD.Start_Search (Search    => pkg_search,
                        Directory => repository,
                        Filter    => (AD.Ordinary_File => True, others => False),
@@ -312,56 +311,46 @@ package body PortScan.Packages is
    end limited_sanity_check;
 
 
-   ------------------------
-   --  clean_repository  --
-   ------------------------
-   procedure clean_repository (repository : String)
+   ---------------------------
+   --  preclean_repository  --
+   ---------------------------
+   procedure preclean_repository (repository : String)
    is
-      procedure mark_package (cursor : ranking_crate.Cursor);
-      procedure kill_package (cursor : package_crate.Cursor);
+      procedure insert (cursor : string_crate.Cursor);
+      using_screen : constant Boolean := Unix.screen_attached;
+      uniqid       : PortScan.port_id := 0;
 
-      procedure mark_package (cursor : ranking_crate.Cursor)
+      procedure insert (cursor : string_crate.Cursor)
       is
-         QR  : constant queue_record := ranking_crate.Element (cursor);
-         pcc : package_crate.Cursor;
-         use type package_crate.Cursor;
+         key2 : JT.Text := string_crate.Element (cursor);
       begin
-         pcc := stored_packages.Find
-           (Key => all_ports (QR.ap_index).package_name);
-         if pcc /= package_crate.No_Element then
-            stored_packages.Delete (Position => pcc);
+         if not portlist.Contains (key2) then
+            uniqid := uniqid + 1;
+            portlist.Insert (key2, uniqid);
          end if;
-      end mark_package;
-
-      procedure kill_package (cursor : package_crate.Cursor)
-      is
-         pkgname : constant String := JT.USS (package_crate.Key (cursor));
-      begin
-         TIO.Put_Line ("Removed: " & pkgname);
-         AD.Delete_File (repository & "/" & pkgname);
-      exception
-         when others =>
-            TIO.Put_Line ("         Failed to remove " & pkgname);
-      end kill_package;
+      end insert;
    begin
-      --  The entire tree must have been scanned *before* this procedure
-      --  is executed (see Portscan.scan_entire_ports_tree)
-      scan_repository (repository);
-      rank_queue.Iterate (mark_package'Access);
-      stored_packages.Iterate (kill_package'Access);
-      stored_packages.Clear;
-   end clean_repository;
+      if not scan_repository (repository) then
+         return;
+      end if;
+      parallel_preliminary_package_scan (repository, using_screen);
+      for ndx in scanners'Range loop
+         stored_origins (ndx).Iterate (insert'Access);
+         stored_origins (ndx).Clear;
+      end loop;
+   end preclean_repository;
 
 
    -----------------------
    --  scan_repository  --
    -----------------------
-   procedure scan_repository (repository : String)
+   function scan_repository (repository : String) return Boolean
    is
       pkg_search : AD.Search_Type;
       dirent     : AD.Directory_Entry_Type;
+      pkg_index  : scanners := scanners'First;
+      result     : Boolean := False;
    begin
-      stored_packages.Clear;
       AD.Start_Search (Search    => pkg_search,
                        Directory => repository,
                        Filter    => (AD.Ordinary_File => True, others => False),
@@ -370,11 +359,19 @@ package body PortScan.Packages is
          AD.Get_Next_Entry (Search => pkg_search,
                             Directory_Entry => dirent);
          declare
-            pkgname  : JT.Text := JT.SUS (AD.Simple_Name (dirent));
+            pkgname : JT.Text := JT.SUS (AD.Simple_Name (dirent));
          begin
-            stored_packages.Insert (Key => pkgname, New_Item => False);
+            stored_packages (pkg_index).Append (New_Item => pkgname);
+            if pkg_index = scanners (number_cores) then
+               pkg_index := scanners'First;
+            else
+               pkg_index := pkg_index + 1;
+            end if;
+            pkgscan_total := pkgscan_total + 1;
+            result := True;
          end;
       end loop;
+      return result;
    end scan_repository;
 
 
@@ -1051,6 +1048,111 @@ package body PortScan.Packages is
    end parallel_package_scan;
 
 
+   -----------------------------------------
+   --  parallel_preliminary_package_scan  --
+   -----------------------------------------
+   procedure parallel_preliminary_package_scan (repository : String;
+                                                show_progress : Boolean)
+   is
+      task type scan (lot : scanners);
+      finished : array (scanners) of Boolean := (others => False);
+      combined_wait : Boolean := True;
+      label_shown   : Boolean := False;
+      aborted       : Boolean := False;
+
+      task body scan
+      is
+         procedure check (csr : string_crate.Cursor);
+         procedure check (csr : string_crate.Cursor) is
+         begin
+            if aborted then
+               return;
+            end if;
+            declare
+               pkgname : constant String := JT.USS (string_crate.Element (csr));
+               pkgpath : constant String := repository & "/" & pkgname;
+               origin  : constant String := query_origin (fullpath => pkgpath);
+               path1   : constant String :=
+                         JT.USS (PM.configuration.dir_portsdir) & "/" & origin;
+            begin
+               if AD.Exists (path1) and then
+                 current_package_name (origin, pkgname)
+               then
+                  stored_origins (lot).Append (New_Item => JT.SUS (origin));
+               else
+                  AD.Delete_File (pkgpath);
+                  TIO.Put_Line ("Removed: " & pkgname);
+               end if;
+            exception
+               when others =>
+                  TIO.Put_Line ("         Failed to remove " & pkgname);
+            end;
+            pkgscan_progress (lot) := pkgscan_progress (lot) + 1;
+         end check;
+      begin
+         stored_packages (lot).Iterate (check'Access);
+         stored_packages (lot).Clear;
+         finished (lot) := True;
+      end scan;
+
+      scan_01 : scan (lot => 1);
+      scan_02 : scan (lot => 2);
+      scan_03 : scan (lot => 3);
+      scan_04 : scan (lot => 4);
+      scan_05 : scan (lot => 5);
+      scan_06 : scan (lot => 6);
+      scan_07 : scan (lot => 7);
+      scan_08 : scan (lot => 8);
+      scan_09 : scan (lot => 9);
+      scan_10 : scan (lot => 10);
+      scan_11 : scan (lot => 11);
+      scan_12 : scan (lot => 12);
+      scan_13 : scan (lot => 13);
+      scan_14 : scan (lot => 14);
+      scan_15 : scan (lot => 15);
+      scan_16 : scan (lot => 16);
+      scan_17 : scan (lot => 17);
+      scan_18 : scan (lot => 18);
+      scan_19 : scan (lot => 19);
+      scan_20 : scan (lot => 20);
+      scan_21 : scan (lot => 21);
+      scan_22 : scan (lot => 22);
+      scan_23 : scan (lot => 23);
+      scan_24 : scan (lot => 24);
+      scan_25 : scan (lot => 25);
+      scan_26 : scan (lot => 26);
+      scan_27 : scan (lot => 27);
+      scan_28 : scan (lot => 28);
+      scan_29 : scan (lot => 29);
+      scan_30 : scan (lot => 30);
+      scan_31 : scan (lot => 31);
+      scan_32 : scan (lot => 32);
+   begin
+      while combined_wait loop
+         delay 1.0;
+         if show_progress then
+            TIO.Put (package_scan_progress);
+         end if;
+         combined_wait := False;
+         for j in scanners'Range loop
+            if not finished (j) then
+               combined_wait := True;
+               exit;
+            end if;
+         end loop;
+         if combined_wait then
+            if not label_shown then
+               label_shown := True;
+               TIO.Put_Line ("Stand by, prescanning existing packages.");
+            end if;
+            if SIG.graceful_shutdown_requested then
+               aborted := True;
+            end if;
+         end if;
+      end loop;
+   end parallel_preliminary_package_scan;
+
+
    -----------------------------------
    --  located_external_repository  --
    -----------------------------------
@@ -1118,5 +1220,51 @@ package body PortScan.Packages is
       debug_opt_check := True;
       debug_dep_check := True;
    end activate_debugging_code;
+
+
+   --------------------
+   --  query_origin  --
+   --------------------
+   function query_origin (fullpath : String) return String
+   is
+      command  : constant String := host_pkg8 & " query -F " & fullpath & " %o";
+      content  : JT.Text;
+      topline  : JT.Text;
+   begin
+      content := generic_system_command (command);
+      JT.nextline (lineblock => content, firstline => topline);
+      return JT.USS (topline);
+   exception
+      when others => return "";
+   end query_origin;
+
+
+   ----------------------------
+   --  current_package_name  --
+   ----------------------------
+   function current_package_name (origin, file_name : String) return Boolean
+   is
+      cpn : constant String := get_pkg_name (origin);
+   begin
+      return cpn = file_name;
+   end current_package_name;
+
+
+   -----------------------------
+   --  package_scan_progress  --
+   -----------------------------
+   function package_scan_progress return String
+   is
+      type percent is delta 0.01 digits 5;
+      complete : port_index := 0;
+      pc : percent;
+      total : constant Float := Float (pkgscan_total);
+   begin
+      for k in scanners'Range loop
+         complete := complete + pkgscan_progress (k);
+      end loop;
+      pc := percent (100.0 * Float (complete) / total);
+      return " progress:" & pc'Img & "%              " & LAT.CR;
+   end package_scan_progress;
 
 end PortScan.Packages;

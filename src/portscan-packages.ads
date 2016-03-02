@@ -3,12 +3,10 @@
 
 package PortScan.Packages is
 
-   --  This can only be executed if a full scan has already occurred.
-   --  This is a deep scan of existing packages that is intended to be run
-   --  just prior to building a repository. It is also executed before
-   --  a full bulk run (in which case it will not be run before rebuilding
-   --  the repository.
-   procedure clean_repository (repository : String);
+   --  This routine first removes all invalid packages (package from removed
+   --  port or older version) and inserts the origins of the remaining packages
+   --  into the port list for a limited tree scan.
+   procedure preclean_repository (repository : String);
 
    --  If performing a limited build run (likely 99% of the use cases), only
    --  the queued packages will be checked.  The checks are limited to finding
@@ -51,7 +49,12 @@ package PortScan.Packages is
 
 private
 
-   stored_packages     : package_crate.Map;
+   type dim_packages is array (scanners) of string_crate.Vector;
+
+   stored_packages     : dim_packages;
+   stored_origins      : dim_packages;
+   pkgscan_progress    : dim_progress := (others => 0);
+   pkgscan_total       : Natural := 0;
    calculated_abi      : JT.Text;
    calculated_alt_abi  : JT.Text;
    calc_abi_noarch     : JT.Text;
@@ -87,8 +90,8 @@ private
    procedure establish_package_architecture;
 
    --  Scan directory that contains the packages (*.txz) and stores the
-   --  file names in the container.
-   procedure scan_repository (repository : String);
+   --  file names in the container.  Returns False if no packages are found.
+   function scan_repository (repository : String) return Boolean;
 
    --  standard method to spawn commands in this package (and get output)
    function generic_system_command (command : String) return JT.Text;
@@ -117,10 +120,29 @@ private
    procedure parallel_package_scan (repository : String; remote_scan : Boolean;
                                     show_progress : Boolean);
 
+   --  Prior to this procedure, the list of existing packages is split as
+   --  a balanced array so this scan will query the package for its origin
+   --  and package name.  If the origin still exists, the port will be
+   --  scanned for the current package name.  If either check fails, the
+   --  package will be deleted, otherwise the origin will be preserved for
+   --  a further in-depth check.
+   procedure parallel_preliminary_package_scan (repository : String;
+                                                show_progress : Boolean);
+
    --  given a port_id, return the package name (no .txz extension!)
    function id2pkgname (id : port_id) return String;
 
    --  Turn on option and dependency debug checks programmatically
    procedure activate_debugging_code;
+
+   --  Given the path components for a package, query it for the port origin
+   function query_origin (fullpath : String) return String;
+
+   --  Given an origin (already validated) and the name of the package in
+   --  focus, return True if "make -V PKGFILE:T" matches the filename
+   function current_package_name (origin, file_name : String) return Boolean;
+
+   --  Dedicated progress meter for prescanning packages
+   function package_scan_progress return String;
 
 end PortScan.Packages;

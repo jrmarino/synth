@@ -121,8 +121,6 @@ private
    subtype logname_field is String (1 .. 19);
    type dim_logname  is array (count_type) of logname_field;
 
-   portlist : portkey_crate.Map;
-
    badport : constant String := "Invalid port origin: ";
    bailing : constant String := "  (Synth must exit)";
    shutreq : constant String := "Graceful shutdown requested, exiting ...";

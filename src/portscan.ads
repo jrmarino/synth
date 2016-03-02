@@ -168,6 +168,7 @@ private
 
    all_ports    : dim_all_ports;
    ports_keys   : portkey_crate.Map;
+   portlist     : portkey_crate.Map;
    make_queue   : dim_make_queue;
    mq_progress  : dim_progress := (others => 0);
    rank_queue   : ranking_crate.Set;
@@ -176,7 +177,6 @@ private
    lot_counter  : port_index := 0;
    last_port    : port_index := 0;
    prescanned   : Boolean    := False;
-
 
    procedure iterate_reverse_deps;
    procedure iterate_drill_down;
@@ -198,6 +198,7 @@ private
    function get_catport (PR : port_record) return String;
    function scan_progress return String;
    function get_max_lots return scanners;
+   function get_pkg_name (origin : String) return String;
 
    type dim_counters is array (count_type) of Natural;
 

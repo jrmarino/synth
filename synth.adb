@@ -310,7 +310,9 @@ begin
             when prep_system =>
                PIL.upgrade_system_everything (skip_installation => True);
             when gen_repo =>
-               if PIL.rebuild_local_respository then
+               if PIL.build_pkg8_as_necessary and then
+                 PIL.rebuild_local_respository
+               then
                   null;
                end if;
             when purge =>

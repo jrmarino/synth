@@ -470,15 +470,27 @@ package body PortScan.Pilot is
          return False;
       end if;
       if use_full_scan then
-         if not fully_scan_ports_tree then
-            return False;
-         end if;
-         PKG.clean_repository (repo);
-         PKG.limited_sanity_check (repository      => repo,
-                                   dry_run         => False,
-                                   suppress_remote => True);
+         REP.initialize (testmode => False,
+                         num_cores => PortScan.cores_available);
+         REP.launch_slave (id => PortScan.scan_slave, opts => noprocs);
+         PKG.preclean_repository (repo);
+         REP.destroy_slave (id => PortScan.scan_slave, opts => noprocs);
+         REP.finalize;
          if SIG.graceful_shutdown_requested then
             TIO.Put_Line (shutreq);
+            return False;
+         end if;
+         TIO.Put_Line ("Stand by, recursively scanning" & portlist.Length'Img &
+                         " ports serially.");
+         if scan_stack_of_single_ports (testmode => False) then
+            PKG.limited_sanity_check (repository      => repo,
+                                      dry_run         => False,
+                                      suppress_remote => True);
+            if SIG.graceful_shutdown_requested then
+               TIO.Put_Line (shutreq);
+               return False;
+            end if;
+         else
             return False;
          end if;
       end if;
@@ -491,6 +503,7 @@ package body PortScan.Pilot is
       if AD.Exists (xz_pkgsite) then
          AD.Delete_File (xz_pkgsite);
       end if;
+      TIO.Put_Line ("Packages validated, rebuilding local repository.");
       REP.initialize (testmode => False, num_cores => PortScan.cores_available);
       REP.launch_slave (id => PortScan.scan_slave, opts => noprocs);
       build_res := REP.build_repository (PortScan.scan_slave);

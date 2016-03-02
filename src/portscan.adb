@@ -415,6 +415,31 @@ package body PortScan is
    end iterate_reverse_deps;
 
 
+   --------------------
+   --  get_pkg_name  --
+   --------------------
+   function get_pkg_name (origin : String) return String
+   is
+      xports   : constant String := "/xports";
+      fullport : constant String := xports & "/" & origin;
+      chroot   : constant String := "/usr/sbin/chroot " &
+                 JT.USS (PM.configuration.dir_buildbase) & ss_base;
+      command  : constant String := chroot & " /usr/bin/make -C " & fullport &
+                 " -VPKGFILE:T";
+      content  : JT.Text;
+      topline  : JT.Text;
+      status   : Integer;
+   begin
+      content := Unix.piped_command (command, status);
+      if status /= 0 then
+         raise bmake_execution with origin &
+           " (return code =" & status'Img & ")";
+      end if;
+      JT.nextline (lineblock => content, firstline => topline);
+      return JT.USS (topline);
+   end get_pkg_name;
+
+
    --------------------------
    --  populate_port_data  --
    --------------------------
