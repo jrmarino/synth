@@ -257,6 +257,21 @@ If you want the newest versions of software always and still leverage prebuilt p
 pkg(8) is configured for the _Latest_ packages and the ports tree is as well.  Unlikely
 _Quarterly_ users, _Latest_ users never have to change the ports tree configuration.
 
+### Can I use Synth to show UPDATING information?
+
+No, but you can use __pkg(8)__ to accomplish this.  Add somethink like this to your ~/.cshrc file:
+
+```
+alias pnotes    'date -v -4w +%Y%m%d | xargs pkg updating --date'
+```
+
+Then the next time you log in, the command "pnotes" will display the last 4 weeks worth of 
+UPDATING entries based on what is installed on the system.  Note that most entries are for
+portmaster and portupgrade users, and that there will be no action for Synth/pkg users for
+the great majority of the entries.
+
+(Courtesy of Matt Smith)
+
 ## Overview Diagrams
 
 ![Relationship with ports and pkg(8)](http://downloads.dragonlace.net/misc/synth-img/synth-arch.png)
