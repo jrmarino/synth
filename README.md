@@ -259,7 +259,7 @@ _Quarterly_ users, _Latest_ users never have to change the ports tree configurat
 
 ### Can I use Synth to show UPDATING information?
 
-No, but you can use __pkg(8)__ to accomplish this.  Add somethink like this to your ~/.cshrc file:
+No, but you can use __pkg(8)__ to accomplish this.  Add something like this to your ~/.cshrc file:
 
 ```
 alias pnotes    'date -v -4w +%Y%m%d | xargs pkg updating --date'
