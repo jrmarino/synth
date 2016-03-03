@@ -95,6 +95,7 @@ private
    root_var         : constant String := "/var";
    root_home        : constant String := "/home";
    root_boot        : constant String := "/boot";
+   root_kmodules    : constant String := "/boot/modules";
    root_root        : constant String := "/root";
    root_proc        : constant String := "/proc";
    root_linux       : constant String := "/compat/linux";

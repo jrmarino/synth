@@ -760,6 +760,7 @@ package body Replicant is
             if AD.Exists (bootdir) then
                mount_nullfs (target      => bootdir,
                              mount_point => location (slave_base, boot));
+               mount_tmpfs (slave_base & root_kmodules, 100);
             end if;
          end;
       end if;
@@ -839,6 +840,7 @@ package body Replicant is
             unmount (location (slave_base, usr_lib32));
          end if;
          if AD.Exists (location (dir_system, boot)) then
+            unmount (slave_base & root_kmodules);
             unmount (location (slave_base, boot));
          end if;
       end if;
