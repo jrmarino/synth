@@ -905,11 +905,20 @@ package body PortScan.Buildcycle is
    ----------------------------
    --  environment_override  --
    ----------------------------
-   function environment_override return String
+   function environment_override (enable_tty : Boolean := False) return String
    is
+      function set_terminal (enable_tty : Boolean) return String;
+      function set_terminal (enable_tty : Boolean) return String is
+      begin
+         if enable_tty then
+            return "TERM=cons25 ";
+         end if;
+         return "TERM=dumb ";
+      end set_terminal;
+
       PATH : constant String := "PATH=/sbin:/bin:/usr/sbin:/usr/bin:" &
                                 "/usr/local/sbin:/usr/local/bin ";
-      TERM : constant String := "TERM=dumb ";
+      TERM : constant String := set_terminal (enable_tty);
       USER : constant String := "USER=root ";
       HOME : constant String := "HOME=/root ";
       LANG : constant String := "LANG=C ";
@@ -1377,8 +1386,8 @@ package body PortScan.Buildcycle is
    procedure interact_with_builder (id : builders)
    is
       root      : constant String := get_root (id);
-      command   : constant String :=
-                  chroot & root & environment_override & "/bin/tcsh";
+      command   : constant String := chroot & root &
+                  environment_override (enable_tty => True) & "/bin/tcsh";
       result    : Boolean;
    begin
       TIO.Put_Line ("Entering interactive test mode at the builder root " &

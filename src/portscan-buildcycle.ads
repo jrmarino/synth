@@ -117,7 +117,7 @@ private
    procedure obtain_custom_environment;
    function  dynamically_linked (base, filename : String) return Boolean;
    function  elapsed_HH_MM_SS (start, stop : CAL.Time) return String;
-   function  environment_override return String;
+   function  environment_override (enable_tty : Boolean := False) return String;
    function  phase2str (phase : phases) return String;
    function  format_loglines (numlines : Natural) return String;
    function  max_time_without_output (phase : phases) return execution_limit;
