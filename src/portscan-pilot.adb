@@ -371,7 +371,11 @@ package body PortScan.Pilot is
    is
       answer : Boolean;
       YN : Character;
+      screen_present : constant Boolean := Unix.screen_attached;
    begin
+      if not screen_present then
+         return False;
+      end if;
       if SIG.graceful_shutdown_requested then
          --  catch previous shutdown request
          return False;
