@@ -1108,11 +1108,18 @@ package body PortScan.Pilot is
 
       procedure print (cursor : ranking_crate.Cursor)
       is
-         id : port_id := ranking_crate.Element (cursor).ap_index;
+         id     : port_id := ranking_crate.Element (cursor).ap_index;
+         kind   : verdiff;
+         diff   : constant String := version_difference (id, kind);
+         origin : constant String := get_catport (all_ports (id));
       begin
-         TIO.Put_Line ("  => " & get_catport (all_ports (id)));
+         case kind is
+            when newbuild => TIO.Put_Line ("  N => " & origin);
+            when rebuild  => TIO.Put_Line ("  R => " & origin);
+            when change   => TIO.Put_Line ("  U => " & origin & diff);
+         end case;
          if goodlog then
-            TIO.Put_Line (listlog, get_catport (all_ports (id)));
+            TIO.Put_Line (listlog, origin & diff);
          end if;
       end print;
    begin
@@ -1123,7 +1130,8 @@ package body PortScan.Pilot is
       exception
          when others => goodlog := False;
       end;
-      TIO.Put_Line ("These are the ports that would be built:");
+      TIO.Put_Line ("These are the ports that would be built ([N]ew, " &
+                   "[R]ebuild, [U]pgrade):");
       rank_queue.Iterate (print'Access);
       TIO.Put_Line ("Total packages that would be built:" &
                       rank_queue.Length'Img);
@@ -1260,5 +1268,55 @@ package body PortScan.Pilot is
    exception
       when others => return True;
    end synth_launch_clash;
+
+
+   --------------------------
+   --  version_difference  --
+   --------------------------
+   function version_difference (id : port_id; kind : out verdiff) return String
+   is
+      dir_pkg : constant String := JT.USS (PM.configuration.dir_repository);
+      current : constant String := JT.USS (all_ports (id).package_name);
+      version : constant String := JT.USS (all_ports (id).port_version);
+   begin
+      if AD.Exists (dir_pkg & "/" & current) then
+         kind := rebuild;
+         return " (rebuild " & version & ")";
+      end if;
+      declare
+         currlen : constant Natural := current'Length;
+         finish  : constant Natural := currlen - version'Length - 4;
+         pattern : constant String  := current (1 .. finish) & "*.txz";
+         origin  : constant String  := get_catport (all_ports (id));
+         upgrade : JT.Text          := JT.blank;
+
+         pkg_search : AD.Search_Type;
+         dirent     : AD.Directory_Entry_Type;
+      begin
+         AD.Start_Search (Search    => pkg_search,
+                          Directory => dir_pkg,
+                          Filter    => (AD.Ordinary_File => True, others => False),
+                          Pattern   => pattern);
+         while AD.More_Entries (Search => pkg_search) loop
+            AD.Get_Next_Entry (Search => pkg_search, Directory_Entry => dirent);
+            declare
+               sname      : String := AD.Simple_Name (dirent);
+               verend     : Natural := sname'Length - 4;
+               testorigin : String := PKG.query_origin (dir_pkg & "/" & sname);
+            begin
+               if testorigin = origin then
+                  upgrade := JT.SUS (" (" & sname (finish + 1 .. verend) &
+                                       " => " & version & ")");
+               end if;
+            end;
+         end loop;
+         if not JT.IsBlank (upgrade) then
+            kind := change;
+            return JT.USS (upgrade);
+         end if;
+      end;
+      kind := newbuild;
+      return " (new " & version & ")";
+   end version_difference;
 
 end PortScan.Pilot;

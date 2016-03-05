@@ -120,6 +120,7 @@ private
 
    subtype logname_field is String (1 .. 19);
    type dim_logname  is array (count_type) of logname_field;
+   type verdiff is (newbuild, rebuild, change);
 
    badport : constant String := "Invalid port origin: ";
    bailing : constant String := "  (Synth must exit)";
@@ -158,5 +159,11 @@ private
 
    --  Query pkg(8)'s repos_dir configuration instead of assuming default
    function get_repos_dir return String;
+
+   --  Given a port ID, search for existing package in the packages directory
+   --  If the exact package exists, return " (rebuild <version>)"
+   --  If no package exists, return " (new)"
+   --  If previous package exists, return " (<oldversion> => <version>)"
+   function version_difference (id : port_id; kind : out verdiff) return String;
 
 end PortScan.Pilot;

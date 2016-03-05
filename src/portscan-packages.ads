@@ -47,6 +47,9 @@ package PortScan.Packages is
    --  Returns the value of the stored external repository
    function top_external_repository return String;
 
+   --  Given the path components for a package, query it for the port origin
+   function query_origin (fullpath : String) return String;
+
 private
 
    type dim_packages is array (scanners) of string_crate.Vector;
@@ -134,9 +137,6 @@ private
 
    --  Turn on option and dependency debug checks programmatically
    procedure activate_debugging_code;
-
-   --  Given the path components for a package, query it for the port origin
-   function query_origin (fullpath : String) return String;
 
    --  Given an origin (already validated) and the name of the package in
    --  focus, return True if "make -V PKGFILE:T" matches the filename
