@@ -1,4 +1,4 @@
-.Dd February 10, 2016
+.Dd March 7, 2016
 .Dt SYNTH 1
 .Os
 .Sh NAME
@@ -360,11 +360,11 @@ the tree. Only those rare users that wish to build the entire set of ports
 would use this command.
 .Ss synth purge-distfiles
 This is a useful command that will first scan the entire ports tree to gather
-a full list of distfiles used by ports, and then it will scan the contents of
-the given distfiles directory. All source distribution files that cannot be
-matched to at least one port will be removed. This can result in gigabytes of
-recovered disk space if significant time has passed since the distfiles
-directory was last cleaned.
+a complete list of distfiles used by the ports tree, and then it will scan
+the contents of the configured distfiles directory. All source distribution
+files that cannot be matched to at least one port in the tree will be removed.
+This can result in gigabytes of recovered disk space if significant time has
+passed since the distfiles directory was last cleaned.
 .Sh ENVIRONMENT
 .Bl -tag -width SYNTHPROFILE
 .It Ev PORTSDIR
@@ -446,6 +446,22 @@ one pair per line.  If the file exists, these variables will be defined
 in the builder environment.  For the default profile, the file would
 normally be located at
 .Pa /usr/local/etc/synth/LiveSystem-environment
+.It <profile>-private.key
+This is one of two files required to support the signing of the repository
+by a local RSA key.  It is the output of the
+.Cm openssl genrsa
+command; see the EXAMPLE section for how to generate it.  The file
+permissions are required to be set at 400 as well.  For the default
+profile, the file is normally located at
+.Pa /usr/local/etc/synth/LiveSystem-private.key
+.It <profile>-private.key
+This is the second of two files required to support the signing of the
+repository by a local RSA key.
+.Nm
+must confirm the public counterpart of the signing key is available
+because its path is required for the generated pkg repository configuration
+file.  For the default profile, the file is normally located at
+.Pa /usr/local/etc/synth/LiveSystem-public.key
 .It synth_status_results.txt
 Whenever a status command is run, a list of ports that would build with the
 actual command is produced at
@@ -580,6 +596,16 @@ See lang/gnatdroid-armv7 port
 .Pc
 but it's not a trivial task to do it. Other architectures would be
 challenging, although not impossible, to support.
+.Sh EXAMPLE
+To activate the signing of default profile's repository with a local RSA
+key, generate the two key files:
+.Bd -literal -offset indent
+% cd /usr/local/etc/synth
+% openssl genrsa -out LiveSystem-private.key 2048
+% chmod 0400 LiveSystem-private.key
+% openssl rsa -in LiveSystem-private.key -out \\
+  LiveSystem-public.key -pubout
+.Ed
 .Sh HISTORY
 .Nm
 was conceived long before coding began in December of 2015. It was designed
