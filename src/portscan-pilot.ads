@@ -160,10 +160,24 @@ private
    --  Query pkg(8)'s repos_dir configuration instead of assuming default
    function get_repos_dir return String;
 
+   --  Returns octal failure of file permissions or "000" upon command failure
+   function file_permissions (full_path : String) return String;
+
    --  Given a port ID, search for existing package in the packages directory
    --  If the exact package exists, return " (rebuild <version>)"
    --  If no package exists, return " (new)"
    --  If previous package exists, return " (<oldversion> => <version>)"
    function version_difference (id : port_id; kind : out verdiff) return String;
+
+   --  This checks for existence of both [profile]-public.key and
+   --  [profile]-private.key.  If only one exists, a non-fatal notice is
+   --  emitted saying signing configuration is incomplete (repo will not be
+   --  signed).  The permissions for the private key will be checked, and if
+   --  not 400 and owned by root, it will fail fatally.
+   --  Returns False with fatal fail, otherwises it always returns True
+   function acceptable_RSA_signing_support return Boolean;
+
+   --  Return True if repo is configured to be built with RSA
+   function set_synth_conf_with_RSA return Boolean;
 
 end PortScan.Pilot;

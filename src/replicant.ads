@@ -47,7 +47,8 @@ package Replicant is
    function standalone_pkg8_install (id : builders) return Boolean;
 
    --  The actual command to build a local repository (Returns True on success)
-   function build_repository (id : builders) return Boolean;
+   function build_repository (id : builders; sign_command : String := "")
+                              return Boolean;
 
    --  Returns all the UNAME_x environment variables
    --  They will be passed to the buildcycle package

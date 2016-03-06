@@ -641,17 +641,27 @@ package body Replicant is
    ------------------------
    --  build_repository  --
    ------------------------
-   function build_repository (id : builders) return Boolean
+   function build_repository (id : builders; sign_command : String := "")
+                              return Boolean
    is
       smount  : constant String := get_slave_mount (id);
       command : constant String := chroot & smount & " " &
-        host_localbase & "/sbin/pkg-static repo /packages";
+                host_localbase & "/sbin/pkg-static repo /packages";
+      key_loc : constant String := "/etc/repo.key";
+      use_key : constant Boolean := AD.Exists (smount & key_loc);
+      use_cmd : constant Boolean := not JT.IsBlank (sign_command);
    begin
       if not standalone_pkg8_install (id) then
          TIO.Put_Line ("Failed to install pkg-static in builder" & id'Img);
          return False;
       end if;
-      silent_exec (command);
+      if use_key then
+         silent_exec (command & " " & key_loc);
+      elsif use_cmd then
+         silent_exec (command & " signing_command: " & sign_command);
+      else
+         silent_exec (command);
+      end if;
       return True;
    exception
       when quepaso : others =>

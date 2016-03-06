@@ -512,7 +512,11 @@ package body PortScan.Pilot is
       TIO.Put_Line ("Packages validated, rebuilding local repository.");
       REP.initialize (testmode => False, num_cores => PortScan.cores_available);
       REP.launch_slave (id => PortScan.scan_slave, opts => noprocs);
-      build_res := REP.build_repository (PortScan.scan_slave);
+      if acceptable_RSA_signing_support then
+         build_res := REP.build_repository (PortScan.scan_slave);
+      else
+         build_res := False;
+      end if;
       REP.destroy_slave (id => PortScan.scan_slave, opts => noprocs);
       REP.finalize;
       if build_res then
@@ -825,6 +829,8 @@ package body PortScan.Pilot is
       repdir : constant String := get_repos_dir;
       target : constant String := repdir & "/00_synth.conf";
       pkgdir : constant String := JT.USS (PM.configuration.dir_packages);
+      pubkey : constant String := PM.synth_confdir & "/" &
+               JT.USS (PM.configuration.profile) & "-public.key";
       handle : TIO.File_Type;
    begin
       if AD.Exists (target) then
@@ -838,6 +844,10 @@ package body PortScan.Pilot is
       TIO.Put_Line (handle, "  url      : file://" & pkgdir & ",");
       TIO.Put_Line (handle, "  priority : 0,");
       TIO.Put_Line (handle, "  enabled  : yes,");
+      if set_synth_conf_with_RSA then
+         TIO.Put_Line (handle, "  signature_type : PUBKEY,");
+         TIO.Put_Line (handle, "  pubkey         : " & pubkey & ",");
+      end if;
       TIO.Put_Line (handle, "}");
       TIO.Close (handle);
       return True;
@@ -1336,5 +1346,99 @@ package body PortScan.Pilot is
       kind := newbuild;
       return " (new " & version & ")";
    end version_difference;
+
+
+   ------------------------
+   --  file_permissions  --
+   ------------------------
+   function file_permissions (full_path : String) return String
+   is
+      command : constant String := "/usr/bin/stat -f %Lp " & full_path;
+      content  : JT.Text;
+      topline  : JT.Text;
+      status   : Integer;
+   begin
+      content := Unix.piped_command (command, status);
+      if status /= 0 then
+         return "000";
+      end if;
+      JT.nextline (lineblock => content, firstline => topline);
+      return JT.USS (topline);
+   end file_permissions;
+
+
+   --------------------------------------
+   --  acceptable_RSA_signing_support  --
+   --------------------------------------
+   function acceptable_RSA_signing_support return Boolean
+   is
+      file_prefix   : constant String := PM.synth_confdir & "/" &
+                      JT.USS (PM.configuration.profile) & "-";
+      key_private   : constant String := file_prefix & "private.key";
+      key_public    : constant String := file_prefix & "public.key";
+      found_private : constant Boolean := AD.Exists (key_private);
+      found_public  : constant Boolean := AD.Exists (key_public);
+      sorry         : constant String := "The generated repository will not " &
+                      "be signed due to the misconfiguration.";
+      repo_key      : constant String := JT.USS (PM.configuration.dir_buildbase)
+                      & ss_base & "/etc/repo.key";
+   begin
+      if not found_private and then not found_public then
+         return True;
+      end if;
+      if found_public and then not found_private then
+         TIO.Put_Line ("A public RSA key file has been found without a " &
+                         "corresponding private key file.");
+         TIO.Put_Line (sorry);
+         return True;
+      end if;
+      if found_private and then not found_public then
+         TIO.Put_Line ("A private RSA key file has been found without a " &
+                         "corresponding public key file.");
+         TIO.Put_Line (sorry);
+         return True;
+      end if;
+      declare
+         mode : constant String := file_permissions (key_private);
+      begin
+         if mode /= "400" then
+            TIO.Put_Line ("The private RSA key file has insecure file " &
+                            "permissions (" & mode & ")");
+            TIO.Put_Line ("Please change the mode of " & key_private &
+                            " to 400 before continuing.");
+            return False;
+         end if;
+      end;
+      declare
+      begin
+         AD.Copy_File (Source_Name => key_private,
+                       Target_Name => repo_key);
+         return True;
+      exception
+         when failed : others =>
+            TIO.Put_Line ("Failed to copy private RSA key to builder.");
+            TIO.Put_Line (EX.Exception_Information (failed));
+            return False;
+      end;
+   end acceptable_RSA_signing_support;
+
+
+   -------------------------------
+   --  set_synth_conf_with_RSA  --
+   -------------------------------
+   function set_synth_conf_with_RSA return Boolean
+   is
+      file_prefix   : constant String := PM.synth_confdir & "/" &
+                      JT.USS (PM.configuration.profile) & "-";
+      key_private   : constant String := file_prefix & "private.key";
+      key_public    : constant String := file_prefix & "public.key";
+      found_private : constant Boolean := AD.Exists (key_private);
+      found_public  : constant Boolean := AD.Exists (key_public);
+   begin
+      return
+        found_public and then
+        found_private and then
+        file_permissions (key_private) = "400";
+   end set_synth_conf_with_RSA;
 
 end PortScan.Pilot;
