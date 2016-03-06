@@ -734,7 +734,9 @@ package body PortScan.Pilot is
                walk (AD.Full_Name (item));
             end if;
          exception
-            when AD.Name_Error => null;
+            when AD.Name_Error =>
+               abort_purge := True;
+               TIO.Put_Line ("walkdir: " & name & " directory does not exist");
          end walkdir;
          procedure print (item : AD.Directory_Entry_Type)
          is
