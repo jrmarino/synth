@@ -742,8 +742,8 @@ package body PortScan.Pilot is
             tball : JT.Text := JT.SUS (FN (leftindent .. FN'Last));
          begin
             if not distfiles.Contains (tball) then
-               uniqid := uniqid + 1;
                if not rmfiles.Contains (tball) then
+                  uniqid := uniqid + 1;
                   rmfiles.Insert (Key => tball, New_Item => uniqid);
                   bytes_purged := bytes_purged + disktype (AD.Size (FN));
                end if;
