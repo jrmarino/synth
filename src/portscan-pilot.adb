@@ -743,8 +743,10 @@ package body PortScan.Pilot is
          begin
             if not distfiles.Contains (tball) then
                uniqid := uniqid + 1;
-               rmfiles.Insert (Key => tball, New_Item => uniqid);
-               bytes_purged := bytes_purged + disktype (AD.Size (FN));
+               if not rmfiles.Contains (tball) then
+                  rmfiles.Insert (Key => tball, New_Item => uniqid);
+                  bytes_purged := bytes_purged + disktype (AD.Size (FN));
+               end if;
             end if;
          end print;
       begin
