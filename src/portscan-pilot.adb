@@ -3,6 +3,7 @@
 
 with Ada.Command_Line;
 with Ada.Strings.Fixed;
+with Ada.Exceptions;
 with PortScan.Ops;
 with PortScan.Packages;
 with PortScan.Buildcycle;
@@ -11,6 +12,7 @@ with Unix;
 
 package body PortScan.Pilot is
 
+   package EX  renames Ada.Exceptions;
    package CLI renames Ada.Command_Line;
    package ASF renames Ada.Strings.Fixed;
    package OPS renames PortScan.Ops;
@@ -679,6 +681,7 @@ package body PortScan.Pilot is
       procedure kill (plcursor : portkey_crate.Cursor);
       procedure walk (name : String);
       function display_kmg (number : disktype) return String;
+      abort_purge  : Boolean := False;
       bytes_purged : disktype := 0;
       tracker      : port_id := 0;
       distfiles    : portkey_crate.Map;
@@ -751,11 +754,15 @@ package body PortScan.Pilot is
                     walkdir'Access);
       exception
          when AD.Name_Error =>
+            abort_purge := True;
             TIO.Put_Line ("The " & name & " directory does not exist");
          when AD.Use_Error =>
+            abort_purge := True;
             TIO.Put_Line ("Searching " & name & " directory is not supported");
-         when others =>
+         when failed : others =>
+            abort_purge := True;
             TIO.Put_Line ("purge_distfiles: Unknown error - directory search");
+            TIO.Put_Line (EX.Exception_Information (failed));
       end walk;
 
       function display_kmg (number : disktype) return String
@@ -794,8 +801,12 @@ package body PortScan.Pilot is
       ports_keys.Iterate (Process => scan'Access);
       TIO.Put_Line ("done");
       walk (name => JT.USS (PM.configuration.dir_distfiles));
-      rmfiles.Iterate (kill'Access);
-      TIO.Put_Line ("Recovered" & display_kmg (bytes_purged));
+      if abort_purge then
+         TIO.Put_Line ("Distfile purge operation aborted.");
+      else
+         rmfiles.Iterate (kill'Access);
+         TIO.Put_Line ("Recovered" & display_kmg (bytes_purged));
+      end if;
    end purge_distfiles;
 
 
