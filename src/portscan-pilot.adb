@@ -683,13 +683,13 @@ package body PortScan.Pilot is
       function display_kmg (number : disktype) return String;
       abort_purge  : Boolean := False;
       bytes_purged : disktype := 0;
-      tracker      : port_id := 0;
       distfiles    : portkey_crate.Map;
       rmfiles      : portkey_crate.Map;
 
       procedure scan (plcursor : portkey_crate.Cursor)
       is
          origin   : JT.Text := portkey_crate.Key (plcursor);
+         tracker  : constant port_id := portkey_crate.Element (plcursor);
          pndx     : constant port_index := ports_keys.Element (origin);
          distinfo : constant String := JT.USS (PM.configuration.dir_portsdir) &
                      "/" & JT.USS (origin) & "/distinfo";
@@ -707,9 +707,12 @@ package body PortScan.Pilot is
                      S : JT.Text := JT.SUS (Line (7 .. bookend - 1));
                   begin
                      if not distfiles.Contains (S) then
-                        tracker := tracker + 1;
                         distfiles.Insert (S, tracker);
                      end if;
+                  exception
+                     when failed : others =>
+                        TIO.Put_Line ("purge_distfiles::scan: " & JT.USS (S));
+                        TIO.Put_Line (EX.Exception_Information (failed));
                   end;
                end if;
             end;
