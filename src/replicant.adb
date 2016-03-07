@@ -1204,6 +1204,7 @@ package body Replicant is
          & "./etc/pwd.db" & LAT.LF
          & "./etc/shells" & LAT.LF
          & "./etc/spwd.db" & LAT.LF
+         & "./var/db/fontconfig" & LAT.LF
          & "./var/db/freebsd-update" & LAT.LF
          & "./var/db/pkg" & LAT.LF
          & "./var/log" & LAT.LF
