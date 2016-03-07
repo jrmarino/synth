@@ -1205,12 +1205,13 @@ package body PortScan.Buildcycle is
    --  detect_leftovers_and_MIA  --
    --------------------------------
    function detect_leftovers_and_MIA (id : builders; action : String;
-                                       description : String) return Boolean
+                                      description : String) return Boolean
    is
       package crate is new AC.Vectors (Index_Type   => Positive,
                                        Element_Type => JT.Text,
                                        "="          => JT.SU."=");
       package sorter is new crate.Generic_Sorting ("<" => JT.SU."<");
+      function  ignore_modifications return Boolean;
       procedure print (cursor : crate.Cursor);
       procedure close_active_modifications;
       path_mm  : String := JT.USS (PM.configuration.dir_buildbase) & "/Base";
@@ -1235,9 +1236,57 @@ package body PortScan.Buildcycle is
       missing   : crate.Vector;
       changed   : crate.Vector;
 
+      function ignore_modifications return Boolean
+      is
+         --  Some modifications need to be ignored
+         --  A) */ls-R
+         --     #ls-R files from texmf are often regenerated
+         --  B) share/xml/catalog.ports
+         --     # xmlcatmgr is constantly updating catalog.ports, ignore
+         --  C) share/octave/octave_packages
+         --     # Octave packages database, blank lines can be inserted
+         --     # between pre-install and post-deinstall
+         --  D) info/dir | */info/dir
+         --  E) lib/gio/modules/giomodule.cache
+         --     # gio modules cache could be modified for any gio modules
+         --  F) etc/gconf/gconf.xml.defaults/%gconf-tree*.xml
+         --     # gconftool-2 --makefile-uninstall-rule is unpredictable
+         --  G) %%PEARDIR%%/.depdb | %%PEARDIR%%/.filemap
+         --     # The is pear database cache
+         filename : constant String := JT.USS (modport);
+         fnlen    : constant Natural := filename'Length;
+      begin
+         if filename = "usr/local/share/xml/catalog.ports" or else
+           filename = "usr/local/share/octave/octave_packages" or else
+           filename = "usr/local/info/dir" or else
+           filename = "usr/local/lib/gio/modules/giomodule.cache" or else
+           filename = "usr/local/share/pear/.depdb" or else
+           filename = "usr/local/share/pear/.filemap"
+         then
+            return True;
+         end if;
+         if fnlen > 17 and then filename (1 .. 10) = "usr/local/"
+         then
+            if filename (fnlen - 4 .. fnlen) = "/ls-R" or else
+              filename (fnlen - 8 .. fnlen) = "/info/dir"
+            then
+               return True;
+            end if;
+         end if;
+         if fnlen > 56 and then filename (1 .. 39) =
+           "usr/local/etc/gconf/gconf.xml.defaults/" and then
+           filename (fnlen - 3 .. fnlen) = ".xml"
+         then
+            if JT.contains (filename, "%gconf-tree") then
+               return True;
+            end if;
+         end if;
+         return False;
+      end ignore_modifications;
+
       procedure close_active_modifications is
       begin
-         if activemod then
+         if activemod and then not ignore_modifications then
             JT.SU.Append (modport, " [ ");
             JT.SU.Append (modport, reasons);
             JT.SU.Append (modport, " ]");
