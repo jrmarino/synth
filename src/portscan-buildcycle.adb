@@ -1277,7 +1277,7 @@ package body PortScan.Buildcycle is
            "usr/local/etc/gconf/gconf.xml.defaults/" and then
            filename (fnlen - 3 .. fnlen) = ".xml"
          then
-            if JT.contains (filename, "%gconf-tree") then
+            if JT.contains (filename, "/%gconf-tree") then
                return True;
             end if;
          end if;
