@@ -311,8 +311,12 @@ the great majority of the entries.
 
 > I have 900+ ports installed on my workstation. Last repository rebuild I did, with the ccache(1) cache fully populated, Synth took around 3.5 hours to rebuild the entire repository. I don't know how long Poudriere took on the same machine but I know it was longer. I thought there was a mistake and ports were not getting rebuilt, but after checking, they were all in fact rebuilt. It is quite fast.
 
-##### PacketMan - FreeBSD forums member - 31 Jan / 3 Feb
+##### PacketMan - FreeBSD forums member - 31 Jan / 3 Feb 2016
 
 > Really liking this synth. Thank you so much Marino. :beer:
 
 > Yes [Synth] a great tool; I can't wait to roll it out to all my machines.
+
+##### tankist02 - FreeBSD forums member - 7 March 2016
+
+> @marino Thank a lot for the great tool and explanation what and why it does. I used to have mysterious crashes after running portmaster. These days I use synth exclusively and crashes don't happen anymore. I tried to use poudriere and it was just too much and slow-ish for my simple needs (home desktop). 
