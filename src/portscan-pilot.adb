@@ -1473,21 +1473,21 @@ package body PortScan.Pilot is
                             "files is blank");
             TIO.Put_Line (sorry);
             return False;
-         else
-            return True;
          end if;
-      else
-         if found_finger then
-            TIO.Put_Line ("The profile fingerprint was found but not the " &
-                         "signing command");
-            TIO.Put_Line (sorry);
-         else
-            TIO.Put_Line ("The profile signing command was found but not " &
-                            "the fingerprint");
-            TIO.Put_Line (sorry);
-         end if;
-         return False;
+         return True;
       end if;
+
+      if found_finger then
+         TIO.Put_Line ("The profile fingerprint was found but not the " &
+                         "signing command");
+         TIO.Put_Line (sorry);
+      elsif found_command then
+        TIO.Put_Line ("The profile signing command was found but not " &
+                        "the fingerprint");
+         TIO.Put_Line (sorry);
+      end if;
+
+      return False;
    end valid_signing_command;
 
 
