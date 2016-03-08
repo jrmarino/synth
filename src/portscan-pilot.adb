@@ -629,6 +629,7 @@ package body PortScan.Pilot is
    begin
       if not portlist.Contains (key2) then
          portlist.Insert (key2, ptid);
+         duplist.Insert (key2, ptid);
       end if;
    end plinsert;
 
@@ -969,7 +970,7 @@ package body PortScan.Pilot is
          JT.SU.Append (caboose, portkey_crate.Key (plcursor));
       end build_train;
    begin
-      portlist.Iterate (Process => build_train'Access);
+      duplist.Iterate (Process => build_train'Access);
       declare
          command : constant String := base_command & JT.USS (caboose);
       begin
