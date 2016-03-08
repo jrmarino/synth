@@ -171,9 +171,9 @@ begin
                then
                   PIL.perform_bulk_run (testmode => False);
                   if PIL.verify_desire_to_rebuild_repository and then
+                    PIL.write_pkg_repos_configuration_file and then
                     PIL.rebuild_local_respository and then
-                    PIL.verify_desire_to_install_packages and then
-                    PIL.write_pkg_repos_configuration_file
+                    PIL.verify_desire_to_install_packages
                   then
                      PIL.upgrade_system_exactly;
                   end if;
@@ -185,9 +185,9 @@ begin
                then
                   PIL.perform_bulk_run (testmode => False);
                   if PIL.verify_desire_to_rebuild_repository and then
+                    PIL.write_pkg_repos_configuration_file and then
                     PIL.rebuild_local_respository and then
-                    PIL.verify_desire_to_install_packages and then
-                    PIL.write_pkg_repos_configuration_file
+                    PIL.verify_desire_to_install_packages
                   then
                      PIL.upgrade_system_exactly;
                   end if;
@@ -198,8 +198,8 @@ begin
                  PIL.sanity_check_then_prefail
                then
                   PIL.perform_bulk_run (testmode => False);
-                  if PIL.rebuild_local_respository and then
-                    PIL.write_pkg_repos_configuration_file
+                  if PIL.write_pkg_repos_configuration_file and then
+                    PIL.rebuild_local_respository
                   then
                      PIL.upgrade_system_exactly;
                   end if;

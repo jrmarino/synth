@@ -462,6 +462,19 @@ must confirm the public counterpart of the signing key is available
 because its path is required for the generated pkg repository configuration
 file.  For the default profile, the file is normally located at
 .Pa /usr/local/etc/synth/LiveSystem-public.key
+.It <profile>-signing_command
+This is one of two files required to support the signing of the repository
+by an external signing server.  It consists of a single line containing
+the command; see the EXAMPLE section.  For the default profile, the file
+is normally located at
+.Pa /usr/local/etc/synth/LiveSystem-signing_command
+.It <profile>-fingerprint
+This is the second of two files required to support the signing of the
+repository by an external signing server.  It consists of a single line
+containing the SHA 256 hash of the public key that is the counterpart of
+the key that signed the repository.  For the default profile, the file
+is normally located at
+.Pa /usr/local/etc/synth/LiveSystem-fingerprint
 .It synth_status_results.txt
 Whenever a status command is run, a list of ports that would build with the
 actual command is produced at
@@ -550,7 +563,8 @@ and
 in the environment.
 .El
 .Sh SEE ALSO
-.Xr pkg 8
+.Xr pkg 8 ,
+.Xr pkg-rep 8
 .Sh NOTES
 .Ss Graceful exit
 During development, the interrupt signal
@@ -606,6 +620,22 @@ key, generate the two key files:
 % openssl rsa -in LiveSystem-private.key -out \\
   LiveSystem-public.key -pubout
 .Ed
+.Pp
+To activate the signing of default profile's repository with an external
+signing server, two files need to be created.  It's assumed the signing
+server has already been configured as described by the
+.Xr pkg-rep 8
+man page, and that the keys are located in the repo.pub and repo.key files.
+On the signing server which is 192.168.0.44 in this example:
+.Bd -literal -offset indent
+% sha256 -q repo.pub > LiveSystem-fingerprint
+% echo "/usr/bin/ssh 192.168.0.44 /usr/local/bin/sign.sh" \\
+  > LiveSystem-signing_command
+.Ed
+.Pp
+Then move both files to /usr/local/etc/synth directory on the build server.
+The build server root user needs to have a passphrase-free SSH key access
+to the signing server in order for Synth to sign the repository.
 .Sh HISTORY
 .Nm
 was conceived long before coding began in December of 2015. It was designed

@@ -177,7 +177,22 @@ private
    --  Returns False with fatal fail, otherwises it always returns True
    function acceptable_RSA_signing_support return Boolean;
 
+   --  The check for existence of both [profile]-signing_command and
+   --  [profile]-fingerprint.  If only one exists, a non-fatal notice is
+   --  emitted without signing the repository.  Returns True if both files
+   --  exist and aren't empty.
+   function valid_signing_command return Boolean;
+
+   --  Return the contents of the profile's signing command
+   function signing_command return String;
+
+   --  Return the contents of the profile's fingerprint
+   function profile_fingerprint return String;
+
    --  Return True if repo is configured to be built with RSA
    function set_synth_conf_with_RSA return Boolean;
+
+   --  converts file contents (limited to 1 line) of given file to a string
+   function one_line_file_contents (filename : String) return String;
 
 end PortScan.Pilot;

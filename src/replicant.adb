@@ -647,6 +647,8 @@ package body Replicant is
       smount  : constant String := get_slave_mount (id);
       command : constant String := chroot & smount & " " &
                 host_localbase & "/sbin/pkg-static repo /packages";
+      sc_cmd  : constant String := host_pkg8 & " repo " & smount &
+                "/packages signing_command: ";
       key_loc : constant String := "/etc/repo.key";
       use_key : constant Boolean := AD.Exists (smount & key_loc);
       use_cmd : constant Boolean := not JT.IsBlank (sign_command);
@@ -658,7 +660,7 @@ package body Replicant is
       if use_key then
          silent_exec (command & " " & key_loc);
       elsif use_cmd then
-         silent_exec (command & " signing_command: " & sign_command);
+         silent_exec (sc_cmd & sign_command);
       else
          silent_exec (command);
       end if;

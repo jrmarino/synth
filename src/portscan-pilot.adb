@@ -512,7 +512,10 @@ package body PortScan.Pilot is
       TIO.Put_Line ("Packages validated, rebuilding local repository.");
       REP.initialize (testmode => False, num_cores => PortScan.cores_available);
       REP.launch_slave (id => PortScan.scan_slave, opts => noprocs);
-      if acceptable_RSA_signing_support then
+      if valid_signing_command then
+         build_res := REP.build_repository (id => PortScan.scan_slave,
+                                            sign_command => signing_command);
+      elsif acceptable_RSA_signing_support then
          build_res := REP.build_repository (PortScan.scan_slave);
       else
          build_res := False;
@@ -831,7 +834,13 @@ package body PortScan.Pilot is
       pkgdir : constant String := JT.USS (PM.configuration.dir_packages);
       pubkey : constant String := PM.synth_confdir & "/" &
                JT.USS (PM.configuration.profile) & "-public.key";
+      keydir : constant String := PM.synth_confdir & "/keys";
+      tstdir : constant String := keydir & "/trusted";
+      autgen : constant String := "# Automatically generated." & LAT.LF;
+      fpfile : constant String := tstdir & "/fingerprint." &
+               JT.USS (PM.configuration.profile);
       handle : TIO.File_Type;
+      vscmd  : Boolean := False;
    begin
       if AD.Exists (target) then
          AD.Delete_File (target);
@@ -839,21 +848,40 @@ package body PortScan.Pilot is
          AD.Create_Path (repdir);
       end if;
       TIO.Create (File => handle, Mode => TIO.Out_File, Name => target);
-      TIO.Put_Line (handle, "# Automatically generated." & LAT.LF);
+      TIO.Put_Line (handle, autgen);
       TIO.Put_Line (handle, "Synth: {");
       TIO.Put_Line (handle, "  url      : file://" & pkgdir & ",");
       TIO.Put_Line (handle, "  priority : 0,");
       TIO.Put_Line (handle, "  enabled  : yes,");
-      if set_synth_conf_with_RSA then
+      if valid_signing_command then
+         vscmd := True;
+         TIO.Put_Line (handle, "  signature_type : FINGERPRINTS,");
+         TIO.Put_Line (handle, "  fingerprints   : " & keydir);
+      elsif set_synth_conf_with_RSA then
          TIO.Put_Line (handle, "  signature_type : PUBKEY,");
-         TIO.Put_Line (handle, "  pubkey         : " & pubkey & ",");
+         TIO.Put_Line (handle, "  pubkey         : " & pubkey);
       end if;
       TIO.Put_Line (handle, "}");
       TIO.Close (handle);
+      if vscmd then
+         if AD.Exists (fpfile) then
+            AD.Delete_File (fpfile);
+         elsif not AD.Exists (tstdir) then
+            AD.Create_Path (tstdir);
+         end if;
+         TIO.Create (File => handle, Mode => TIO.Out_File, Name => fpfile);
+         TIO.Put_Line (handle, autgen);
+         TIO.Put_Line (handle, "function    : sha256");
+         TIO.Put_Line (handle, "fingerprint : " & profile_fingerprint);
+         TIO.Close (handle);
+      end if;
       return True;
    exception
       when others =>
          TIO.Put_Line ("Error: failed to create " & target);
+         if TIO.Is_Open (handle) then
+            TIO.Close (handle);
+         end if;
          return False;
    end write_pkg_repos_configuration_file;
 
@@ -943,8 +971,7 @@ package body PortScan.Pilot is
    begin
       portlist.Iterate (Process => build_train'Access);
       declare
-         command : constant String :=
-           base_command & JT.USS (caboose);
+         command : constant String := base_command & JT.USS (caboose);
       begin
          if not Unix.external_command (command) then
             TIO.Put_Line ("Unfortunately, the system upgraded failed.");
@@ -1423,6 +1450,70 @@ package body PortScan.Pilot is
    end acceptable_RSA_signing_support;
 
 
+   ----------------------------------
+   --  acceptable_signing_command  --
+   ----------------------------------
+   function valid_signing_command return Boolean
+   is
+      file_prefix   : constant String := PM.synth_confdir & "/" &
+                      JT.USS (PM.configuration.profile) & "-";
+      fingerprint   : constant String := file_prefix & "fingerprint";
+      ext_command   : constant String := file_prefix & "signing_command";
+      found_finger  : constant Boolean := AD.Exists (fingerprint);
+      found_command : constant Boolean := AD.Exists (ext_command);
+      sorry         : constant String := "The generated repository will not " &
+                      "be externally signed due to the misconfiguration.";
+   begin
+      if found_finger and then found_command then
+         if JT.IsBlank (one_line_file_contents (fingerprint)) or else
+           JT.IsBlank (one_line_file_contents (ext_command))
+         then
+            TIO.Put_Line ("At least one of the profile signing command " &
+                            "files is blank");
+            TIO.Put_Line (sorry);
+            return False;
+         else
+            return True;
+         end if;
+      else
+         if found_finger then
+            TIO.Put_Line ("The profile fingerprint was found but not the " &
+                         "signing command");
+            TIO.Put_Line (sorry);
+         else
+            TIO.Put_Line ("The profile signing command was found but not " &
+                            "the fingerprint");
+            TIO.Put_Line (sorry);
+         end if;
+         return False;
+      end if;
+   end valid_signing_command;
+
+
+   -----------------------
+   --  signing_command  --
+   -----------------------
+   function signing_command return String
+   is
+      filename : constant String := PM.synth_confdir & "/" &
+                 JT.USS (PM.configuration.profile) & "-signing_command";
+   begin
+      return one_line_file_contents (filename);
+   end signing_command;
+
+
+   ---------------------------
+   --  profile_fingerprint  --
+   ---------------------------
+   function profile_fingerprint return String
+   is
+      filename : constant String := PM.synth_confdir & "/" &
+                 JT.USS (PM.configuration.profile) & "-fingerprint";
+   begin
+      return one_line_file_contents (filename);
+   end profile_fingerprint;
+
+
    -------------------------------
    --  set_synth_conf_with_RSA  --
    -------------------------------
@@ -1440,5 +1531,22 @@ package body PortScan.Pilot is
         found_private and then
         file_permissions (key_private) = "400";
    end set_synth_conf_with_RSA;
+
+
+   ------------------------------
+   --  one_line_file_contents  --
+   ------------------------------
+   function one_line_file_contents (filename : String) return String
+   is
+      target_file : TIO.File_Type;
+      contents    : JT.Text := JT.blank;
+   begin
+      TIO.Open (File => target_file, Mode => TIO.In_File, Name => filename);
+      if not TIO.End_Of_File (target_file) then
+         contents := JT.SUS (TIO.Get_Line (target_file));
+      end if;
+      TIO.Close (target_file);
+      return JT.USS (contents);
+   end one_line_file_contents;
 
 end PortScan.Pilot;
