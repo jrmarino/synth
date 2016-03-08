@@ -814,7 +814,8 @@ package body PortScan.Buildcycle is
    function dynamically_linked (base, filename : String) return Boolean
    is
       command : String := chroot & base & " /usr/bin/file -b " &
-        "-e ascii -e encoding -e tar -e compress " & filename;
+        "-e ascii -e encoding -e tar -e compress " &
+        LAT.Quotation & filename & LAT.Quotation;
       comres  : JT.Text;
    begin
       comres := generic_system_command (command);
