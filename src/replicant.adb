@@ -777,13 +777,17 @@ package body Replicant is
          end;
       end if;
 
-      if AD.Exists (root_usr_src) then
-         mount_nullfs (root_usr_src, location (slave_base, usr_src));
-         if AD.Exists (root_usr_src & "/sys") then
-            create_symlink (destination   => "usr/src/sys",
-                            symbolic_link => slave_base & "/sys");
+      declare
+         srcdir : String := clean_mount_point (usr_src);
+      begin
+         if AD.Exists (srcdir) then
+            mount_nullfs (srcdir, location (slave_base, usr_src));
+            if AD.Exists (srcdir & "/sys") then
+               create_symlink (destination   => "usr/src/sys",
+                               symbolic_link => slave_base & "/sys");
+            end if;
          end if;
-      end if;
+      end;
 
       if AD.Exists (mount_target (ccache)) then
          mount_nullfs (mount_target (ccache), location (slave_base, ccache),
