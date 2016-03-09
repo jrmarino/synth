@@ -146,12 +146,14 @@ package body Actions is
       optX1A : constant String := "[>]   Switch/create profiles " &
                                          "(changes discarded)";
       optX1B : constant String := "[>]   Switch/create profiles";
+      optX4B : constant String := "[<]   Delete alternative profile";
       optX2A : constant String := "[ESC] Exit without saving changes";
       optX3A : constant String := "[RET] Save changes (starred)";
       optX3B : constant String := "[RET] Exit";
 
       dupe     : PM.configuration_record := PM.configuration;
       pristine : Boolean;
+      extra_profiles : Boolean;
       procedure print_opt (opt : option);
       procedure print_menu;
       procedure print_header;
@@ -159,6 +161,7 @@ package body Actions is
       procedure change_positive_option (opt : option);
       procedure change_directory_option (opt : option);
       procedure switch_profile;
+      procedure delete_profile;
 
       procedure print_opt (opt : option)
       is
@@ -233,6 +236,9 @@ package body Actions is
          TIO.Put_Line ("");
          if pristine then
             TIO.Put_Line (indent & optX1B);
+            if extra_profiles then
+               TIO.Put_Line (indent & optX4B);
+            end if;
             TIO.Put_Line (indent & optX3B);
          else
             TIO.Put_Line (indent & optX1A);
@@ -458,6 +464,77 @@ package body Actions is
          end loop;
       end switch_profile;
 
+      procedure delete_profile
+      is
+         function list (limit : Natural := 0; total : out Natural)
+                        return JT.Text;
+         all_profiles : JT.Text := PM.sections_list;
+         selected     : JT.Text;
+         continue     : Boolean;
+         max_menu     : Natural;
+         number       : Positive;
+
+         function list (limit : Natural := 0; total : out Natural)
+                        return JT.Text
+         is
+            topline  : JT.Text;
+            profiles : JT.Text := all_profiles;
+            crlen1   : Natural := JT.SU.Length (profiles);
+            crlen2   : Natural;
+         begin
+            total := 0;
+            loop
+               JT.nextline (lineblock => profiles, firstline => topline);
+               crlen2 := JT.SU.Length (profiles);
+               exit when crlen1 = crlen2;
+               crlen1 := crlen2;
+               if not JT.equivalent (topline, PM.configuration.profile) then
+                  total := total + 1;
+                  if limit = 0 then
+                     TIO.Put_Line
+                       (indent & "[" & JT.int2str (total) &
+                          "] Delete " & LAT.Quotation &
+                          JT.USS (topline) & LAT.Quotation & " profile");
+                  elsif limit = total then
+                     return topline;
+                  end if;
+               end if;
+            end loop;
+            total := total + 1;
+            TIO.Put_Line (indent & "[" & JT.int2str (total) &
+                            "] Do nothing (return to previous screen)");
+            return JT.blank;
+         end list;
+      begin
+         loop
+            continue := False;
+            clear_screen;
+            print_header;
+            selected := list (total => max_menu);
+            TIO.Put (LAT.LF & "Select profile number (cannot be undone): ");
+            declare
+            begin
+               INT.Get (number);
+            exception
+               when others =>
+                  TIO.Skip_Line;
+                  number := 1000;
+            end;
+            if number = max_menu then
+               continue := True;
+            elsif number < max_menu then
+               declare
+                  dummy : Natural;
+                  unwanted : constant String := JT.USS
+                    (list (limit => number, total => dummy));
+               begin
+                  PM.delete_profile (profile => unwanted);
+               end;
+               continue := True;
+            end if;
+            exit when continue;
+         end loop;
+      end delete_profile;
 
       answer   : Character;
       ascii    : Natural;
@@ -465,6 +542,7 @@ package body Actions is
    begin
       loop
          pristine := True;
+         extra_profiles := PM.alternative_profiles_exist;
          clear_screen;
          print_header;
          print_menu;
@@ -495,6 +573,11 @@ package body Actions is
                when '>' =>
                   switch_profile;
                   exit;
+               when '<' =>
+                  if extra_profiles then
+                     delete_profile;
+                     exit;
+                  end if;
                when LAT.LF =>
                   if not pristine then
                      PM.configuration := dupe;

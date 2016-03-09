@@ -557,7 +557,7 @@ package body Parameters is
 
             if Line'Length > 0 and then
               Line (1) = '[' and then
-              Line /= "[Global Configuration]"
+              Line /= "[" & master_section & "]"
             then
                JT.SU.Append (result, Line (2 .. Line'Last - 1) & LAT.LF);
             end if;
@@ -675,5 +675,101 @@ package body Parameters is
                                     "[H] Compiler cache");
 
    end all_paths_valid;
+
+
+   ----------------------
+   --  delete_profile  --
+   ----------------------
+   procedure delete_profile (profile : String)
+   is
+      old_file : TIO.File_Type;
+      new_file : TIO.File_Type;
+      nextgen  : constant String := synth_confdir & "/synth.ini.next";
+      pattern  : constant String := "[" & profile & "]";
+      blocking : Boolean := False;
+   begin
+      if not AD.Exists (conf_location) then
+         raise update_config
+           with "The " & conf_location & " configuration file does not exist.";
+      end if;
+      if AD.Exists (nextgen) then
+         AD.Delete_File (nextgen);
+      end if;
+      TIO.Create (File => new_file, Mode => TIO.Out_File, Name => nextgen);
+      TIO.Open (File => old_file, Mode => TIO.In_File, Name => conf_location);
+      while not TIO.End_Of_File (old_file) loop
+         declare
+            Line    : constant String := TIO.Get_Line (old_file);
+            bracket : Boolean := False;
+         begin
+            if not JT.IsBlank (Line) then
+               bracket := Line (1) = '[';
+            end if;
+            if bracket and then blocking then
+               blocking := False;
+            end if;
+            if not blocking and then Line = pattern then
+               blocking := True;
+            end if;
+            if not blocking then
+               TIO.Put_Line (new_file, Line);
+            end if;
+         end;
+      end loop;
+      TIO.Close (old_file);
+      TIO.Close (new_file);
+      AD.Delete_File (conf_location);
+      AD.Rename (Old_Name => nextgen, New_Name => conf_location);
+   exception
+      when others =>
+         if TIO.Is_Open (new_file) then
+            TIO.Close (new_file);
+         end if;
+         if AD.Exists (nextgen) then
+            AD.Delete_File (nextgen);
+         end if;
+         if TIO.Is_Open (old_file) then
+            TIO.Close (old_file);
+         end if;
+         raise update_config
+           with  "Failed to remove " & profile & " profile";
+   end delete_profile;
+
+
+   ----------------------------------
+   --  alternative_profiles_exist  --
+   ----------------------------------
+   function alternative_profiles_exist return Boolean
+   is
+      counter : Natural := 0;
+      conf_file : TIO.File_Type;
+   begin
+      if not AD.Exists (conf_location) then
+         return False;
+      end if;
+      TIO.Open (File => conf_file, Mode => TIO.In_File, Name => conf_location);
+      while not TIO.End_Of_File (conf_file) loop
+         declare
+            Line    : constant String := TIO.Get_Line (conf_file);
+            bracket : Boolean := False;
+         begin
+            if not JT.IsBlank (Line) then
+               bracket := Line (1) = '[';
+            end if;
+            if bracket and then Line /= "[" & master_section & "]"
+            then
+               counter := counter + 1;
+            end if;
+         end;
+      end loop;
+      TIO.Close (conf_file);
+      return counter > 1;
+   exception
+      when others =>
+         if TIO.Is_Open (conf_file) then
+            TIO.Close (conf_file);
+         end if;
+         return False;
+   end alternative_profiles_exist;
 
 end Parameters;

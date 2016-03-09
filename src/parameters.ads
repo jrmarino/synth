@@ -53,11 +53,13 @@ package Parameters is
    procedure write_configuration (profile : String := live_system);
    procedure write_blank_section (section : String);
    function sections_list return JT.Text;
+   function alternative_profiles_exist return Boolean;
    function default_profile (new_profile : String;
                              num_cores : cpu_range) return configuration_record;
    function load_specific_profile (profile : String; num_cores : cpu_range)
                                    return configuration_record;
    procedure write_master_section;
+   procedure delete_profile (profile : String);
 
 private
 
