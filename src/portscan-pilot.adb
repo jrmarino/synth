@@ -1310,13 +1310,20 @@ package body PortScan.Pilot is
 
       cwd      : constant String  := AD.Current_Directory;
       usrlocal : constant String  := get_usrlocal;
+      portsdir : constant String  := JT.USS (PM.configuration.dir_portsdir);
       ullen    : constant Natural := usrlocal'Length;
+      pdlen    : constant Natural := portsdir'Length;
    begin
-      if cwd = usrlocal then
+      if cwd = usrlocal or else cwd = portsdir then
          return True;
       end if;
       if cwd'Length > ullen and then
         cwd (1 .. ullen + 1) = usrlocal & "/"
+      then
+         return True;
+      end if;
+      if cwd'Length > pdlen and then
+        cwd (1 .. pdlen + 1) = portsdir & "/"
       then
          return True;
       end if;

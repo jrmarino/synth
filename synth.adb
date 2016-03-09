@@ -99,6 +99,11 @@ begin
             return;
          end if;
 
+         if PIL.synth_launch_clash then
+            TIO.Put_Line (badcwd);
+            return;
+         end if;
+
          if not PIL.store_origins then
             --  error messages emitted by store_origins, just exit now
             return;
@@ -129,11 +134,6 @@ begin
          end if;
 
          if PIL.synthexec_missing then
-            return;
-         end if;
-
-         if PIL.synth_launch_clash then
-            TIO.Put_Line (badcwd);
             return;
          end if;
 
@@ -242,6 +242,11 @@ begin
          end case;
 
 
+         if PIL.synth_launch_clash then
+            TIO.Put_Line (badcwd);
+            return;
+         end if;
+
          if PIL.insufficient_privileges then
             TIO.Put_Line (regjoe);
             return;
@@ -278,11 +283,6 @@ begin
          end if;
 
          if PIL.synthexec_missing then
-            return;
-         end if;
-
-         if PIL.synth_launch_clash then
-            TIO.Put_Line (badcwd);
             return;
          end if;
 
