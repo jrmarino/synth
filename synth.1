@@ -1,4 +1,4 @@
-.Dd March 7, 2016
+.Dd March 9, 2016
 .Dt SYNTH 1
 .Os
 .Sh NAME
@@ -200,6 +200,13 @@ carriage return
 saves the changes while pressing the
 .Dq Escape
 key will discard them.
+.Pp
+If more than one profile exists, an option to delete profiles will appear
+on the menu.  By pressing the
+.Dq <
+key, a new menu will appear that lists all the inactive profiles.
+Entering the number associated with one of those profiles will immediately
+delete the profile.  The deletion cannot be undone.
 .Ss synth upgrade-system
 The
 .Cm upgrade-system
