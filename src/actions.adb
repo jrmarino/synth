@@ -9,6 +9,7 @@ with GNAT.OS_Lib;
 
 with JohnnyText;
 with Parameters;
+with Unix;
 
 package body Actions is
 
@@ -342,22 +343,32 @@ package body Actions is
                TIO.Put (": ");
             end if;
             declare
-               testpath : String := TIO.Get_Line;
+               testpath : constant String := TIO.Get_Line;
             begin
                if AD.Exists (testpath) then
-                  case opt is
-                  when 1 => dupe.dir_portsdir   := JT.SUS (testpath);
-                  when 2 => dupe.dir_packages   := JT.SUS (testpath);
-                            dupe.dir_repository := JT.SUS (testpath & "/All");
-                  when 3 => dupe.dir_distfiles  := JT.SUS (testpath);
-                  when 4 => dupe.dir_options    := JT.SUS (testpath);
-                  when 5 => dupe.dir_logs       := JT.SUS (testpath);
-                  when 6 => dupe.dir_buildbase  := JT.SUS (testpath);
-                  when 7 => dupe.dir_system     := JT.SUS (testpath);
-                  when 8 => dupe.dir_ccache     := JT.SUS (testpath);
-                  when others => raise menu_error
-                       with "Illegal value : " & opt'Img;
-                  end case;
+                  declare
+                     stp : constant String := Unix.true_path (testpath);
+                     utp : JT.Text := JT.SUS (stp);
+                  begin
+                     if JT.IsBlank (stp) then
+                        raise menu_error
+                          with "Does not resolve: " & testpath;
+                     else
+                        case opt is
+                        when 1 => dupe.dir_portsdir   := utp;
+                        when 2 => dupe.dir_packages   := utp;
+                                  dupe.dir_repository := JT.SUS (stp & "/All");
+                        when 3 => dupe.dir_distfiles  := utp;
+                        when 4 => dupe.dir_options    := utp;
+                        when 5 => dupe.dir_logs       := utp;
+                        when 6 => dupe.dir_buildbase  := utp;
+                        when 7 => dupe.dir_system     := utp;
+                        when 8 => dupe.dir_ccache     := utp;
+                        when others => raise menu_error
+                             with "Illegal value : " & opt'Img;
+                        end case;
+                     end if;
+                  end;
                   continue := True;
                elsif opt = 8 then
                   dupe.dir_ccache := JT.SUS (PM.no_ccache);

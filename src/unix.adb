@@ -228,4 +228,24 @@ package body Unix is
       return result;
    end pipe_read;
 
+
+   -----------------
+   --  true_path  --
+   -----------------
+   function true_path (provided_path : String) return String
+   is
+      use type ICS.chars_ptr;
+      buffer : IC.char_array (0 .. 1024) := (others => IC.nul);
+      result : ICS.chars_ptr;
+      path   : IC.char_array := IC.To_C (provided_path);
+   begin
+      result := realpath (pathname => path, resolved_path => buffer);
+      if result = ICS.Null_Ptr then
+         return "";
+      end if;
+      return ICS.Value (result);
+   exception
+      when others => return "";
+   end true_path;
+
 end Unix;

@@ -3,12 +3,14 @@
 
 with Interfaces.C;
 with Interfaces.C_Streams;
+with Interfaces.C.Strings;
 with JohnnyText;
 
 package Unix is
 
    package JT  renames JohnnyText;
    package IC  renames Interfaces.C;
+   package ICS renames Interfaces.C.Strings;
    package CSM renames Interfaces.C_Streams;
 
    type process_exit is (still_running, exited_normally, exited_with_error);
@@ -57,6 +59,10 @@ package Unix is
    --  Returns True if a TTY device is detected
    function screen_attached return Boolean;
 
+   --  Equivalent of libc's realpath() function
+   --  It resolves symlinks and relative directories to get the true path
+   function true_path (provided_path : String) return String;
+
 private
 
    type uInt8 is mod 2 ** 16;
@@ -67,6 +73,10 @@ private
 
    function pclose (FileStream : CSM.FILEs) return CSM.int;
    pragma Import (C, pclose);
+
+   function realpath (pathname, resolved_path : IC.char_array)
+                      return ICS.chars_ptr;
+   pragma Import (C, realpath, "realpath");
 
    function nohang_waitpid (pid : pid_t) return uInt8;
    pragma Import (C, nohang_waitpid, "__nohang_waitpid");
