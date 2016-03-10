@@ -242,11 +242,6 @@ begin
          end case;
 
 
-         if PIL.synth_launch_clash then
-            TIO.Put_Line (badcwd);
-            return;
-         end if;
-
          if PIL.insufficient_privileges then
             TIO.Put_Line (regjoe);
             return;
@@ -260,6 +255,11 @@ begin
          PortScan.set_cores;
          if not Parameters.load_configuration (PortScan.cores_available) then
             TIO.Put_Line (badcfg);
+            return;
+         end if;
+
+         if PIL.synth_launch_clash then
+            TIO.Put_Line (badcwd);
             return;
          end if;
 
