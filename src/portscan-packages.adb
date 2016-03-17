@@ -248,7 +248,6 @@ package body PortScan.Packages is
          for m in scanners'Range loop
             mq_progress (m) := 0;
          end loop;
-
          parallel_package_scan (repository, True, using_screen);
 
          if SIG.graceful_shutdown_requested then
@@ -285,6 +284,11 @@ package body PortScan.Packages is
                TIO.Close (listlog);
                TIO.Put_Line ("The complete build list can also be found at:"
                              & LAT.LF & filename);
+            end if;
+         else
+            if PM.configuration.defer_prebuilt then
+               TIO.Put_Line ("No packages qualify for prefetching from " &
+                               "official package repository.");
             end if;
          end if;
       else
@@ -409,8 +413,8 @@ package body PortScan.Packages is
          fullpath : constant String := repository & "/" & pkg_name;
          command  : constant String := host_pkg8 & " query -F " & fullpath &
                                        " %Ok:%Ov";
-         remocmd  : constant String := host_pkg8 & " rquery -U %Ok:%Ov -r " &
-                    JT.USS (external_repository) & " " & pkg_base;
+         remocmd  : constant String := host_pkg8 & " rquery -r " &
+                    JT.USS (external_repository) & " -U %Ok:%Ov " & pkg_base;
          content  : JT.Text;
          topline  : JT.Text;
          colon    : Natural;
@@ -521,8 +525,8 @@ package body PortScan.Packages is
       fullpath : constant String := repository & "/" & pkg_name;
       command  : constant String := host_pkg8 & " query -F " & fullpath &
                                     " %do:%dn-%dv";
-      remocmd  : constant String := host_pkg8 & " rquery -U %do:%dn-%dv -r " &
-                 JT.USS (external_repository) & " " & pkg_base;
+      remocmd  : constant String := host_pkg8 & " rquery -r " &
+                 JT.USS (external_repository) & " -U %do:%dn-%dv " & pkg_base;
    begin
       if repository = "" then
          return generic_system_command (remocmd);
@@ -665,8 +669,8 @@ package body PortScan.Packages is
       pkg_name : constant String := JT.USS (all_ports (id).package_name);
       fullpath : constant String := repository & "/" & pkg_name;
       command  : constant String := host_pkg8 & " query -F " & fullpath & " %q";
-      remocmd  : constant String := host_pkg8 & " rquery -U %q -r " &
-                          JT.USS (external_repository) & " " & pkg_base;
+      remocmd  : constant String := host_pkg8 & " rquery -r " &
+                          JT.USS (external_repository) & " -U %q " & pkg_base;
       content  : JT.Text;
       topline  : JT.Text;
    begin
