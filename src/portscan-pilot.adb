@@ -1557,4 +1557,23 @@ package body PortScan.Pilot is
       return JT.USS (contents);
    end one_line_file_contents;
 
+
+   -------------------------
+   --  valid_system_root  --
+   -------------------------
+   function valid_system_root return Boolean is
+   begin
+      if REP.boot_modules_directory_missing then
+         TIO.Put_Line ("The /boot directory is optional, but when it exists, " &
+                         "the /boot/modules directory must also exist.");
+         TIO.Put ("Please create the ");
+         if not JT.equivalent (PM.configuration.dir_system, "/") then
+            TIO.Put (JT.USS (PM.configuration.dir_system));
+         end if;
+         TIO.Put_Line ("/boot/modules directory and retry.");
+         return False;
+      end if;
+      return True;
+   end valid_system_root;
+
 end PortScan.Pilot;

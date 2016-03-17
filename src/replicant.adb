@@ -1358,4 +1358,24 @@ package body Replicant is
       return builder_env;
    end jail_environment;
 
+
+   --------------------------------------
+   --  boot_modules_directory_missing  --
+   --------------------------------------
+   function boot_modules_directory_missing return Boolean is
+   begin
+      if JT.equivalent (PM.configuration.operating_sys, "FreeBSD") then
+         declare
+            sroot   : constant String := JT.USS (PM.configuration.dir_system);
+            bootdir : constant String := sroot & root_boot;
+            modsdir : constant String := sroot & root_kmodules;
+         begin
+            if AD.Exists (bootdir) and then not AD.Exists (modsdir) then
+               return True;
+            end if;
+         end;
+      end if;
+      return False;
+   end boot_modules_directory_missing;
+
 end Replicant;

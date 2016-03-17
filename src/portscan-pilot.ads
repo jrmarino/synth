@@ -114,6 +114,10 @@ package PortScan.Pilot is
    --  Known issue for when cwd is within <system root>/usr/local
    function synth_launch_clash return Boolean;
 
+   --  Returns False if additional checks against the given system root
+   --  fail.  Currently it's only checking for FreeBSD's /boot/modules
+   function valid_system_root return Boolean;
+
    pilot_log : exception;
 
 private

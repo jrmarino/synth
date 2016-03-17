@@ -99,6 +99,10 @@ begin
             return;
          end if;
 
+         if not PIL.valid_system_root then
+            return;
+         end if;
+
          if PIL.synth_launch_clash then
             TIO.Put_Line (badcwd);
             return;
@@ -263,9 +267,13 @@ begin
             return;
          end if;
 
-         if not (mandate = configure) and then not Parameters.all_paths_valid
-         then
-            return;
+         if not (mandate = configure) then
+            if not Parameters.all_paths_valid then
+               return;
+            end if;
+            if not PIL.valid_system_root then
+               return;
+            end if;
          end if;
 
          if PIL.previous_run_mounts_detected then

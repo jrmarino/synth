@@ -54,6 +54,10 @@ package Replicant is
    --  They will be passed to the buildcycle package
    function jail_environment return JT.Text;
 
+   --  On FreeBSD, if "/boot" exists but "/boot/modules" does not, return True
+   --  This is a pre-run validity check
+   function boot_modules_directory_missing return Boolean;
+
 private
 
    type mount_mode is (readonly, readwrite);
