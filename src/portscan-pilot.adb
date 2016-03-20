@@ -488,6 +488,9 @@ package body PortScan.Pilot is
          end if;
          TIO.Put_Line ("Stand by, recursively scanning" & portlist.Length'Img &
                          " ports serially.");
+         for k in dim_all_ports'Range loop
+            all_ports (k).deletion_due := False;
+         end loop;
          if scan_stack_of_single_ports (testmode => False) then
             PKG.limited_sanity_check (repository      => repo,
                                       dry_run         => False,
