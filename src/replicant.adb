@@ -1189,6 +1189,7 @@ package body Replicant is
          & "./usr/share" & LAT.LF
          & "./usr/src" & LAT.LF
          & "./var/run" & LAT.LF
+         & "./var/tmp" & LAT.LF
          & "./xports"
         );
    end write_common_mtree_exclude_base;
