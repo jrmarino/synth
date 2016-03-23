@@ -273,6 +273,26 @@ the great majority of the entries.
 
 (Courtesy of Matt Smith)
 
+### Can redundant cached port options be removed en-masse?
+
+Yes.  It is not uncommon for an existing port options cache to contain
+over a 100 redundant files.  This happens when people build ports on a
+live system and just hit "ok" when the options dialog appears.  The causes
+the options settings to be saved, but this is unnecessary because the
+settings are the same as the defaults.  Later this can cause issues when
+the port maintainer updates the options and they no longer match the saved
+values.  The redundant files can be listed like this:
+
+```
+/bin/sh /usr/ports/Tools/scripts/redundant-opt-files.sh
+```
+
+To delete all the redundant options, just pipe the output into *rm*
+
+```
+/bin/sh /usr/ports/Tools/scripts/redundant-opt-files.sh | xargs rm -rf
+```
+
 ## Overview Diagrams
 
 ![Relationship with ports and pkg(8)](http://downloads.dragonlace.net/misc/synth-img/synth-arch.png)
