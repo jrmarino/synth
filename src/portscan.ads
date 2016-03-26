@@ -39,7 +39,8 @@ package PortScan is
    --  Starting with a single port, recurse to determine a limited but complete
    --  dependency tree.  Repeated calls will augment already existing data.
    --  Return True on success
-   function scan_single_port (catport : String) return Boolean;
+   function scan_single_port (catport : String; always_build : Boolean)
+                              return Boolean;
 
    --  This procedure causes the reverse dependencies to be calculated, and
    --  then the extended (recursive) reverse dependencies.  The former is
@@ -149,6 +150,7 @@ private
          work_locked   : Boolean              := False;
          pkg_present   : Boolean              := False;
          remote_pkg    : Boolean              := False;
+         never_remote  : Boolean              := False;
          deletion_due  : Boolean              := False;
          use_procfs    : Boolean              := False;
          use_linprocfs : Boolean              := False;

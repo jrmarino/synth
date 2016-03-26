@@ -21,7 +21,9 @@ package PortScan.Pilot is
 
    --  Iterate through stack of individual build requests and scan each one.
    --  If any scan fails, return False.
-   function scan_stack_of_single_ports (testmode : Boolean) return Boolean;
+   function scan_stack_of_single_ports (testmode : Boolean;
+                                        always_build : Boolean := False)
+                                        return Boolean;
 
    --  Runs post-scan sanity check
    --  If successful, then scans for all "ignored" ports, failing them

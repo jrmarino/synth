@@ -38,7 +38,7 @@ package body PortScan is
    ------------------------
    --  scan_single_port  --
    ------------------------
-   function scan_single_port (catport : String)
+   function scan_single_port (catport : String; always_build : Boolean)
                               return Boolean
    is
       xports : constant String := JT.USS (PM.configuration.dir_buildbase) &
@@ -108,6 +108,7 @@ package body PortScan is
       declare
       begin
          populate_port_data (target);
+         all_ports (target).never_remote := always_build;
       exception
          when issue : others =>
             TIO.Put ("Encountered issue with " & catport &
@@ -155,6 +156,7 @@ package body PortScan is
          PR.work_locked   := False;
          PR.pkg_present   := False;
          PR.remote_pkg    := False;
+         PR.never_remote  := False;
          PR.deletion_due  := False;
          PR.use_procfs    := False;
          PR.use_linprocfs := False;

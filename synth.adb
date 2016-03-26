@@ -184,7 +184,8 @@ begin
                end if;
             when force =>
                if PIL.build_pkg8_as_necessary and then
-                 PIL.scan_stack_of_single_ports (testmode => False) and then
+                 PIL.scan_stack_of_single_ports (testmode => False,
+                                                 always_build => True) and then
                  PIL.sanity_check_then_prefail (delete_first => True)
                then
                   PIL.perform_bulk_run (testmode => False);
@@ -210,7 +211,8 @@ begin
                end if;
             when test =>
                if PIL.build_pkg8_as_necessary and then
-                 PIL.scan_stack_of_single_ports (testmode => True) and then
+                 PIL.scan_stack_of_single_ports (testmode => True,
+                                                 always_build => True) and then
                  PIL.sanity_check_then_prefail (delete_first => True)
                then
                   if PIL.interact_with_single_builder then

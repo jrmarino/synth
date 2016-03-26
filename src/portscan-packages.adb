@@ -977,7 +977,9 @@ package body PortScan.Packages is
             important   : constant Boolean := all_ports (target_port).scanned;
          begin
             if not aborted and then important then
-               if remote_scan then
+               if remote_scan and then
+                 not all_ports (target_port).never_remote
+               then
                   if not all_ports (target_port).pkg_present or else
                     all_ports (target_port).deletion_due
                   then

@@ -86,7 +86,8 @@ package body PortScan.Pilot is
    begin
       REP.initialize (testmode => False, num_cores => PortScan.cores_available);
       REP.launch_slave (id => PortScan.scan_slave, opts => noprocs);
-      good_scan := PortScan.scan_single_port (catport => pkgng);
+      good_scan := PortScan.scan_single_port (catport => pkgng,
+                                              always_build => False);
 
       if good_scan then
          PortScan.set_build_priority;
@@ -144,7 +145,9 @@ package body PortScan.Pilot is
    ----------------------------------
    --  scan_stack_of_single_ports  --
    ----------------------------------
-   function scan_stack_of_single_ports (testmode : Boolean) return Boolean
+   function scan_stack_of_single_ports (testmode : Boolean;
+                                        always_build : Boolean := False)
+                                        return Boolean
    is
       procedure scan (plcursor : portkey_crate.Cursor);
       successful : Boolean := True;
@@ -164,7 +167,7 @@ package body PortScan.Pilot is
             successful := False;
             return;
          end if;
-         if not PortScan.scan_single_port (origin) then
+         if not PortScan.scan_single_port (origin, always_build) then
             TIO.Put_Line
               ("Scan of " & origin & " failed" &
                  PortScan.obvious_problem
@@ -272,6 +275,9 @@ package body PortScan.Pilot is
         (repository => JT.USS (PM.configuration.dir_repository),
          dry_run    => dry_run, suppress_remote => block_remote);
       bld_counter := (OPS.queue_length, 0, 0, 0, 0);
+      if PKG.queue_is_empty then
+         return False;
+      end if;
       if dry_run then
          return True;
       end if;
