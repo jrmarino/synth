@@ -293,6 +293,66 @@ To delete all the redundant options, just pipe the output into *rm*
 /bin/sh /usr/ports/Tools/scripts/redundant-opt-files.sh | xargs rm -rf
 ```
 
+### How does one configure Synth to use ccache?
+
+First, install ccache:
+
+```
+> pkg install ccache 
+or
+> cd /usr/ports/devel/ccache && make install
+```
+
+Check initial configuration:
+
+```
+> ccache -s
+cache directory                     /root/.ccache
+primary config                      /root/.ccache/ccache.conf
+secondary config      (readonly)    /usr/local/etc/ccache.conf
+cache hit (direct)                     0
+cache hit (preprocessed)               0
+cache miss                             0
+files in cache                         0
+cache size                           0.0 kB
+max cache size                       5.0 GB
+```
+
+Update the maximum cache size:
+
+```
+> ccache --max-size=15G
+Set cache size limit to 15.0 GB
+```
+
+Set the cache location where you want it (e.g. /var/cache/ccache):
+
+```
+> ccache --set-config=cache_dir=/var/cache/ccache
+```
+
+check configuration again:
+
+```
+> ccache -s
+cache directory                     /var/cache/ccache
+primary config                      /root/.ccache/ccache.conf
+secondary config      (readonly)    /usr/local/etc/ccache.conf
+cache hit (direct)                     0
+cache hit (preprocessed)               0
+cache miss                             0
+files in cache                         0
+cache size                           0.0 kB
+max cache size                      15.0 GB
+```
+
+Now run __synth configure__, selection option [H], and enter the value of 
+_cache directory_ (/var/cache/ccache in this example)
+
+While synth is building, you can run __ccache -s__ command repeatedly in
+another terminal to check if the statistics are changing during the build.
+If they are, ccache is properly configured.
+
 ## Overview Diagrams
 
 ![Relationship with ports and pkg(8)](http://downloads.dragonlace.net/misc/synth-img/synth-arch.png)
