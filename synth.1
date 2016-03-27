@@ -1,4 +1,4 @@
-.Dd March 9, 2016
+.Dd March 27, 2016
 .Dt SYNTH 1
 .Os
 .Sh NAME
@@ -430,6 +430,16 @@ command to signal
 .Nm
 to clean up and terminate. This is a developer tool to troubleshoot port
 build problems and it is not intended for the average user.
+.It Ev LOCK
+This environment variable only applies with the
+.Cm test
+command. When it is defined to any value, the builder's localbase is
+remounted read-only prior to the configure phase and restored to
+read/write permissions after building is complete.  This is a diagnostic
+tool aimed at pinpointing file system violations as a port is not supposed
+to write to localbase prior to staging.  Note that the localbase tmpfs
+setting will considered as False in this mode, so building may be
+noticeably slower than normal.
 .El
 .Sh FILES
 The following files may be used or created:

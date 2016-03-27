@@ -73,6 +73,7 @@ private
    customenv : JT.Text;
    slave_env : JT.Text;
    testing   : Boolean;
+   lock_localbase : Boolean;
 
    chroot    : constant String := "/usr/sbin/chroot ";
    uselog    : constant Boolean := True;
@@ -124,4 +125,10 @@ private
    function  watchdog_setting (sid : port_id) return String;
    function  detect_leftovers_and_MIA (id : builders; action : String;
                                        description : String) return Boolean;
+
+   --  This is designed to be used twice; once with lock=True and again
+   --  with lock=False.  It's a diagnostic mechanism and effectively sets
+   --  /usr/local inside a slave as read-only
+   procedure set_localbase_protection (id : builders; lock : Boolean);
+
 end PortScan.Buildcycle;

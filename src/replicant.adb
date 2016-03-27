@@ -109,6 +109,7 @@ package body Replicant is
    begin
       smp_cores := num_cores;
       developer_mode := testmode;
+      support_locks := testmode and then Unix.env_variable_defined ("LOCK");
       if JT.equivalent (PM.configuration.operating_sys, "FreeBSD") then
          opsys := freebsd;
       end if;
@@ -736,7 +737,7 @@ package body Replicant is
          mount_nullfs (slave_work, location (slave_base, wrkdirs), readwrite);
       end if;
 
-      if PM.configuration.tmpfs_localbase then
+      if not support_locks and then PM.configuration.tmpfs_localbase then
          mount_tmpfs (slave_base & root_localbase, 12 * 1024);
       else
          forge_directory (slave_local);
@@ -825,7 +826,7 @@ package body Replicant is
       dir_system   : constant String := JT.USS (PM.configuration.dir_system);
    begin
       unmount (slave_base & root_localbase);
-      if not PM.configuration.tmpfs_localbase then
+      if support_locks or else not PM.configuration.tmpfs_localbase then
          --  We can't use AD.Delete_Tree because it skips directories
          --  starting with "." (pretty useless then)
          annihilate_directory_tree (slave_local);

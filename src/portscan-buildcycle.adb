@@ -43,6 +43,9 @@ package body PortScan.Buildcycle is
 
             when configure =>
                if testing then
+                  if lock_localbase then
+                     set_localbase_protection (id, True);
+                  end if;
                   mark_file_system (id, "preconfig");
                end if;
                R := exec_phase_generic (id, phase);
@@ -538,6 +541,7 @@ package body PortScan.Buildcycle is
    begin
       set_uname_mrv;
       testing := test_mode;
+      lock_localbase := testing and then Unix.env_variable_defined ("LOCK");
       slave_env := jail_env;
       declare
          logdir : constant String := JT.USS (PM.configuration.dir_logs);
@@ -633,6 +637,9 @@ package body PortScan.Buildcycle is
                             skip_header => False,
                             skip_footer => True);
       if testing and then passed then
+         if lock_localbase then
+            set_localbase_protection (id, False);
+         end if;
          passed := detect_leftovers_and_MIA
            (id, "preconfig", "between port configure and build");
       end if;
@@ -1501,5 +1508,67 @@ package body PortScan.Buildcycle is
             TIO.Close (fragment);
          end if;
    end obtain_custom_environment;
+
+
+   --------------------------------
+   --  set_localbase_protection  --
+   --------------------------------
+   procedure set_localbase_protection (id : builders; lock : Boolean)
+   is
+      procedure remount (readonly : Boolean);
+      procedure dismount;
+
+      smount        : constant String := get_root (id);
+      lbase         : constant String := "/usr/local";
+      slave_local   : constant String := smount & "_localbase";
+
+
+      procedure remount (readonly : Boolean)
+      is
+         cmd_freebsd   : String := "/sbin/mount_nullfs ";
+         cmd_dragonfly : String := "/sbin/mount_null ";
+         points        : String := slave_local & " " & smount & lbase;
+         options       : String := "-o ro ";
+         cmd           : JT.Text;
+      begin
+         if JT.equivalent (PM.configuration.operating_sys, "FreeBSD") then
+            cmd := JT.SUS (cmd_freebsd);
+         else
+            cmd := JT.SUS (cmd_dragonfly);
+         end if;
+         if readonly then
+            JT.SU.Append (cmd, options);
+         end if;
+         JT.SU.Append (cmd, points);
+
+         if not Unix.piped_mute_command (JT.USS (cmd)) then
+            if uselog then
+               TIO.Put_Line (trackers (id).log_handle,
+                             "command failed: " & JT.USS (cmd));
+            end if;
+         end if;
+      end remount;
+
+      procedure dismount
+      is
+         cmd_unmount : constant String := "/sbin/umount " & smount & lbase;
+      begin
+         if not Unix.piped_mute_command (cmd_unmount) then
+            if uselog then
+               TIO.Put_Line (trackers (id).log_handle,
+                             "command failed: " & cmd_unmount);
+            end if;
+         end if;
+      end dismount;
+
+   begin
+      if lock then
+         dismount;
+         remount (readonly => True);
+      else
+         dismount;
+         remount (readonly => False);
+      end if;
+   end set_localbase_protection;
 
 end PortScan.Buildcycle;

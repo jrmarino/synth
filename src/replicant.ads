@@ -117,6 +117,7 @@ private
 
    flavor           : nullfs_flavor   := unknown;
    smp_cores        : cpu_range       := cpu_range'First;
+   support_locks    : Boolean;
    developer_mode   : Boolean;
    builder_env      : JT.Text;
 
