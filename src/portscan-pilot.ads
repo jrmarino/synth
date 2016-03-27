@@ -120,6 +120,9 @@ package PortScan.Pilot is
    --  fail.  Currently it's only checking for FreeBSD's /boot/modules
    function valid_system_root return Boolean;
 
+   --  returns True if CONSERVATIVE_UPGRADE option on host pkg(8) is enabled
+   function host_pkg8_conservative_upgrade_set return Boolean;
+
    pilot_log : exception;
 
 private

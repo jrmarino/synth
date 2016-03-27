@@ -323,7 +323,12 @@ begin
                if PIL.build_pkg8_as_necessary and then
                  PIL.rebuild_local_respository
                then
-                  null;
+                  if PIL.host_pkg8_conservative_upgrade_set then
+                     TIO.Put_Line ("Note: This system's pkg(8) is configured " &
+                                     "with CONSERVATIVE_UPGRADE = true");
+                     TIO.Put_Line ("      You may wish to toggle that " &
+                                     "setting if this is a local repository.");
+                  end if;
                end if;
             when purge =>
                PIL.purge_distfiles;

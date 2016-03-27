@@ -1585,4 +1585,19 @@ package body PortScan.Pilot is
       return True;
    end valid_system_root;
 
+
+   ------------------------------------------
+   --  host_pkg8_conservative_upgrade_set  --
+   ------------------------------------------
+   function host_pkg8_conservative_upgrade_set return Boolean
+   is
+      command : constant String := host_pkg8 & " config CONSERVATIVE_UPGRADE";
+      content : JT.Text;
+      topline : JT.Text;
+   begin
+      content := CYC.generic_system_command (command);
+      JT.nextline (lineblock => content, firstline => topline);
+      return JT.equivalent (topline, "yes");
+   end host_pkg8_conservative_upgrade_set;
+
 end PortScan.Pilot;
