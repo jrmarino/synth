@@ -1261,6 +1261,8 @@ package body PortScan.Buildcycle is
          --     # gconftool-2 --makefile-uninstall-rule is unpredictable
          --  G) %%PEARDIR%%/.depdb | %%PEARDIR%%/.filemap
          --     # The is pear database cache
+         --  H) "." with timestamp modification
+         --     # this happens when ./tmp or ./var is used, which is legal
          filename : constant String := JT.USS (modport);
          fnlen    : constant Natural := filename'Length;
       begin
@@ -1271,6 +1273,9 @@ package body PortScan.Buildcycle is
            filename = "usr/local/share/pear/.depdb" or else
            filename = "usr/local/share/pear/.filemap"
          then
+            return True;
+         end if;
+         if filename = "." and then JT.equivalent (reasons, "modification") then
             return True;
          end if;
          if fnlen > 17 and then filename (1 .. 10) = "usr/local/"
