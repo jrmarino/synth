@@ -1189,6 +1189,7 @@ package body Replicant is
          & "./usr/sbin" & LAT.LF
          & "./usr/share" & LAT.LF
          & "./usr/src" & LAT.LF
+         & "./var/db/fontconfig" & LAT.LF
          & "./var/run" & LAT.LF
          & "./var/tmp" & LAT.LF
          & "./xports"
@@ -1212,7 +1213,6 @@ package body Replicant is
          & "./etc/pwd.db" & LAT.LF
          & "./etc/shells" & LAT.LF
          & "./etc/spwd.db" & LAT.LF
-         & "./var/db/fontconfig" & LAT.LF
          & "./var/db/freebsd-update" & LAT.LF
          & "./var/db/pkg" & LAT.LF
          & "./var/log" & LAT.LF
