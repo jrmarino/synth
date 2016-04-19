@@ -615,7 +615,9 @@ package body PortScan is
          end case;
       end loop;
       all_ports (target).scanned := True;
-      if catport = "x11-toolkits/gnustep-gui"
+      if catport = "x11-toolkits/gnustep-gui" or else
+        catport = "lang/rust" or else
+        catport = "lang/rust-nightly"
       then
          all_ports (target).use_procfs := True;
       end if;
