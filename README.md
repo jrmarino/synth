@@ -223,6 +223,7 @@ allow.mount
 allow.mount.nullfs
 allow.mount.tmpfs
 allow.mount.devfs
+allow.chflags
 ```
 (Courtesy of Dewayne Geraghty)
 
