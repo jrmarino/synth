@@ -748,6 +748,18 @@ package body Replicant is
          mount_procfs (path_to_proc => location (slave_base, proc));
       end if;
 
+      if flavor = dragonfly then
+         declare
+            bootdir : String := clean_mount_point (boot);
+         begin
+            if AD.Exists (bootdir) then
+               mount_nullfs (target      => bootdir,
+                             mount_point => location (slave_base, boot));
+               mount_tmpfs (slave_base & root_lmodules, 100);
+            end if;
+         end;
+      end if;
+
       if flavor = freebsd then
          if opts.need_linprocfs then
             if PM.configuration.tmpfs_localbase then
@@ -843,6 +855,13 @@ package body Replicant is
 
       if AD.Exists (mount_target (ccache)) then
          unmount (location (slave_base, ccache));
+      end if;
+
+      if flavor = dragonfly then
+         if AD.Exists (location (dir_system, boot)) then
+            unmount (slave_base & root_lmodules);
+            unmount (location (slave_base, boot));
+         end if;
       end if;
 
       if flavor = freebsd then
@@ -1366,6 +1385,17 @@ package body Replicant is
    --------------------------------------
    function boot_modules_directory_missing return Boolean is
    begin
+      if JT.equivalent (PM.configuration.operating_sys, "DragonFly") then
+         declare
+            sroot   : constant String := JT.USS (PM.configuration.dir_system);
+            bootdir : constant String := sroot & root_boot;
+            modsdir : constant String := sroot & root_lmodules;
+         begin
+            if AD.Exists (bootdir) and then not AD.Exists (modsdir) then
+               return True;
+            end if;
+         end;
+      end if;
       if JT.equivalent (PM.configuration.operating_sys, "FreeBSD") then
          declare
             sroot   : constant String := JT.USS (PM.configuration.dir_system);
