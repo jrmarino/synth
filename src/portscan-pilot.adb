@@ -492,8 +492,13 @@ package body PortScan.Pilot is
             TIO.Put_Line (shutreq);
             return False;
          end if;
-         TIO.Put_Line ("Stand by, recursively scanning" & portlist.Length'Img &
-                         " ports serially.");
+         TIO.Put ("Stand by, recursively scanning");
+         if Natural (portlist.Length) = 1 then
+            TIO.Put (" 1 port");
+         else
+            TIO.Put (portlist.Length'Img & " ports");
+         end if;
+         TIO.Put_Line (" serially.");
          for k in dim_all_ports'Range loop
             all_ports (k).deletion_due := False;
          end loop;
