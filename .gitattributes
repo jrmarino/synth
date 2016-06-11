@@ -1,0 +1,14 @@
+# Auto detect text files and perform LF normalization
+* text eol=lf
+
+*.adb	text
+*.ads	text
+*.gpr	text
+*.md	text
+*.html	text
+*.shtml	text
+*.css	text
+*.tpl	text
+
+*.png	binary
+*.jpg	binary
