@@ -464,7 +464,8 @@ package body PortScan.Pilot is
    ---------------------------------
    --  rebuild_local_respository  --
    ---------------------------------
-   function rebuild_local_respository (use_full_scan : Boolean := True)
+   function rebuild_local_respository (remove_invalid_packages : Boolean;
+                                       use_full_scan : Boolean := True)
                                        return Boolean
    is
       repo : constant String := JT.USS (PM.configuration.dir_repository);
@@ -482,7 +483,9 @@ package body PortScan.Pilot is
          REP.initialize (testmode => False,
                          num_cores => PortScan.cores_available);
          REP.launch_slave (id => PortScan.scan_slave, opts => noprocs);
-         PKG.preclean_repository (repo);
+         if remove_invalid_packages then
+            PKG.preclean_repository (repo);
+         end if;
          REP.destroy_slave (id => PortScan.scan_slave, opts => noprocs);
          REP.finalize;
          if SIG.graceful_shutdown_requested then
@@ -949,7 +952,7 @@ package body PortScan.Pilot is
       if SIG.graceful_shutdown_requested then
          return;
       end if;
-      if rebuild_local_respository then
+      if rebuild_local_respository (remove_invalid_packages => True) then
          if not skip_installation then
             if not Unix.external_command (command)
             then

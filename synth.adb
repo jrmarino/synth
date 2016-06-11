@@ -176,7 +176,8 @@ begin
                   PIL.perform_bulk_run (testmode => False);
                   if PIL.verify_desire_to_rebuild_repository and then
                     PIL.write_pkg_repos_configuration_file and then
-                    PIL.rebuild_local_respository and then
+                    PIL.rebuild_local_respository
+                      (remove_invalid_packages => False) and then
                     PIL.verify_desire_to_install_packages
                   then
                      PIL.upgrade_system_exactly;
@@ -191,7 +192,8 @@ begin
                   PIL.perform_bulk_run (testmode => False);
                   if PIL.verify_desire_to_rebuild_repository and then
                     PIL.write_pkg_repos_configuration_file and then
-                    PIL.rebuild_local_respository and then
+                    PIL.rebuild_local_respository
+                      (remove_invalid_packages => False) and then
                     PIL.verify_desire_to_install_packages
                   then
                      PIL.upgrade_system_exactly;
@@ -205,6 +207,7 @@ begin
                   PIL.perform_bulk_run (testmode => False);
                   if PIL.write_pkg_repos_configuration_file and then
                     PIL.rebuild_local_respository
+                      (remove_invalid_packages => False)
                   then
                      PIL.upgrade_system_exactly;
                   end if;
@@ -322,6 +325,7 @@ begin
             when gen_repo =>
                if PIL.build_pkg8_as_necessary and then
                  PIL.rebuild_local_respository
+                   (remove_invalid_packages => True)
                then
                   if PIL.host_pkg8_conservative_upgrade_set then
                      TIO.Put_Line ("Note: This system's pkg(8) is configured " &
@@ -338,7 +342,10 @@ begin
                  PIL.sanity_check_then_prefail
                then
                   PIL.perform_bulk_run (testmode => False);
-                  if PIL.rebuild_local_respository (use_full_scan => False) then
+                  if PIL.rebuild_local_respository
+                    (use_full_scan => False,
+                     remove_invalid_packages => True)
+                  then
                      null;
                   end if;
                end if;
