@@ -267,8 +267,6 @@ package body PortScan.Packages is
       end if;
       if dry_run then
          if not fetch_list.Is_Empty then
-            declare
-
             begin
                TIO.Create (File => listlog, Mode => TIO.Out_File,
                            Name => filename);

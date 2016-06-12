@@ -502,6 +502,7 @@ package body PortScan.Pilot is
          for k in dim_all_ports'Range loop
             all_ports (k).deletion_due := False;
          end loop;
+         PortScan.reset_ports_tree;
          if scan_stack_of_single_ports (testmode => False) then
             PKG.limited_sanity_check (repository      => repo,
                                       dry_run         => False,
