@@ -12,7 +12,8 @@ project Default is
    end Pretty_Printer;
 
    package Compiler is
-      for Default_Switches ("ada") use ("-g", "-O2", "-gnat12", "-gnatyaAbBcdefhiklnOprsSxt");
+      for Default_Switches ("ada") use ("-g", "-O2", "-gnat12", "-gnatyaAbBcdefhiklnOprsSxt", "-fstack-check");
    end Compiler;
 
 end Default;
+
