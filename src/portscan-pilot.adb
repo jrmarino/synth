@@ -81,13 +81,15 @@ package body PortScan.Pilot is
    is
       pkg_good  : Boolean;
       good_scan : Boolean;
+      stop_now  : Boolean;
       selection : PortScan.port_id;
       result    : Boolean := True;
    begin
       REP.initialize (testmode => False, num_cores => PortScan.cores_available);
       REP.launch_slave (id => PortScan.scan_slave, opts => noprocs);
       good_scan := PortScan.scan_single_port (catport => pkgng,
-                                              always_build => False);
+                                              always_build => False,
+                                              fatal => stop_now);
 
       if good_scan then
          PortScan.set_build_priority;
@@ -151,6 +153,7 @@ package body PortScan.Pilot is
    is
       procedure scan (plcursor : portkey_crate.Cursor);
       successful : Boolean := True;
+      just_stop_now : Boolean;
 
       procedure scan (plcursor : portkey_crate.Cursor)
       is
@@ -167,12 +170,17 @@ package body PortScan.Pilot is
             successful := False;
             return;
          end if;
-         if not PortScan.scan_single_port (origin, always_build) then
-            TIO.Put_Line
-              ("Scan of " & origin & " failed" &
-                 PortScan.obvious_problem
-                 (JT.USS (PM.configuration.dir_portsdir), origin) &
-                 ", it will not be considered.");
+         if not PortScan.scan_single_port (origin, always_build, just_stop_now)
+         then
+            if just_stop_now then
+               successful := False;
+            else
+               TIO.Put_Line
+                 ("Scan of " & origin & " failed" &
+                    PortScan.obvious_problem
+                    (JT.USS (PM.configuration.dir_portsdir), origin) &
+                    ", it will not be considered.");
+            end if;
          end if;
       end scan;
 

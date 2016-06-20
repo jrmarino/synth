@@ -38,7 +38,8 @@ package body PortScan is
    ------------------------
    --  scan_single_port  --
    ------------------------
-   function scan_single_port (catport : String; always_build : Boolean)
+   function scan_single_port (catport : String; always_build : Boolean;
+                              fatal : out Boolean)
                               return Boolean
    is
       xports : constant String := JT.USS (PM.configuration.dir_buildbase) &
@@ -47,6 +48,7 @@ package body PortScan is
       procedure dig (cursor : block_crate.Cursor);
       target    : port_index;
       aborted   : Boolean := False;
+      indy500   : Boolean := False;
       uscatport : JT.Text := JT.SUS (catport);
 
       procedure dig (cursor : block_crate.Cursor)
@@ -54,9 +56,19 @@ package body PortScan is
          new_target : port_index := block_crate.Element (cursor);
       begin
          if not aborted then
+            if all_ports (new_target).scan_locked then
+               --  We've already seen this (circular dependency)
+               raise circular_logic;
+            end if;
             if not all_ports (new_target).scanned then
                populate_port_data (new_target);
+               all_ports (new_target).scan_locked := True;
                all_ports (new_target).blocked_by.Iterate (dig'Access);
+               all_ports (new_target).scan_locked := False;
+               if indy500 then
+                  TIO.Put_Line ("... backtrace " &
+                                  get_catport (all_ports (new_target)));
+               end if;
             end if;
          end if;
       exception
@@ -77,6 +89,13 @@ package body PortScan is
             TIO.Put_Line (LAT.LF & get_catport (all_ports (new_target)) &
                             " scan aborted because dependency is malformed.");
             TIO.Put_Line (EX.Exception_Message (issue));
+         when issue : circular_logic =>
+            aborted := True;
+            indy500 := True;
+            TIO.Put_Line (LAT.LF & catport &
+                            " scan aborted because a circular dependency on " &
+                            get_catport (all_ports (new_target)) &
+                            " was detected.");
          when issue : others =>
             aborted := True;
             declare
@@ -94,6 +113,7 @@ package body PortScan is
             end;
       end dig;
    begin
+      fatal := False;
       if not AD.Exists (xports & "/" & catport & "/Makefile") then
          return False;
       end if;
@@ -116,7 +136,13 @@ package body PortScan is
             TIO.Put_Line (EX.Exception_Message (issue));
             return False;
       end;
+      all_ports (target).scan_locked := True;
       all_ports (target).blocked_by.Iterate (dig'Access);
+      all_ports (target).scan_locked := False;
+      if indy500 then
+         TIO.Put_Line ("... backtrace " & catport);
+         fatal := True;
+      end if;
       return not aborted;
 
    end scan_single_port;
@@ -154,6 +180,7 @@ package body PortScan is
          PR.rev_scanned   := False;
          PR.unlist_failed := False;
          PR.work_locked   := False;
+         PR.scan_locked   := False;
          PR.pkg_present   := False;
          PR.remote_pkg    := False;
          PR.never_remote  := False;
