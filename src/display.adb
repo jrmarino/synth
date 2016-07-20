@@ -160,9 +160,13 @@ package body Display is
    procedure launch_actions_zone
    is
       consumed   : constant Integer := builders_used + 4 + 2;
-      difference : constant Integer := 0 - consumed;
       viewpos    : constant TIC.Line_Position := TIC.Line_Position (consumed);
+      difference : Integer := 0 - consumed;
    begin
+      --  Guarantee at least 10 lines for history and let ncurses handle any overflow
+      if difference < 10 then
+         difference := 10;
+      end if;
       historyheight := inc (TIC.Lines, difference);
       zone_actions := TIC.Create (Number_Of_Lines       => historyheight,
                                   Number_Of_Columns     => app_width,
