@@ -68,6 +68,7 @@ private
    memory_megs     : Natural := 0;
 
    make_query      : exception;
+   bad_opsys       : exception;
 
    --  Default Sizing by number of CPUS
    --      1 CPU ::  1 Builder,  1 job  per builder
