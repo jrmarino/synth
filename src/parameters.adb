@@ -199,9 +199,10 @@ package body Parameters is
          res.operating_sys := extract_string
            (profile, Field_12, query_opsys (JT.USS (res.dir_portsdir)));
       end if;
-      if res.operating_sys /= "FreeBSD" and then res.operating_sys /= "DragonFly"
+      if not JT.equivalent (res.operating_sys, "FreeBSD") and then
+        not JT.equivalent (res.operating_sys, "DragonFly")
       then
-         raise bad_opsys with "Unknown Operating System: " & res.operating_sys;
+         raise bad_opsys with "Unknown Operating System: " & JT.USS (res.operating_sys);
       end if;
 
       res.dir_options    := extract_string (profile, Field_13, std_options);
