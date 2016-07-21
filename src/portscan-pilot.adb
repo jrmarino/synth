@@ -50,7 +50,9 @@ package body PortScan.Pilot is
                return valid_file (Arg2);
             end if;
             if valid_catport (catport => Arg2) then
-               plinsert (Arg2, 2);
+               if Arg2 /= pkgng then
+                  plinsert (Arg2, 2);
+               end if;
                return True;
             else
                TIO.Put_Line (badport & Arg2);
@@ -63,7 +65,9 @@ package body PortScan.Pilot is
             Argk : constant String := trimmed_catport (CLI.Argument (k));
          begin
             if valid_catport (catport => Argk) then
-               plinsert (Argk, k);
+               if Argk /= pkgng then
+                  plinsert (Argk, k);
+               end if;
             else
                TIO.Put_Line (badport & "'" & Argk & "'" & k'Img);
                return False;
