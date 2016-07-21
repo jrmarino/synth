@@ -180,7 +180,7 @@ package body Unix is
    --------------------------
    --  piped_mute_command  --
    --------------------------
-   function piped_mute_command (command : String ; abnormal: out JT.Text) return Boolean
+   function piped_mute_command (command : String; abnormal : out JT.Text) return Boolean
    is
       redirect   : constant String := " 2>&1";
       filestream : CSM.FILEs;
