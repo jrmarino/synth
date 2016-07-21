@@ -1535,6 +1535,7 @@ package body PortScan.Buildcycle is
          points        : String := slave_local & " " & smount & lbase;
          options       : String := "-o ro ";
          cmd           : JT.Text;
+         cmd_output    : JT.Text;
       begin
          if JT.equivalent (PM.configuration.operating_sys, "FreeBSD") then
             cmd := JT.SUS (cmd_freebsd);
@@ -1546,10 +1547,13 @@ package body PortScan.Buildcycle is
          end if;
          JT.SU.Append (cmd, points);
 
-         if not Unix.piped_mute_command (JT.USS (cmd)) then
+         if not Unix.piped_mute_command (JT.USS (cmd), cmd_output) then
             if uselog then
                TIO.Put_Line (trackers (id).log_handle,
                              "command failed: " & JT.USS (cmd));
+               if not JT.IsBlank (cmd_output) then
+                  TIO.Put_Line (trackers (id).log_handle, JT.USS (cmd_output));
+               end if;
             end if;
          end if;
       end remount;
@@ -1557,11 +1561,15 @@ package body PortScan.Buildcycle is
       procedure dismount
       is
          cmd_unmount : constant String := "/sbin/umount " & smount & lbase;
+         cmd_output  : JT.Text;
       begin
-         if not Unix.piped_mute_command (cmd_unmount) then
+         if not Unix.piped_mute_command (cmd_unmount, cmd_output) then
             if uselog then
                TIO.Put_Line (trackers (id).log_handle,
                              "command failed: " & cmd_unmount);
+               if not JT.IsBlank (cmd_output) then
+                  TIO.Put_Line (trackers (id).log_handle, JT.USS (cmd_output));
+               end if;
             end if;
          end if;
       end dismount;

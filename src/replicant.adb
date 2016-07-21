@@ -115,6 +115,8 @@ package body Replicant is
       end if;
       flavor := opsys;
 
+      start_abnormal_logging;
+
       if AD.Exists (mm) then
          annihilate_directory_tree (mm);
       end if;
@@ -140,6 +142,7 @@ package body Replicant is
       if AD.Exists (mm) then
          annihilate_directory_tree (mm);
       end if;
+      stop_abnormal_logging;
    end finalize;
 
 
@@ -205,9 +208,9 @@ package body Replicant is
    is
       command : constant String := "/sbin/umount " & device_or_node;
    begin
-      --  failure to unmount causes stderr squawks which messes up curses
-      --  display.  Just ignore for now (Add robustness later)
-      silent_exec (command);
+      --  failure to unmount causes stderr squawks which messes up curses display
+      --  Just log it and ignore for now (Add robustness later)
+      execute (command);
    exception
       when others => null;  -- silently fail
    end unmount;
@@ -349,13 +352,12 @@ package body Replicant is
    ---------------
    procedure execute (command : String)
    is
-      Args        : OSL.Argument_List_Access;
       Exit_Status : Integer;
+      output : JT.Text := Unix.piped_command (command, Exit_Status);
    begin
-      Args := OSL.Argument_String_To_List (command);
-      Exit_Status := OSL.Spawn (Program_Name => Args (Args'First).all,
-                                Args => Args (Args'First + 1 .. Args'Last));
-      OSL.Free (Args);
+      if abn_log_ready and then not JT.IsBlank (output) then
+         TIO.Put_Line (abnormal_log, JT.USS (output));
+      end if;
       if Exit_Status /= 0 then
          raise scenario_unexpected with
            command & " => failed with code" & Exit_Status'Img;
@@ -366,9 +368,16 @@ package body Replicant is
    -------------------
    --  silent_exec  --
    -------------------
-   procedure silent_exec (command : String) is
+   procedure silent_exec (command : String)
+   is
+      cmd_output : JT.Text;
+      success : Boolean := Unix.piped_mute_command (command, cmd_output);
    begin
-      if not Unix.piped_mute_command (command) then
+      if not success then
+         if abn_log_ready and then not JT.IsBlank (cmd_output) then
+            TIO.Put_Line (abnormal_log, "piped_mute_command failure:");
+            TIO.Put_Line (abnormal_log, JT.USS (cmd_output));
+         end if;
          raise scenario_unexpected with
            command & " => failed (exit code not 0)";
       end if;
@@ -1408,5 +1417,36 @@ package body Replicant is
       end if;
       return False;
    end boot_modules_directory_missing;
+
+
+   ------------------------------
+   --  start_abnormal_logging  --
+   ------------------------------
+   procedure start_abnormal_logging
+   is
+      logpath : constant String := JT.USS (PM.configuration.dir_logs)
+        & "/" & abnormal_cmd_logname;
+   begin
+      if AD.Exists (logpath) then
+         AD.Delete_File (logpath);
+      end if;
+      TIO.Create (File => abnormal_log,
+                  Mode => TIO.Out_File,
+                  Name => logpath);
+      abn_log_ready := True;
+      exception
+      when others => abn_log_ready := False;
+   end start_abnormal_logging;
+
+
+   -----------------------------
+   --  stop_abnormal_logging  --
+   -----------------------------
+   procedure stop_abnormal_logging is
+   begin
+      if abn_log_ready then
+         TIO.Close (abnormal_log);
+      end if;
+   end stop_abnormal_logging;
 
 end Replicant;

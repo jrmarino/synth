@@ -120,7 +120,11 @@ private
    smp_cores        : cpu_range       := cpu_range'First;
    support_locks    : Boolean;
    developer_mode   : Boolean;
+   abn_log_ready    : Boolean;
    builder_env      : JT.Text;
+   abnormal_log     : TIO.File_Type;
+
+   abnormal_cmd_logname : constant String := "05_abnormal_cmd.out";
 
    --  Throws exception if mount attempt was unsuccessful
    procedure mount_nullfs (target, mount_point : String;
@@ -218,5 +222,9 @@ private
 
    --  Derived from /usr/bin/file -b <slave>/bin/sh
    function get_arch_from_bourne_shell return String;
+
+   --  capture unexpected output while setting up builders (e.g. mount)
+   procedure start_abnormal_logging;
+   procedure stop_abnormal_logging;
 
 end Replicant;

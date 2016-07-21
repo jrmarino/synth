@@ -180,20 +180,15 @@ package body Unix is
    --------------------------
    --  piped_mute_command  --
    --------------------------
-   function piped_mute_command (command : String) return Boolean
+   function piped_mute_command (command : String ; abnormal: out JT.Text) return Boolean
    is
       redirect   : constant String := " 2>&1";
       filestream : CSM.FILEs;
       status     : Integer;
-      result     : JT.Text;
    begin
       filestream := popen (IC.To_C (command & redirect), IC.To_C ("r"));
-      result     := pipe_read (OpenFile => filestream);
+      abnormal   := pipe_read (OpenFile => filestream);
       status     := pipe_close (OpenFile => filestream);
-      if status /= 0 then
-         TIO.Put_Line ("piped_mute_command failure:");
-         TIO.Put_Line (" => " & JT.USS (result));
-      end if;
       return status = 0;
    end piped_mute_command;
 

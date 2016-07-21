@@ -50,7 +50,7 @@ package Unix is
    --  Run external command that is expected to have no output to standard
    --  out, but catch stdout anyway.  Don't return any output, but do return
    --  True of the command returns status of zero.
-   function piped_mute_command (command : String) return Boolean;
+   function piped_mute_command (command : String; abnormal : out JT.Text) return Boolean;
 
    --  When the cone of silence is deployed, the terminal does not echo
    --  and Control-Q/S keystrokes are not captured (and vice-versa)
