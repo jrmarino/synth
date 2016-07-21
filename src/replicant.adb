@@ -954,7 +954,6 @@ package body Replicant is
       package crate is new AC.Vectors (Index_Type   => Positive,
                                        Element_Type => JT.Text,
                                        "="          => JT.SU."=");
-      package sorter is new crate.Generic_Sorting ("<" => JT.SU."<");
       procedure annihilate (cursor : crate.Cursor);
 
       buildbase : constant String := JT.USS (PM.configuration.dir_buildbase);
@@ -993,7 +992,6 @@ package body Replicant is
          end if;
       end loop;
 
-      sorter.Sort (Container => mpoints);
       mpoints.Reverse_Iterate (Process => annihilate'Access);
 
       if synth_mounts_exist then
