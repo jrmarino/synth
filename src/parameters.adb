@@ -140,9 +140,15 @@ package body Parameters is
    function load_specific_profile (profile : String; num_cores : cpu_range)
                                    return configuration_record
    is
+      function opsys_ok return Boolean;
       def_builders : Integer;
       def_jlimit   : Integer;
       res          : configuration_record;
+      function opsys_ok return Boolean is
+      begin
+         return (JT.equivalent (res.operating_sys, "FreeBSD") or else
+                 JT.equivalent (res.operating_sys, "DragonFly"));
+      end opsys_ok;
    begin
       --  The profile *must* exist before this procedure is called!
       default_parallelism (num_cores        => num_cores,
@@ -199,10 +205,15 @@ package body Parameters is
          res.operating_sys := extract_string
            (profile, Field_12, query_opsys (JT.USS (res.dir_portsdir)));
       end if;
-      if not JT.equivalent (res.operating_sys, "FreeBSD") and then
-        not JT.equivalent (res.operating_sys, "DragonFly")
-      then
-         raise bad_opsys with "Unknown Operating System: " & JT.USS (res.operating_sys);
+      if not opsys_ok then
+         TIO.Put_Line ("Unknown operating system: " & JT.USS (res.operating_sys));
+         TIO.Put_Line ("This configuration entry must be either 'FreeBSD' or 'DragonFly'");
+         TIO.Put_Line ("Manually edit " & Definitions.host_localbase &
+                         "/etc/synth/synth.ini file to remove the line of the");
+         TIO.Put_Line (profile & " profile starting with 'Operating_system='");
+         TIO.Put_Line ("The synth.ini file should regenerate properly on the next Synth command.");
+         TIO.Put_Line ("");
+         raise bad_opsys;
       end if;
 
       res.dir_options    := extract_string (profile, Field_13, std_options);
