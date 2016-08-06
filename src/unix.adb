@@ -170,7 +170,7 @@ package body Unix is
       filestream : CSM.FILEs;
       result     : JT.Text;
    begin
-      filestream := popen (IC.To_C (command & redirect), IC.To_C ("r"));
+      filestream := popen (IC.To_C (command & redirect), IC.To_C ("re"));
       result := pipe_read (OpenFile => filestream);
       status := pipe_close (OpenFile => filestream);
       return result;
@@ -186,7 +186,7 @@ package body Unix is
       filestream : CSM.FILEs;
       status     : Integer;
    begin
-      filestream := popen (IC.To_C (command & redirect), IC.To_C ("r"));
+      filestream := popen (IC.To_C (command & redirect), IC.To_C ("re"));
       abnormal   := pipe_read (OpenFile => filestream);
       status     := pipe_close (OpenFile => filestream);
       return status = 0;
