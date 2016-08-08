@@ -642,10 +642,7 @@ package body PortScan is
          end case;
       end loop;
       all_ports (target).scanned := True;
-      if catport = "x11-toolkits/gnustep-gui" or else
-        catport = "lang/rust" or else
-        catport = "lang/rust-nightly"
-      then
+      if catport = "x11-toolkits/gnustep-gui" then
          all_ports (target).use_procfs := True;
       end if;
       if catport = "emulators/linux_base-c6" or else
