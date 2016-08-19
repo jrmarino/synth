@@ -1242,6 +1242,7 @@ package body Replicant is
          & "./var/db" & LAT.LF
          & "./var/log" & LAT.LF
          & "./var/mail" & LAT.LF
+         & "./var/spool" & LAT.LF
          & "./var/tmp" & LAT.LF
          & "./usr/local/etc/gconf/gconf.xml.defaults/%gconf-tree*.xml" & LAT.LF
          & "./usr/local/lib/gio/modules/giomodule.cache" & LAT.LF
