@@ -24,6 +24,10 @@ int main (int argc, char *argv[])
     {
       return (-3);
     }
+  if (fd <= STDERR_FILENO)
+    {
+      return (-5);
+    }
 
   dup2 (fd, STDOUT_FILENO);
   dup2 (fd, STDERR_FILENO);
@@ -37,5 +41,6 @@ int main (int argc, char *argv[])
         return (-4);
       }
   }
+  closefrom (3);
   return execv (argv[3], (argv + 3));
 }
