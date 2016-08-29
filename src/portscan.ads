@@ -69,7 +69,7 @@ private
    max_ports  : constant := 28000;
    scan_slave : constant builders := 9;
    ss_base    : constant String := "/SL09";
-   watchdog_active : constant Boolean := False;  --  not reliable yet, turn off
+   watchdog_active : constant Boolean := True;
 
    type port_id   is range -1 .. max_ports - 1;
    subtype port_index is port_id range 0 .. port_id'Last;
