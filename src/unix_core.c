@@ -86,6 +86,22 @@ __chatty_control ()
   return 0;
 }
 
+/*
+ * reap_process kills per given pid and waits for it to return
+ * returns 0 on success, -1 on failures
+ */
+int reap_process (pid_t dead_pid_walking)
+{
+   int status = 0;
+
+   if (kill(dead_pid_walking, SIGKILL) == 0)
+   {
+      waitpid (dead_pid_walking, &status, 0);
+      return (0);
+   }
+   return (-1);
+}
+
 int
 __kill_process_tree (pid_t reaper_pid)
 {
@@ -94,42 +110,48 @@ __kill_process_tree (pid_t reaper_pid)
    struct procctl_reaper_status info;
    struct procctl_reaper_kill killemall;
 
-   if (procctl(P_PID, reaper_pid, PROC_REAP_STATUS, &info) == 0)
+   if (reaper_pid > 0)
    {
-      if (info.rs_children != 0)
+      if (procctl(P_PID, reaper_pid, PROC_REAP_STATUS, &info) == 0)
       {
-         killemall.rk_sig = SIGKILL;
-         killemall.rk_flags = 0;
-         if (procctl(P_PID, reaper_pid, PROC_REAP_KILL, &killemall) != 0)
+         if (info.rs_children != 0)
          {
-             return (-1);
+            killemall.rk_sig = SIGKILL;
+            killemall.rk_flags = 0;
+            if (procctl(P_PID, reaper_pid, PROC_REAP_KILL, &killemall) != 0)
+            {
+                return (-1);
+            }
          }
       }
-      if (procctl(P_PID, reaper_pid, PROC_REAP_RELEASE, NULL) == 0)
-      {
-         if (reaper_pid > 0)
-         {
-            return (kill (reaper_pid, SIGKILL));
-         }
-      }
+      return (reap_process (reaper_pid));
    }
 #  endif  /* __FreeBSD__ */
 #  ifdef __DragonFly__
-  union reaper_info info;
-  
-   if (procctl(P_PID, reaper_pid, PROC_REAP_STATUS, &info) == 0)
+   union reaper_info info;
+   int keep_going = 1;
+
+   if (reaper_pid > 0)
    {
-      if (info.status.pid_head > 0)
+      while (keep_going)
       {
-         kill(info.status.pid_head, SIGKILL);
-      }
-      if (procctl(P_PID, reaper_pid, PROC_REAP_RELEASE, NULL) == 0)
-      {
-         if (reaper_pid > 0)
+         keep_going = 0;
+         if (procctl(P_PID, reaper_pid, PROC_REAP_STATUS, &info) == 0)
          {
-            return (kill (reaper_pid, SIGKILL));
+            if (info.status.pid_head > 0)
+            {
+               if (reap_process (info.status.pid_head) == 0)
+               {
+                  keep_going = 1;
+               }
+               else
+               {
+                  return (-1);
+               }
+            }
          }
       }
+      return (reap_process (reaper_pid));
    }
 #  endif  /* __DragonFly__ */
 #else     /* PROC_REAP_STATUS */
