@@ -483,13 +483,12 @@ package body PortScan is
                  " -VPKGVERSION -VPKGFILE:T -VMAKE_JOBS_NUMBER -VIGNORE" &
                  " -VFETCH_DEPENDS -VEXTRACT_DEPENDS -VPATCH_DEPENDS" &
                  " -VBUILD_DEPENDS -VLIB_DEPENDS -VRUN_DEPENDS" &
-                 " -VSELECTED_OPTIONS -VDESELECTED_OPTIONS" &
-                 " -V_INCLUDE_USES_SCONS_MK -VUSE_LINUX";
+                 " -VSELECTED_OPTIONS -VDESELECTED_OPTIONS -VUSE_LINUX";
       content  : JT.Text;
       topline  : JT.Text;
       status   : Integer;
 
-      type result_range is range 1 .. 14;
+      type result_range is range 1 .. 13;
 
       --  prototypes
       procedure set_depends (line  : JT.Text; dtype : dependency_type);
@@ -632,10 +631,6 @@ package body PortScan is
             when 11 => set_options (topline, True);
             when 12 => set_options (topline, False);
             when 13 =>
-               if JT.equivalent (topline, "yes") then
-                  all_ports (target).use_watchdog := False;
-               end if;
-            when 14 =>
                if not JT.IsBlank (JT.trim (topline)) then
                   all_ports (target).use_linprocfs := True;
                end if;

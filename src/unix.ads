@@ -87,6 +87,9 @@ private
    function chatty_control return uInt8;
    pragma Import (C, chatty_control, "__chatty_control");
 
+   function internal_kill_tree (reaper_pid : pid_t) return IC.int;
+   pragma Import (C, internal_kill_tree, "__kill_process_tree");
+
    --  internal pipe close command
    function pipe_close (OpenFile : CSM.FILEs) return Integer;
 

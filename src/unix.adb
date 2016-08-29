@@ -66,15 +66,11 @@ package body Unix is
    -------------------------
    procedure kill_process_tree (process_group : pid_t)
    is
-      pgid : constant String := process_group'Img;
-      dfly_cmd : constant String := "/usr/bin/pkill -KILL -g";
-      free_cmd : constant String := "/bin/pkill -KILL -g";
-      killres  : Boolean;
+      use type IC.int;
+      result : constant IC.int := internal_kill_tree (process_group);
    begin
-      if JT.equivalent (PM.configuration.operating_sys, "FreeBSD") then
-         killres := external_command (free_cmd & pgid);
-      else
-         killres := external_command (dfly_cmd & pgid);
+      if result /= 0 then
+         TIO.Put_Line ("Notice: kill process pid" & process_group'Img & " failed");
       end if;
    end kill_process_tree;
 

@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <fcntl.h>
+#include <sys/procctl.h>
 
 int main (int argc, char *argv[])
 {
@@ -33,14 +34,21 @@ int main (int argc, char *argv[])
   dup2 (fd, STDERR_FILENO);
   close (fd);
 
+#ifdef PROC_REAP_ACQUIRE
   if (strncmp (argv[2], "1", 1) == 0)
   {
-    int result = setpgid (0, 0);
-    if (result != 0)
+    /*
+     * Watchdog requested and supported
+     * Set current process as the reaper for all future children
+     * Interface identical for FreeBSD and DragonFly
+     */
+    if (procctl(P_PID, getpid(), PROC_REAP_ACQUIRE, NULL) < 0)
       {
         return (-4);
       }
   }
+#endif
+
   closefrom (3);
   return execv (argv[3], (argv + 3));
 }
