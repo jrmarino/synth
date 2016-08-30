@@ -137,6 +137,7 @@ main (int argc, char *argv[])
    int status = 0;
 
    signal(SIGUSR1, handler);
+   signal(SIGINT,  handler);
 
    pid = vfork();
    if (pid < 0)
