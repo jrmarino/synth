@@ -13,7 +13,24 @@
 #include <signal.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <sys/wait.h>
 #include <sys/procctl.h>
+
+/*
+ * reap_process kills per given pid and waits for it to return
+ * returns 0 on success, -1 on failures
+ */
+int reap_process (pid_t dead_pid_walking)
+{
+   int status = 0;
+
+   if (kill(dead_pid_walking, SIGKILL) == 0)
+   {
+      waitpid (dead_pid_walking, &status, 0);
+      return (0);
+   }
+   return (-1);
+}
 
 int
 kill_process_tree (pid_t reaper_pid)
@@ -121,7 +138,7 @@ main (int argc, char *argv[])
 
    signal(SIGUSR1, handler);
 
-   pid = vfork ();
+   pid = vfork();
    if (pid < 0)
    {
       return (-6);
