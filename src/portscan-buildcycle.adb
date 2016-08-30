@@ -743,9 +743,11 @@ package body PortScan.Buildcycle is
          end if;
          status := Unix.process_status (pid);
          if status = Unix.exited_normally then
+            Unix.reap_any_children (process_group => pid);
             return True;
          end if;
          if status = Unix.exited_with_error then
+            Unix.reap_any_children (process_group => pid);
             return False;
          end if;
       end loop;
