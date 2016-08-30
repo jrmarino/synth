@@ -103,7 +103,7 @@ int reap_process (pid_t dead_pid_walking)
 }
 
 int
-__kill_process_tree (pid_t reaper_pid)
+__reap_children (pid_t reaper_pid)
 {
 #ifdef PROC_REAP_STATUS
 #  ifdef __FreeBSD__
@@ -124,7 +124,7 @@ __kill_process_tree (pid_t reaper_pid)
             }
          }
       }
-      return (reap_process (reaper_pid));
+      return (0);
    }
 #  endif  /* __FreeBSD__ */
 #  ifdef __DragonFly__
@@ -151,10 +151,20 @@ __kill_process_tree (pid_t reaper_pid)
             }
          }
       }
-      return (reap_process (reaper_pid));
+      return (0);
    }
 #  endif  /* __DragonFly__ */
 #else     /* PROC_REAP_STATUS */
   return (-1);
 #endif    /* PROC_REAP_STATUS */
+}
+
+int
+__kill_process_tree (pid_t reaper_pid)
+{
+   if (__reap_children (reaper_pid) == 0)
+   {
+      return (reap_process (reaper_pid));
+   }
+   return (-1);
 }

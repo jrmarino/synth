@@ -75,6 +75,20 @@ package body Unix is
    end kill_process_tree;
 
 
+   -------------------------
+   --  reap_any_children  --
+   -------------------------
+   procedure reap_any_children (process_group : pid_t)
+   is
+      use type IC.int;
+      result : constant IC.int := internal_reap_children (process_group);
+   begin
+      if result /= 0 then
+         TIO.Put_Line ("Notice: reap children of pid" & process_group'Img & " failed");
+      end if;
+   end reap_any_children;
+
+
    ------------------------
    --  external_command  --
    ------------------------
