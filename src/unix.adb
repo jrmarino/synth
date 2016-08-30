@@ -67,26 +67,12 @@ package body Unix is
    procedure kill_process_tree (process_group : pid_t)
    is
       use type IC.int;
-      result : constant IC.int := internal_kill_tree (process_group);
+      result : constant IC.int := signal_runaway (process_group);
    begin
       if result /= 0 then
-         TIO.Put_Line ("Notice: kill process pid" & process_group'Img & " failed");
+         TIO.Put_Line ("Notice: failed to signal pid " & process_group'Img);
       end if;
    end kill_process_tree;
-
-
-   -------------------------
-   --  reap_any_children  --
-   -------------------------
-   procedure reap_any_children (process_group : pid_t)
-   is
-      use type IC.int;
-      result : constant IC.int := internal_reap_children (process_group);
-   begin
-      if result /= 0 then
-         TIO.Put_Line ("Notice: reap children of pid" & process_group'Img & " failed");
-      end if;
-   end reap_any_children;
 
 
    ------------------------

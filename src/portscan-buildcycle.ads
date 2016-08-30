@@ -122,7 +122,6 @@ private
    function  phase2str (phase : phases) return String;
    function  format_loglines (numlines : Natural) return String;
    function  max_time_without_output (phase : phases) return execution_limit;
-   function  watchdog_setting (sid : port_id) return String;
    function  detect_leftovers_and_MIA (id : builders; action : String;
                                        description : String) return Boolean;
 

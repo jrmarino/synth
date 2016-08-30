@@ -187,7 +187,6 @@ package body PortScan is
          PR.deletion_due  := False;
          PR.use_procfs    := False;
          PR.use_linprocfs := False;
-         PR.use_watchdog  := watchdog_active;
          PR.reverse_score := 0;
          PR.librun.Clear;
          PR.blocks.Clear;

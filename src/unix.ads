@@ -24,9 +24,6 @@ package Unix is
    --  Kill everything with the identified process group
    procedure kill_process_tree (process_group : pid_t);
 
-   --  Kill children of a process
-   procedure reap_any_children (process_group : pid_t);
-
    --  Allows other packages to call external commands (e.g. Pilot)
    --  Returns "True" on success
    function external_command (command : String) return Boolean;
@@ -90,11 +87,8 @@ private
    function chatty_control return uInt8;
    pragma Import (C, chatty_control, "__chatty_control");
 
-   function internal_kill_tree (reaper_pid : pid_t) return IC.int;
-   pragma Import (C, internal_kill_tree, "__kill_process_tree");
-
-   function internal_reap_children (reaper_pid : pid_t) return IC.int;
-   pragma Import (C, internal_reap_children, "__reap_children");
+   function signal_runaway (pid : pid_t) return IC.int;
+   pragma Import (C, signal_runaway, "__shut_it_down");
 
    --  internal pipe close command
    function pipe_close (OpenFile : CSM.FILEs) return Integer;

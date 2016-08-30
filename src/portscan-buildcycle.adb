@@ -701,11 +701,10 @@ package body PortScan.Buildcycle is
       status      : Unix.process_exit;
       lock_lines  : Natural;
       quartersec  : one_minute := one_minute'First;
-      hangmonitor : Boolean := all_ports (trackers (id).seq_id).use_watchdog;
+      hangmonitor : constant Boolean := True;
       synthexec   : constant String := host_localbase & "/libexec/synthexec";
       truecommand : constant String := synthexec & " " &
-                             log_name (trackers (id).seq_id) & " " &
-                             watchdog_setting (trackers (id).seq_id) & command;
+                             log_name (trackers (id).seq_id) & " " & command;
    begin
       dogbite := False;
       watchdog (squirrel) := trackers (id).loglines;
@@ -743,11 +742,9 @@ package body PortScan.Buildcycle is
          end if;
          status := Unix.process_status (pid);
          if status = Unix.exited_normally then
-            Unix.reap_any_children (process_group => pid);
             return True;
          end if;
          if status = Unix.exited_with_error then
-            Unix.reap_any_children (process_group => pid);
             return False;
          end if;
       end loop;
@@ -1154,21 +1151,6 @@ package body PortScan.Buildcycle is
          when deinstall        => return 10;
       end case;
    end max_time_without_output;
-
-
-   ------------------------
-   --  watchdog_setting  --
-   ------------------------
-   function watchdog_setting (sid : port_id) return String
-   is
-      watchdog : constant Boolean := all_ports (sid).use_watchdog;
-   begin
-      if watchdog then
-         return "1 ";
-      else
-         return "0 ";
-      end if;
-   end watchdog_setting;
 
 
    ------------------------
