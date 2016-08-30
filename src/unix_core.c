@@ -90,5 +90,5 @@ __chatty_control ()
  */
 int __shut_it_down (pid_t dead_pid_walking)
 {
-   return (kill(dead_pid_walking, SIGUSR1);
+   return (kill(dead_pid_walking, SIGUSR1));
 }
