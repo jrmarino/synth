@@ -152,8 +152,18 @@ main (int argc, char *argv[])
    }
 
    /* Parent */
-   while ((waitpid (pid, &status, 0) < 0) && (errno == EINTR)) { };
+   for (;;) {
+      pid_t cpid;
 
+      cpid = wait3(&status, 0, NULL);
+      if (cpid == pid)
+         break;
+      if (cpid < 0 && errno != EINTR)
+      {
+         status = W_EXITCODE(1, 0);
+         break;
+      }
+   }
    kill_process_tree (getpid());
    return (WEXITSTATUS (status));
 }
