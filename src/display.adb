@@ -262,8 +262,10 @@ package body Display is
       L2F5 : constant String := pad (JT.int2str (data.impulse), 4);
 
    begin
-      if data.swap >= 100.0 then
+      if data.swap = 100.0 then
          L2F4 := " 100%";
+      elsif data.swap > 100.0 then
+         L2F4 := "  N/A";
       else
          L2F4 := fmtpc (data.swap, True);
       end if;

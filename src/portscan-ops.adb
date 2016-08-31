@@ -708,7 +708,7 @@ package body PortScan.Ops is
          end;
       end loop;
       if blocks_total = 0 then
-         return 100.0;
+         return 200.0;  --  Signal to set swap display to "N/A"
       else
          return 100.0 * Float (blocks_used) / Float (blocks_total);
       end if;
