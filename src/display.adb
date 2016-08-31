@@ -265,7 +265,7 @@ package body Display is
       if data.swap = 100.0 then
          L2F4 := " 100%";
       elsif data.swap > 100.0 then
-         L2F4 := "  N/A";
+         L2F4 := "  n/a";
       else
          L2F4 := fmtpc (data.swap, True);
       end if;
