@@ -1142,7 +1142,7 @@ package body PortScan.Buildcycle is
          when lib_depends      => return 5;
          when configure        => return 15;
          when build            => return 20;
-         when run_depends      => return 10;
+         when run_depends      => return 20;   --  octave-forge under contention
          when stage            => return 20;
          when check_plist      => return 3;
          when pkg_package      => return 120;
