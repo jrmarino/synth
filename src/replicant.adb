@@ -122,7 +122,7 @@ package body Replicant is
       end if;
 
       AD.Create_Path (mm);
-      AD.Copy_File (etcmp, mm & maspas);
+      create_base_passwd (mm);
       execute (command);
       create_base_group (mm);
       cache_port_variables (mm);
@@ -451,6 +451,56 @@ package body Replicant is
       TIO.Close (live_file);
       TIO.Close (group);
    end create_base_group;
+
+
+   --------------------------
+   --  create_base_passwd  --
+   --------------------------
+   procedure create_base_passwd (path_to_mm  : String)
+   is
+      subtype syspasswd is String (1 .. 10);
+      type passwdset is array (1 .. 28) of syspasswd;
+      users       : constant passwdset :=
+        ("root      ", "toor      ", "daemon    ", "operator  ",
+         "bin       ", "tty       ", "kmem      ", "mail      ",
+         "games     ", "news      ", "man       ", "sshd      ",
+         "smmsp     ", "mailnull  ", "bind      ", "unbound   ",
+         "proxy     ", "_pflogd   ", "_dhcp     ", "uucp      ",
+         "xten      ", "pop       ", "auditdistd", "_sdpd     ",
+         "www       ", "_ypldap   ", "hast      ", "nobody    ");
+      masterpwd   : TIO.File_Type;
+      live_file   : TIO.File_Type;
+      keepit      : Boolean;
+      target      : constant String  := path_to_mm & "/master.passwd";
+      live_origin : constant String  := "/etc/master.passwd";
+   begin
+      TIO.Open   (File => live_file, Mode => TIO.In_File, Name => live_origin);
+      TIO.Create (File => masterpwd, Mode => TIO.Out_File, Name => target);
+      while not TIO.End_Of_File (live_file) loop
+         keepit := False;
+         declare
+            line : String := TIO.Get_Line (live_file);
+         begin
+            for pwdindex in passwdset'Range loop
+               declare
+                  pwdcolon : String := JT.trim (users (pwdindex)) & ":";
+               begin
+                  if pwdcolon'Length <= line'Length then
+                     if pwdcolon = line (1 .. pwdcolon'Last) then
+                        keepit := True;
+                        exit;
+                     end if;
+                  end if;
+               end;
+            end loop;
+            if keepit then
+               TIO.Put_Line (masterpwd, line);
+            end if;
+         end;
+      end loop;
+      TIO.Close (live_file);
+      TIO.Close (masterpwd);
+   end create_base_passwd;
 
 
    --------------------

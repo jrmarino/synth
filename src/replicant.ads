@@ -168,7 +168,8 @@ private
    procedure create_make_conf (path_to_etc : String);
 
    --  create /etc/passwd (and databases) to define system users
-   procedure create_passwd (path_to_etc : String);
+   procedure create_passwd      (path_to_etc : String);
+   procedure create_base_passwd (path_to_mm  : String);
 
    --  create /etc/group to define root user
    procedure create_group      (path_to_etc : String);
