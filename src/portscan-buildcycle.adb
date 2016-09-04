@@ -1127,29 +1127,36 @@ package body PortScan.Buildcycle is
    -------------------------------
    --  max_time_without_output  --
    -------------------------------
-   function max_time_without_output (phase : phases) return execution_limit is
+   function max_time_without_output (phase : phases) return execution_limit
+   is
+      base : Integer;
    begin
       case phase is
-         when check_sanity     => return 1;
-         when pkg_depends      => return 3;
-         when fetch_depends    => return 3;
+         when check_sanity     => base := 1;
+         when pkg_depends      => base := 3;
+         when fetch_depends    => base := 3;
          when fetch | checksum => return 480;  --  8 hours
-         when extract_depends  => return 3;
-         when extract          => return 30;
-         when patch_depends    => return 3;
-         when patch            => return 3;
-         when build_depends    => return 5;
-         when lib_depends      => return 5;
-         when configure        => return 15;
-         when build            => return 40;   --  20 is realistic, but 40 for extreme loads
-         when run_depends      => return 25;   --  octave-forge under heavy contention
-         when stage            => return 30;   --  Increased for bad ports that build in stage
-         when check_plist      => return 3;
-         when pkg_package      => return 120;
-         when install_mtree    => return 3;
-         when install          => return 10;
-         when deinstall        => return 10;
+         when extract_depends  => base := 3;
+         when extract          => base := 20;
+         when patch_depends    => base := 3;
+         when patch            => base := 3;
+         when build_depends    => base := 5;
+         when lib_depends      => base := 5;
+         when configure        => base := 15;
+         when build            => base := 20;
+         when run_depends      => base := 15;   --  octave-forge is driver
+         when stage            => base := 15;
+         when check_plist      => base := 3;
+         when pkg_package      => base := 80;
+         when install_mtree    => base := 3;
+         when install          => base := 10;
+         when deinstall        => base := 10;
       end case;
+      declare
+         multiplier_x10 : constant Positive := timeout_multiplier_x10;
+      begin
+         return execution_limit (base * multiplier_x10 / 10);
+      end;
    end max_time_without_output;
 
 
@@ -1567,5 +1574,35 @@ package body PortScan.Buildcycle is
          remount (readonly => False);
       end if;
    end set_localbase_protection;
+
+
+   ------------------------------
+   --  timeout_multiplier_x10  --
+   ------------------------------
+   function timeout_multiplier_x10 return Positive
+   is
+      command : String := "/usr/bin/env LANG=C /sbin/sysctl vm.loadavg";
+      comres  : JT.Text;
+   begin
+      comres := generic_system_command (command);
+      declare
+         highend  : constant Natural := JT.SU.Length (comres) - 1;
+         stripped : constant String := JT.SU.Slice (Source => comres, Low => 15, High => highend);
+         section2 : constant String := JT.part_2 (stripped, " ");
+         average5 : constant String := JT.part_1 (section2, " ");
+         avefloat : Float;
+      begin
+         avefloat := Float'Value (average5) / Float (number_cores);
+         if avefloat <= 1.0 then
+            return 10;
+         else
+            return Integer (avefloat * 10.0);
+         end if;
+      exception
+         when others => return 10;
+      end;
+   exception
+      when others => return 10;
+   end timeout_multiplier_x10;
 
 end PortScan.Buildcycle;

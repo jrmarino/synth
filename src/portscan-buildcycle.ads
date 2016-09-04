@@ -122,6 +122,7 @@ private
    function  phase2str (phase : phases) return String;
    function  format_loglines (numlines : Natural) return String;
    function  max_time_without_output (phase : phases) return execution_limit;
+   function  timeout_multiplier_x10 return Positive;
    function  detect_leftovers_and_MIA (id : builders; action : String;
                                        description : String) return Boolean;
 
