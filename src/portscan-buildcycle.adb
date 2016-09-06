@@ -1145,7 +1145,7 @@ package body PortScan.Buildcycle is
          when configure        => base := 15;
          when build            => base := 20;
          when run_depends      => base := 15;   --  octave-forge is driver
-         when stage            => base := 15;
+         when stage            => base := 20;   --  desire 15 but too many rogue builders-in-stage
          when check_plist      => base := 3;
          when pkg_package      => base := 80;
          when install_mtree    => base := 3;
