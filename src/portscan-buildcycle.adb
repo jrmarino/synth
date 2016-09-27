@@ -701,7 +701,7 @@ package body PortScan.Buildcycle is
       status      : Unix.process_exit;
       lock_lines  : Natural;
       quartersec  : one_minute := one_minute'First;
-      hangmonitor : constant Boolean := True;
+      hangmonitor : Boolean := PM.configuration.enable_watchdog;
       synthexec   : constant String := host_localbase & "/libexec/synthexec";
       truecommand : constant String := synthexec & " " &
                              log_name (trackers (id).seq_id) & " " & command;
