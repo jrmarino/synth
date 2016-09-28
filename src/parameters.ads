@@ -32,6 +32,7 @@ package Parameters is
          tmpfs_localbase : Boolean;
          avec_ncurses    : Boolean;
          defer_prebuilt  : Boolean;
+         enable_watchdog : Boolean;
       end record;
 
    configuration  : configuration_record;
@@ -116,6 +117,7 @@ private
    Field_14 : constant String := "Directory_system";
    Field_15 : constant String := "Display_with_ncurses";
    Field_16 : constant String := "leverage_prebuilt";
+   Field_17 : constant String := "enable_watchdog";
 
    global_01 : constant String := "profile_selected";
 
@@ -147,3 +149,4 @@ private
    procedure mkdirp_from_file (filename : String);
 
 end Parameters;
+
