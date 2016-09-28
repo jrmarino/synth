@@ -310,7 +310,6 @@ package body PortScan.Ops is
                --  text mode support, periodic status reports
                if cntalert = alert_count'Last then
                   cntalert := alert_count'First;
-                  cntrefresh := refresh_count'First;
                   declare
                      Remaining : constant Integer := bld_counter (total) -
                        bld_counter (success) - bld_counter (failure) -
@@ -321,24 +320,24 @@ package body PortScan.Ops is
                                      "  Succ:" & bld_counter (success)'Img &
                                      "  Fail:" & bld_counter (failure)'Img &
                                      "  Skip:" & bld_counter (skipped)'Img &
-                                     "  Ign:"  & bld_counter (ignored)'Img);
+                                     "   Ign:" & bld_counter (ignored)'Img);
                   end;
                else
                   cntalert := cntalert + 1;
+               end if;
 
-                  --  Update log lines every 30 seconds for the watchdog
-                  if cntrefresh = refresh_count'Last then
-                     cntrefresh := refresh_count'First;
-                     for b in builders'First .. num_builders loop
-                        if builder_states (b) /= shutdown and then
-                          builder_states (b) /= idle
-                        then
-                           CYC.set_log_lines (b);
-                        end if;
-                     end loop;
-                  else
-                     cntrefresh := cntrefresh + 1;
-                  end if;
+               --  Update log lines every 30 seconds for the watchdog
+               if cntrefresh = refresh_count'Last then
+                  cntrefresh := refresh_count'First;
+                  for b in builders'First .. num_builders loop
+                     if builder_states (b) /= shutdown and then
+                       builder_states (b) /= idle
+                     then
+                        CYC.set_log_lines (b);
+                     end if;
+                  end loop;
+               else
+                  cntrefresh := cntrefresh + 1;
                end if;
             end if;
          else
