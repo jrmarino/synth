@@ -1297,7 +1297,9 @@ package body Replicant is
          & "./usr/local/etc/gconf/gconf.xml.defaults/%gconf-tree*.xml" & LAT.LF
          & "./usr/local/lib/gio/modules/giomodule.cache" & LAT.LF
          & "./usr/local/info/dir" & LAT.LF
+         & "./usr/local/info" & LAT.LF
          & "./usr/local/*/info/dir" & LAT.LF
+         & "./usr/local/*/info" & LAT.LF
          & "./usr/local/*/ls-R" & LAT.LF
          & "./usr/local/share/octave/octave_packages" & LAT.LF
          & "./usr/local/share/xml/catalog.ports"
