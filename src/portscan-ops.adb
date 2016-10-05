@@ -199,6 +199,12 @@ package body PortScan.Ops is
                         TIO.Put_Line (logs (total), CYC.elapsed_now & " [" &
                                      JT.zeropad (Integer (slave), 2) & "] => " &
                                         port_name (instructions (slave)));
+                        if not curses_support then
+                           TIO.Put_Line (CYC.elapsed_now & " => [" &
+                                           JT.zeropad (Integer (slave), 2) &
+                                           "]          Kickoff " &
+                                           port_name (instructions (slave)));
+                        end if;
                      end if;
                   end if;
                when done_success | done_failure =>
