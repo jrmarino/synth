@@ -87,14 +87,11 @@ package body Display is
         "  Left        Failed        skipped        swap  0.0%   Impulse" &
         "       00:00:00 ";
    begin
-      TIC.Set_Character_Attributes (Win   => zone_summary,
-                                    Attr  => bright,
-                                    Color => TIC.Color_Pair (c_sumlabel));
-
-      TIC.Move_Cursor (Win => zone_summary, Line => 0, Column => 0);
-      TIC.Add (Win => zone_summary, Str => line1);
-      TIC.Move_Cursor (Win => zone_summary, Line => 1, Column => 0);
-      TIC.Add (Win => zone_summary, Str => line2);
+      Choose_Pen (summary, bright, c_sumlabel);
+      Relocate   (summary, 0);
+      Scrawl     (summary, line1);
+      Relocate   (summary, 1);
+      Scrawl     (summary, line2);
    end draw_static_summary_zone;
 
 
@@ -125,31 +122,26 @@ package body Display is
       headtxt : constant appline := " ID  Elapsed   Build Phase      " &
         "Origin                                   Lines ";
    begin
-      TIC.Set_Character_Attributes (Win   => zone_builders,
-                                    Attr  => bright,
-                                    Color => TIC.Color_Pair (c_dashes));
-      TIC.Move_Cursor (Win => zone_builders, Line => 0, Column => 0);
-      TIC.Add (Win => zone_builders, Str => dashes);
-      TIC.Move_Cursor (Win => zone_builders, Line => 2, Column => 0);
-      TIC.Add (Win => zone_builders, Str => dashes);
-      TIC.Move_Cursor (Win => zone_builders, Line => lastrow, Column => 0);
-      TIC.Add (Win => zone_builders, Str => dashes);
+      Choose_Pen (builder, bright, c_dashes);
+      Relocate   (builder, 0);
+      Scrawl     (builder, dashes);
+      Relocate   (builder, 2);
+      Scrawl     (builder, dashes);
+      Relocate   (builder, lastrow);
+      Scrawl     (builder, dashes);
+      Relocate   (builder, 1);
 
-      TIC.Move_Cursor (Win => zone_builders, Line => 1, Column => 0);
       if SIG.graceful_shutdown_requested then
-         TIC.Set_Character_Attributes (Win   => zone_builders,
-                                       Attr  => bright,
-                                       Color => c_advisory);
-         TIC.Add (Win => zone_builders, Str => shutdown_msg);
+         Choose_Pen (builder, bright, c_advisory);
+         Scrawl     (builder, shutdown_msg);
       else
-         TIC.Set_Character_Attributes (Win   => zone_builders,
-                                       Attr  => normal,
-                                       Color => c_tableheader);
-         TIC.Add (Win => zone_builders, Str => headtxt);
+         Choose_Pen (builder, normal, c_tableheader);
+         Scrawl     (builder, headtxt);
       end if;
+
       for z in 3 .. inc (lastrow, -1) loop
-         TIC.Move_Cursor (Win => zone_builders, Line => z, Column => 0);
-         TIC.Add (Win => zone_builders, Str => blank);
+         Relocate (builder, z);
+         Scrawl   (builder, blank);
       end loop;
    end draw_static_builders_zone;
 
@@ -240,13 +232,9 @@ package body Display is
          if dim then
             attribute := normal;
          end if;
-         TIC.Set_Character_Attributes (Win   => zone_summary,
-                                       Attr  => attribute,
-                                       Color => color);
-         TIC.Move_Cursor (Win => zone_summary, Line => row, Column => col);
-         TIC.Add (Win => zone_summary, Str => S);
-      exception
-         when others => null;
+         Choose_Pen (summary, attribute, color);
+         Relocate   (summary, row, col);
+         Scrawl     (summary, S);
       end colorado;
 
       L1F1 : constant String := pad (JT.int2str (data.Initially));
@@ -306,11 +294,9 @@ package body Display is
 
       procedure print_id is
       begin
-         TIC.Set_Character_Attributes (Win   => zone_builders,
-                                       Attr  => c_slave (BR.id).attribute,
-                                       Color => c_slave (BR.id).palette);
-         TIC.Move_Cursor (Win => zone_builders, Line => row, Column => 1);
-         TIC.Add (Win => zone_builders, Str => BR.slavid);
+         Choose_Pen (builder, c_slave (BR.id).attribute, c_slave (BR.id).palette);
+         Relocate   (builder, row, 1);
+         Scrawl     (builder, BR.slavid);
       end print_id;
       procedure colorado (S : String; color :  TIC.Color_Pair;
                           col : TIC.Column_Position;
@@ -322,19 +308,15 @@ package body Display is
          if dim then
             attribute := normal;
          end if;
-         TIC.Set_Character_Attributes (Win   => zone_builders,
-                                       Attr  => attribute,
-                                       Color => color);
-         TIC.Move_Cursor (Win => zone_builders, Line => row, Column => col);
-         TIC.Add (Win => zone_builders, Str => S);
+         Choose_Pen (builder, attribute, color);
+         Relocate   (builder, row, col);
+         Scrawl     (builder, S);
       end colorado;
    begin
       if SIG.graceful_shutdown_requested then
-         TIC.Set_Character_Attributes (Win   => zone_builders,
-                                       Attr  => bright,
-                                       Color => c_advisory);
-         TIC.Move_Cursor (Win => zone_builders, Line => 1, Column => 0);
-         TIC.Add (Win => zone_builders, Str => shutdown_msg);
+         Choose_Pen (builder, bright, c_advisory);
+         Relocate   (builder, 1);
+         Scrawl     (builder, shutdown_msg);
       end if;
       print_id;
       colorado (BR.Elapsed, c_standard,  5, row, True);
@@ -377,16 +359,14 @@ package body Display is
                           col : TIC.Column_Position;
                           row : TIC.Line_Position;
                           dim : Boolean := False);
-      function col_action (action : String) return TIC.Color_Pair;
+      function col_action (status : String) return TIC.Color_Pair;
       procedure print_id (id : builders; sid : String; row : TIC.Line_Position;
-                          action : String);
+                          status : String);
       procedure clear_row (row : TIC.Line_Position) is
       begin
-         TIC.Set_Character_Attributes (Win   => zone_actions,
-                                       Attr  => TIC.Normal_Video,
-                                       Color => c_standard);
-         TIC.Move_Cursor (Win => zone_actions, Line => row, Column => 0);
-         TIC.Add (Win => zone_actions, Str => blank);
+         Choose_Pen (action, TIC.Normal_Video, c_standard);
+         Relocate   (action, row);
+         Scrawl     (action, blank);
       end clear_row;
       procedure colorado (S : String; color :  TIC.Color_Pair;
                           col : TIC.Column_Position;
@@ -398,44 +378,38 @@ package body Display is
          if dim then
             attribute := normal;
          end if;
-         TIC.Set_Character_Attributes (Win   => zone_actions,
-                                       Attr  => attribute,
-                                       Color => color);
-         TIC.Move_Cursor (Win => zone_actions, Line => row, Column => col);
-         TIC.Add (Win => zone_actions, Str => S);
+         Choose_Pen (action, attribute, color);
+         Relocate   (action, row, col);
+         Scrawl     (action, S);
       end colorado;
-      function col_action (action : String) return TIC.Color_Pair is
+      function col_action (status : String) return TIC.Color_Pair is
       begin
-         if action = "shutdown" then
+         if status = "shutdown" then
             return c_shutdown;
-         elsif action = "success " then
+         elsif status = "success " then
             return c_success;
-         elsif action = "failure " then
+         elsif status = "failure " then
             return c_failure;
-         elsif action = "skipped " then
+         elsif status = "skipped " then
             return c_skipped;
-         elsif action = "ignored " then
+         elsif status = "ignored " then
             return c_ignored;
          else
             return c_standard;
          end if;
       end col_action;
       procedure print_id (id : builders; sid : String; row : TIC.Line_Position;
-                          action : String)
+                          status : String)
       is
       begin
-         TIC.Set_Character_Attributes (Win   => zone_actions,
-                                       Attr  => normal,
-                                       Color => c_standard);
-         TIC.Move_Cursor (Win => zone_actions, Line => row, Column => 10);
-         TIC.Add (Win => zone_actions, Str => "[--]");
-         if action /= "skipped " and then action /= "ignored "
+         Choose_Pen (action, normal, c_standard);
+         Relocate   (action, row, 10);
+         Scrawl     (action, "[--]");
+         if status /= "skipped " and then status /= "ignored "
          then
-            TIC.Set_Character_Attributes (Win   => zone_actions,
-                                          Attr  => c_slave (id).attribute,
-                                          Color => c_slave (id).palette);
-            TIC.Move_Cursor (Win => zone_actions, Line => row, Column => 11);
-            TIC.Add (Win => zone_actions, Str => sid);
+            Choose_Pen (action, c_slave (id).attribute, c_slave (id).palette);
+            Relocate   (action, row, 11);
+            Scrawl     (action, sid);
          end if;
       end print_id;
 
@@ -455,7 +429,7 @@ package body Display is
             print_id (id     => history (arrow).id,
                       sid    => history (arrow).slavid,
                       row    => row,
-                      action => history (arrow).action);
+                      status => history (arrow).action);
             colorado (history (arrow).action,
                       col_action (history (arrow).action), 15, row);
             colorado (history (arrow).origin, c_origin, 24, row);
@@ -560,5 +534,79 @@ package body Display is
       end loop;
 
    end establish_colors;
+
+
+   ------------------------------------------------------------------------
+   --  Relocate
+   ------------------------------------------------------------------------
+   procedure Relocate
+     (zone        : zones;
+      next_line   : TIC.Line_Position;
+      next_column : TIC.Column_Position := 0)
+   is
+   begin
+      case zone is
+         when builder =>
+            TIC.Move_Cursor (Win    => zone_builders,
+                             Line   => next_line,
+                             Column => next_column);
+         when summary =>
+            TIC.Move_Cursor (Win    => zone_summary,
+                             Line   => next_line,
+                             Column => next_column);
+         when action =>
+            TIC.Move_Cursor (Win    => zone_actions,
+                             Line   => next_line,
+                             Column => next_column);
+      end case;
+   exception
+      when TIC.Curses_Exception => null;
+   end Relocate;
+
+
+   ------------------------------------------------------------------------
+   --  Scrawl
+   ------------------------------------------------------------------------
+   procedure Scrawl (zone : zones; information : String) is
+   begin
+      case zone is
+         when builder =>
+            TIC.Add (Win => zone_builders, Str => information);
+         when summary =>
+            TIC.Add (Win => zone_summary, Str => information);
+         when action =>
+            TIC.Add (Win => zone_actions, Str => information);
+      end case;
+   exception
+      when TIC.Curses_Exception => null;
+   end Scrawl;
+
+
+   ------------------------------------------------------------------------
+   --  Choose_Pen
+   ------------------------------------------------------------------------
+   procedure Choose_Pen
+     (zone        : zones;
+      attribute   : TIC.Character_Attribute_Set;
+      pen_color   : TIC.Color_Pair)
+   is
+   begin
+      case zone is
+         when builder =>
+            TIC.Set_Character_Attributes (Win   => zone_builders,
+                                          Attr  => attribute,
+                                          Color => pen_color);
+         when summary =>
+            TIC.Set_Character_Attributes (Win   => zone_summary,
+                                          Attr  => attribute,
+                                          Color => pen_color);
+         when action =>
+            TIC.Set_Character_Attributes (Win   => zone_actions,
+                                          Attr  => attribute,
+                                          Color => pen_color);
+      end case;
+   exception
+      when TIC.Curses_Exception => null;
+   end Choose_Pen;
 
 end Display;

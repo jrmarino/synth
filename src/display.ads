@@ -92,6 +92,7 @@ private
    type builder_palette is array (builders) of palette_rec;
    type cyclic_range is range 1 .. 50;
    type dim_history is array (cyclic_range) of history_rec;
+   type zones is (summary, builder, action);
    subtype appline is String (1 .. 79);
 
    history       : dim_history;
@@ -142,5 +143,17 @@ private
    procedure establish_colors;
    procedure draw_static_summary_zone;
    procedure draw_static_builders_zone;
+
+   procedure Scrawl
+     (zone        : zones;
+      information : String);
+   procedure Relocate
+     (zone        : zones;
+      next_line   : TIC.Line_Position;
+      next_column : TIC.Column_Position := 0);
+   procedure Choose_Pen
+     (zone        : zones;
+      attribute   : TIC.Character_Attribute_Set;
+      pen_color   : TIC.Color_Pair);
 
 end Display;
