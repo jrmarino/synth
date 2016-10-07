@@ -35,7 +35,7 @@ package body PortScan.Ops is
    procedure parallel_bulk_run (num_builders : builders; logs : dim_handlers)
    is
       subtype cycle_count is Natural range 1 .. 9;
-      subtype refresh_count is Natural range 1 .. 30;
+      subtype refresh_count is Natural range 1 .. 4;
       subtype alert_count is Natural range 1 .. 200;
       instructions   : dim_instruction   := (others => port_match_failed);
       builder_states : dim_builder_state := (others => idle);
@@ -332,7 +332,7 @@ package body PortScan.Ops is
                   cntalert := cntalert + 1;
                end if;
 
-               --  Update log lines every 30 seconds for the watchdog
+               --  Update log lines every 4 seconds for the watchdog
                if cntrefresh = refresh_count'Last then
                   cntrefresh := refresh_count'First;
                   for b in builders'First .. num_builders loop

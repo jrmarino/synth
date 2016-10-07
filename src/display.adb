@@ -76,6 +76,8 @@ package body Display is
    -----------------------------------
    procedure set_full_redraw_next_update is
    begin
+      draw_static_summary_zone;
+      draw_static_builders_zone;
       for zone in zones'Range loop
          begin
             TIC.Redraw (Win => zone_window (zone));
@@ -107,17 +109,19 @@ package body Display is
    procedure draw_static_summary_zone
    is
       line1 : constant appline :=
-        " Total         Built        Ignored        Load  0.00  Pkg/hour" &
-        "                ";
+        custom_message (message   => " Total         Built        Ignored       " &
+                                     " Load  0.00  Pkg/hour                ",
+                        attribute => bright,
+                        pen_color => c_sumlabel);
+
       line2 : constant appline :=
-        "  Left        Failed        skipped        swap  0.0%   Impulse" &
-        "       00:00:00 ";
+        custom_message (message   => "  Left        Failed        skipped      " &
+                                     "  swap  0.0%   Impulse       00:00:00 ",
+                        attribute => bright,
+                        pen_color => c_sumlabel);
    begin
-      Choose_Pen (summary, bright, c_sumlabel);
-      Relocate   (summary, 0);
-      Scrawl     (summary, line1);
-      Relocate   (summary, 1);
-      Scrawl     (summary, line2);
+      Scrawl (summary, line1, 0);
+      Scrawl (summary, line2, 1);
    end draw_static_summary_zone;
 
 
@@ -147,30 +151,28 @@ package body Display is
       hghtint : constant Integer := 4 + builders_used;
       height  : constant TIC.Line_Position := TIC.Line_Position (hghtint);
       lastrow : constant TIC.Line_Position := inc (height, -1);
-      dashes  : constant appline := (others => '=');
-      headtxt : constant appline := " ID  Elapsed   Build Phase      " &
-        "Origin                                   Lines ";
+      dmsg    : constant String (appline'Range) := (others => '=');
+      dashes  : constant appline := custom_message (message   => dmsg,
+                                                    attribute => bright,
+                                                    pen_color => c_dashes);
+      headtxt : constant appline :=
+        custom_message (message   => " ID  Elapsed   Build Phase      Origin  " &
+                                     "                                 Lines ",
+                        attribute => normal,
+                        pen_color => c_tableheader);
    begin
-      Choose_Pen (builder, bright, c_dashes);
-      Relocate   (builder, 0);
-      Scrawl     (builder, dashes);
-      Relocate   (builder, 2);
-      Scrawl     (builder, dashes);
-      Relocate   (builder, lastrow);
-      Scrawl     (builder, dashes);
-      Relocate   (builder, 1);
+      Scrawl (builder, dashes, 0);
+      Scrawl (builder, dashes, 2);
+      Scrawl (builder, dashes, lastrow);
 
       if SIG.graceful_shutdown_requested then
-         Choose_Pen (builder, bright, c_advisory);
-         Scrawl     (builder, shutdown_msg);
+         Scrawl (builder, shutdown_message, 1);
       else
-         Choose_Pen (builder, normal, c_tableheader);
-         Scrawl     (builder, headtxt);
+         Scrawl (builder, headtxt, 1);
       end if;
 
       for z in 3 .. inc (lastrow, -1) loop
-         Relocate (builder, z);
-         Scrawl   (builder, blank);
+         Scrawl (builder, blank_line, z);
       end loop;
    end draw_static_builders_zone;
 
@@ -259,14 +261,11 @@ package body Display is
                           row : TIC.Line_Position;
                           dim : Boolean := False)
       is
-         attribute : TIC.Character_Attribute_Set := bright;
+         info : TIC.Attributed_String := custom_message (message   => S,
+                                                         attribute => emphasis (dim),
+                                                         pen_color => color);
       begin
-         if dim then
-            attribute := normal;
-         end if;
-         Choose_Pen (summary, attribute, color);
-         Relocate   (summary, row, col);
-         Scrawl     (summary, S);
+         Scrawl (summary, info, row, col);
       end colorado;
 
       L1F1 : constant String := pad (JT.int2str (data.Initially));
@@ -324,31 +323,28 @@ package body Display is
       procedure print_id;
       row : TIC.Line_Position := inc (TIC.Line_Position (BR.id), 2);
 
-      procedure print_id is
+      procedure print_id
+      is
+         info : TIC.Attributed_String := custom_message (message   => BR.slavid,
+                                                         attribute => c_slave (BR.id).attribute,
+                                                         pen_color => c_slave (BR.id).palette);
       begin
-         Choose_Pen (builder, c_slave (BR.id).attribute, c_slave (BR.id).palette);
-         Relocate   (builder, row, 1);
-         Scrawl     (builder, BR.slavid);
+         Scrawl (builder, info, row, 1);
       end print_id;
       procedure colorado (S : String; color :  TIC.Color_Pair;
                           col : TIC.Column_Position;
                           row : TIC.Line_Position;
                           dim : Boolean := False)
       is
-         attribute : TIC.Character_Attribute_Set := bright;
+         info : TIC.Attributed_String := custom_message (message   => S,
+                                                         attribute => emphasis (dim),
+                                                         pen_color => color);
       begin
-         if dim then
-            attribute := normal;
-         end if;
-         Choose_Pen (builder, attribute, color);
-         Relocate   (builder, row, col);
-         Scrawl     (builder, S);
+         Scrawl (builder, info, row, col);
       end colorado;
    begin
       if SIG.graceful_shutdown_requested then
-         Choose_Pen (builder, bright, c_advisory);
-         Relocate   (builder, 1);
-         Scrawl     (builder, shutdown_msg);
+         Scrawl (builder, shutdown_message, 1);
       end if;
       print_id;
       colorado (BR.Elapsed, c_standard,  5, row, True);
@@ -396,23 +392,18 @@ package body Display is
                           status : String);
       procedure clear_row (row : TIC.Line_Position) is
       begin
-         Choose_Pen (action, TIC.Normal_Video, c_standard);
-         Relocate   (action, row);
-         Scrawl     (action, blank);
+         Scrawl (action, blank_line, row);
       end clear_row;
       procedure colorado (S : String; color :  TIC.Color_Pair;
                           col : TIC.Column_Position;
                           row : TIC.Line_Position;
                           dim : Boolean := False)
       is
-         attribute : TIC.Character_Attribute_Set := bright;
+         info : TIC.Attributed_String := custom_message (message   => S,
+                                                         attribute => emphasis (dim),
+                                                         pen_color => color);
       begin
-         if dim then
-            attribute := normal;
-         end if;
-         Choose_Pen (action, attribute, color);
-         Relocate   (action, row, col);
-         Scrawl     (action, S);
+         Scrawl (action, info, row, col);
       end colorado;
       function col_action (status : String) return TIC.Color_Pair is
       begin
@@ -433,16 +424,22 @@ package body Display is
       procedure print_id (id : builders; sid : String; row : TIC.Line_Position;
                           status : String)
       is
+         bracket : TIC.Attributed_String := custom_message (message   => "[--]",
+                                                            attribute => normal,
+                                                            pen_color => c_standard);
+         bindex : Positive := 2;
       begin
-         Choose_Pen (action, normal, c_standard);
-         Relocate   (action, row, 10);
-         Scrawl     (action, "[--]");
          if status /= "skipped " and then status /= "ignored "
          then
-            Choose_Pen (action, c_slave (id).attribute, c_slave (id).palette);
-            Relocate   (action, row, 11);
-            Scrawl     (action, sid);
+            for index in sid'Range loop
+               bracket (bindex) := (Attr  => c_slave (id).attribute,
+                                    Color => c_slave (id).palette,
+                                    Ch    => sid (index));
+               bindex := bindex + 1;
+            end loop;
          end if;
+
+         Scrawl (action, bracket, row, 10);
       end print_id;
 
       arrow  : cyclic_range := history_arrow;
@@ -590,46 +587,38 @@ package body Display is
    ------------------------------------------------------------------------
    --  Relocate
    ------------------------------------------------------------------------
-   procedure Relocate
+   function Relocate
      (zone        : zones;
       next_line   : TIC.Line_Position;
-      next_column : TIC.Column_Position := 0)
+      next_column : TIC.Column_Position) return Boolean
    is
    begin
       TIC.Move_Cursor (Win    => zone_window (zone),
                        Line   => next_line,
                        Column => next_column);
+      return True;
    exception
-      when TIC.Curses_Exception => null;
+      when TIC.Curses_Exception => return False;
    end Relocate;
 
 
    ------------------------------------------------------------------------
    --  Scrawl
    ------------------------------------------------------------------------
-   procedure Scrawl (zone : zones; information : String) is
+   procedure Scrawl (zone        : zones;
+                     information : TIC.Attributed_String;
+                     at_line     : TIC.Line_Position;
+                     at_column   : TIC.Column_Position := 0) is
    begin
-      TIC.Add (Win => zone_window (zone), Str => information);
+      if Relocate (zone        => zone,
+                   next_line   => at_line,
+                   next_column => at_column)
+      then
+         TIC.Add (Win => zone_window (zone), Str => information);
+      end if;
    exception
       when TIC.Curses_Exception => null;
    end Scrawl;
-
-
-   ------------------------------------------------------------------------
-   --  Choose_Pen
-   ------------------------------------------------------------------------
-   procedure Choose_Pen
-     (zone        : zones;
-      attribute   : TIC.Character_Attribute_Set;
-      pen_color   : TIC.Color_Pair)
-   is
-   begin
-      TIC.Set_Character_Attributes (Win   => zone_window (zone),
-                                    Attr  => attribute,
-                                    Color => pen_color);
-   exception
-      when TIC.Curses_Exception => null;
-   end Choose_Pen;
 
 
    ------------------------------------------------------------------------
@@ -664,5 +653,67 @@ package body Display is
    exception
       when TIC.Curses_Exception => return False;
    end Start_Curses_Mode;
+
+
+   ------------------------------------------------------------------------
+   --  blank_line
+   ------------------------------------------------------------------------
+   function blank_line return appline
+   is
+      space : TIC.Attributed_Character := (Attr  => TIC.Normal_Video,
+                                           Color => c_standard,
+                                           Ch    => ' ');
+      product : appline := (others => space);
+   begin
+      return product;
+   end blank_line;
+
+
+   ------------------------------------------------------------------------
+   --  custom_message
+   ------------------------------------------------------------------------
+   function custom_message (message   : String;
+                            attribute : TIC.Character_Attribute_Set;
+                            pen_color : TIC.Color_Pair) return TIC.Attributed_String
+   is
+      product : TIC.Attributed_String (1 .. message'Length);
+      pindex  : Positive := 1;
+   begin
+      for index in message'Range loop
+         product (pindex) := (Attr  => attribute,
+                              Color => pen_color,
+                              Ch    => message (index));
+         pindex := pindex + 1;
+      end loop;
+      return product;
+   end custom_message;
+
+
+   ------------------------------------------------------------------------
+   --  shutdown_message
+   ------------------------------------------------------------------------
+   function shutdown_message return appline
+   is
+      data : constant String := "        Graceful shutdown in progress, " &
+                                "so no new tasks will be started.        ";
+      product : appline := custom_message (message   => data,
+                                           attribute => bright,
+                                           pen_color => c_advisory);
+   begin
+      return product;
+   end shutdown_message;
+
+
+   ------------------------------------------------------------------------
+   --  emphasis
+   ------------------------------------------------------------------------
+   function emphasis (dimmed : Boolean) return TIC.Character_Attribute_Set is
+   begin
+      if dimmed then
+         return normal;
+      else
+         return bright;
+      end if;
+   end emphasis;
 
 end Display;

@@ -93,7 +93,7 @@ private
    type cyclic_range is range 1 .. 50;
    type dim_history is array (cyclic_range) of history_rec;
    type zones is (summary, builder, action);
-   subtype appline is String (1 .. 79);
+   subtype appline is TIC.Attributed_String (1 .. 79);
 
    history       : dim_history;
    history_arrow : cyclic_range := cyclic_range'Last;
@@ -130,10 +130,6 @@ private
    dimmed        : constant TIC.Character_Attribute_Set :=
                             (Dim_Character => True, others => False);
 
-   shutdown_msg : constant appline := "        Graceful shutdown in " &
-                  "progress, so no new tasks will be started.        ";
-   blank        : constant appline := (others => ' ');
-
    function launch_summary_zone  return Boolean;
    function launch_builders_zone return Boolean;
    function launch_actions_zone  return Boolean;
@@ -142,21 +138,26 @@ private
    function zone_window (zone : zones) return TIC.Window;
    function Start_Curses_Mode return Boolean;
    function establish_colors return Boolean;
+   function blank_line return appline;
+   function shutdown_message return appline;
+   function emphasis       (dimmed    : Boolean) return TIC.Character_Attribute_Set;
+   function custom_message (message   : String;
+                            attribute : TIC.Character_Attribute_Set;
+                            pen_color : TIC.Color_Pair) return TIC.Attributed_String;
 
    procedure draw_static_summary_zone;
    procedure draw_static_builders_zone;
 
    procedure Scrawl
      (zone        : zones;
-      information : String);
-   procedure Relocate
+      information : TIC.Attributed_String;
+      at_line     : TIC.Line_Position;
+      at_column   : TIC.Column_Position := 0);
+
+   function Relocate
      (zone        : zones;
       next_line   : TIC.Line_Position;
-      next_column : TIC.Column_Position := 0);
-   procedure Choose_Pen
-     (zone        : zones;
-      attribute   : TIC.Character_Attribute_Set;
-      pen_color   : TIC.Color_Pair);
+      next_column : TIC.Column_Position) return Boolean;
 
    procedure Return_To_Text_Mode;
    procedure Refresh_Zone (zone : zones);
