@@ -185,12 +185,15 @@ package body Display is
       consumed   : constant Integer := builders_used + 4 + 2;
       viewpos    : constant TIC.Line_Position := TIC.Line_Position (consumed);
       difference : Integer := 0 - consumed;
+      use type TIC.Line_Position;
    begin
-      --  Guarantee at least 10 lines for history and let ncurses handle any overflow
-      if difference < 10 then
-         difference := 10;
-      end if;
       historyheight := inc (TIC.Lines, difference);
+      --  Make sure history window lines range from 10 to 50
+      if historyheight < 10 then
+         historyheight := 10;
+      elsif historyheight > TIC.Line_Position (cyclic_range'Last) then
+         historyheight := TIC.Line_Position (cyclic_range'Last);
+      end if;
       zone_actions := TIC.Create (Number_Of_Lines       => historyheight,
                                   Number_Of_Columns     => app_width,
                                   First_Line_Position   => viewpos,
@@ -443,16 +446,13 @@ package body Display is
       end print_id;
 
       arrow  : cyclic_range := history_arrow;
-      maxrow : TIC.Line_Position;
-      use type TIC.Line_Position;
+      maxrow : Natural;
+      row    : TIC.Line_Position;
    begin
-      if historyheight >= TIC.Line_Position (cyclic_range'Last) then
-         maxrow := TIC.Line_Position (cyclic_range'Last) - 1;
-      else
-         maxrow := historyheight - 1;
-      end if;
-      for row in TIC.Line_Position (0) .. maxrow loop
-
+      --  historyheight guaranteed to be no bigger than cyclic_range
+      maxrow := Integer (historyheight) - 1;
+      for rowindex in 0 .. maxrow loop
+         row := TIC.Line_Position (rowindex);
          if history (arrow).established then
             colorado (history (arrow).run_elapsed, c_standard, 1, row, True);
             print_id (id     => history (arrow).id,

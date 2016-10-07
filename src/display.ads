@@ -99,7 +99,7 @@ private
    history_arrow : cyclic_range := cyclic_range'Last;
    builders_used : Integer;
 
-   app_width     : TIC.Column_Count := 80;
+   app_width     : constant TIC.Column_Count := 80;
    historyheight : TIC.Line_Position;
    zone_summary  : TIC.Window;
    zone_builders : TIC.Window;
