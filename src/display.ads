@@ -134,13 +134,15 @@ private
                   "progress, so no new tasks will be started.        ";
    blank        : constant appline := (others => ' ');
 
-   procedure launch_summary_zone;
-   procedure launch_builders_zone;
-   procedure launch_actions_zone;
+   function launch_summary_zone  return Boolean;
+   function launch_builders_zone return Boolean;
+   function launch_actions_zone  return Boolean;
 
    function inc (X : TIC.Line_Position; by : Integer) return TIC.Line_Position;
+   function zone_window (zone : zones) return TIC.Window;
+   function Start_Curses_Mode return Boolean;
+   function establish_colors return Boolean;
 
-   procedure establish_colors;
    procedure draw_static_summary_zone;
    procedure draw_static_builders_zone;
 
@@ -155,5 +157,8 @@ private
      (zone        : zones;
       attribute   : TIC.Character_Attribute_Set;
       pen_color   : TIC.Color_Pair);
+
+   procedure Return_To_Text_Mode;
+   procedure Refresh_Zone (zone : zones);
 
 end Display;

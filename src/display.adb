@@ -14,28 +14,38 @@ package body Display is
    ----------------------
    function launch_monitor (num_builders : builders) return Boolean is
    begin
-      TIC.Init_Screen;
-      if not TIC.Has_Colors then
-         TIC.End_Windows;
+      if not Start_Curses_Mode then
          return False;
       end if;
-      TIC.Set_Echo_Mode (False);
-      TIC.Set_Raw_Mode (True);
-      TIC.Set_Cbreak_Mode (True);
-      TIC.Set_Cursor_Visibility (Visibility => cursor_vis);
-
-      establish_colors;
+      if not TIC.Has_Colors and then not establish_colors then
+         Return_To_Text_Mode;
+         return False;
+      end if;
+      begin
+         TIC.Set_Echo_Mode (False);
+         TIC.Set_Raw_Mode (True);
+         TIC.Set_Cbreak_Mode (True);
+         TIC.Set_Cursor_Visibility (Visibility => cursor_vis);
+      exception
+         when TIC.Curses_Exception =>
+            Return_To_Text_Mode;
+            return False;
+      end;
 
       builders_used := Integer (num_builders);
 
-      launch_summary_zone;
-      launch_builders_zone;
-      launch_actions_zone;
+      if not launch_summary_zone or else
+        not launch_builders_zone or else
+        not launch_actions_zone
+      then
+         terminate_monitor;
+         return False;
+      end if;
 
       draw_static_summary_zone;
       draw_static_builders_zone;
-      TIC.Refresh (Win => zone_summary);
-      TIC.Refresh (Win => zone_builders);
+      Refresh_Zone (summary);
+      Refresh_Zone (builder);
       return True;
    end launch_monitor;
 
@@ -43,12 +53,21 @@ package body Display is
    -------------------------
    --  terminate_monitor  --
    -------------------------
-   procedure terminate_monitor is
+   procedure terminate_monitor
+   is
+      ok : Boolean := True;
    begin
-      TIC.Delete (Win => zone_actions);
-      TIC.Delete (Win => zone_builders);
-      TIC.Delete (Win => zone_summary);
-      TIC.End_Windows;
+      --  zone_window can't be used because Delete will modify Win variable
+      begin
+         TIC.Delete (Win => zone_summary);
+         TIC.Delete (Win => zone_builders);
+         TIC.Delete (Win => zone_actions);
+      exception
+         when TIC.Curses_Exception => ok := False;
+      end;
+      if ok then
+         Return_To_Text_Mode;
+      end if;
    end terminate_monitor;
 
 
@@ -57,21 +76,28 @@ package body Display is
    -----------------------------------
    procedure set_full_redraw_next_update is
    begin
-      TIC.Redraw (Win => zone_actions);
-      TIC.Redraw (Win => zone_builders);
-      TIC.Redraw (Win => zone_summary);
+      for zone in zones'Range loop
+         begin
+            TIC.Redraw (Win => zone_window (zone));
+         exception
+            when TIC.Curses_Exception => null;
+         end;
+      end loop;
    end set_full_redraw_next_update;
 
 
    ---------------------------
    --  launch_summary_zone  --
    ---------------------------
-   procedure launch_summary_zone is
+   function launch_summary_zone return Boolean is
    begin
       zone_summary := TIC.Create (Number_Of_Lines       => 2,
                                   Number_Of_Columns     => app_width,
                                   First_Line_Position   => 0,
                                   First_Column_Position => 0);
+      return True;
+   exception
+      when TIC.Curses_Exception => return False;
    end launch_summary_zone;
 
 
@@ -98,7 +124,7 @@ package body Display is
    ----------------------------
    --  launch_builders_zone  --
    ----------------------------
-   procedure launch_builders_zone
+   function launch_builders_zone return Boolean
    is
       hghtint : constant Integer := 4 + builders_used;
       height  : constant TIC.Line_Position := TIC.Line_Position (hghtint);
@@ -107,6 +133,9 @@ package body Display is
                                    Number_Of_Columns     => app_width,
                                    First_Line_Position   => 2,
                                    First_Column_Position => 0);
+      return True;
+   exception
+      when TIC.Curses_Exception => return False;
    end launch_builders_zone;
 
 
@@ -149,7 +178,7 @@ package body Display is
    ---------------------------
    --  launch_actions_zone  --
    ---------------------------
-   procedure launch_actions_zone
+   function launch_actions_zone return Boolean
    is
       consumed   : constant Integer := builders_used + 4 + 2;
       viewpos    : constant TIC.Line_Position := TIC.Line_Position (consumed);
@@ -164,6 +193,9 @@ package body Display is
                                   Number_Of_Columns     => app_width,
                                   First_Line_Position   => viewpos,
                                   First_Column_Position => 0);
+      return True;
+   exception
+      when TIC.Curses_Exception => return False;
    end launch_actions_zone;
 
 
@@ -276,7 +308,7 @@ package body Display is
       colorado (L2F5, c_standard, 64, 1, True);
       colorado (data.elapsed, c_elapsed, 70, 1);
 
-      TIC.Refresh (Win => zone_summary);
+      Refresh_Zone (summary);
    end summarize;
 
 
@@ -331,7 +363,7 @@ package body Display is
    ------------------------------
    procedure refresh_builder_window is
    begin
-      TIC.Refresh (Win => zone_builders);
+      Refresh_Zone (builder);
    end refresh_builder_window;
 
 
@@ -443,25 +475,29 @@ package body Display is
             arrow := arrow - 1;
          end if;
       end loop;
-      TIC.Refresh (Win => zone_actions);
+      Refresh_Zone (action);
    end refresh_history_window;
 
 
    ------------------------
    --  establish_colors  --
    ------------------------
-   procedure establish_colors is
+   function establish_colors return Boolean is
    begin
       TIC.Start_Color;
-      TIC.Init_Pair (TIC.Color_Pair (1), TIC.White,   TIC.Black);
-      TIC.Init_Pair (TIC.Color_Pair (2), TIC.Green,   TIC.Black);
-      TIC.Init_Pair (TIC.Color_Pair (3), TIC.Red,     TIC.Black);
-      TIC.Init_Pair (TIC.Color_Pair (4), TIC.Yellow,  TIC.Black);
-      TIC.Init_Pair (TIC.Color_Pair (5), TIC.Black,   TIC.Black);
-      TIC.Init_Pair (TIC.Color_Pair (6), TIC.Cyan,    TIC.Black);
-      TIC.Init_Pair (TIC.Color_Pair (7), TIC.Blue,    TIC.Black);
-      TIC.Init_Pair (TIC.Color_Pair (8), TIC.Magenta, TIC.Black);
-      TIC.Init_Pair (TIC.Color_Pair (9), TIC.Blue,    TIC.White);
+      begin
+         TIC.Init_Pair (TIC.Color_Pair (1), TIC.White,   TIC.Black);
+         TIC.Init_Pair (TIC.Color_Pair (2), TIC.Green,   TIC.Black);
+         TIC.Init_Pair (TIC.Color_Pair (3), TIC.Red,     TIC.Black);
+         TIC.Init_Pair (TIC.Color_Pair (4), TIC.Yellow,  TIC.Black);
+         TIC.Init_Pair (TIC.Color_Pair (5), TIC.Black,   TIC.Black);
+         TIC.Init_Pair (TIC.Color_Pair (6), TIC.Cyan,    TIC.Black);
+         TIC.Init_Pair (TIC.Color_Pair (7), TIC.Blue,    TIC.Black);
+         TIC.Init_Pair (TIC.Color_Pair (8), TIC.Magenta, TIC.Black);
+         TIC.Init_Pair (TIC.Color_Pair (9), TIC.Blue,    TIC.White);
+      exception
+         when TIC.Curses_Exception => return False;
+      end;
 
       c_standard    := TIC.Color_Pair (1);
       c_success     := TIC.Color_Pair (2);
@@ -533,7 +569,22 @@ package body Display is
          c_slave (bld) := c_slave (bld - 32);
       end loop;
 
+      return True;
+
    end establish_colors;
+
+
+   ------------------------------------------------------------------------
+   --  zone_window
+   ------------------------------------------------------------------------
+   function zone_window (zone : zones) return TIC.Window is
+   begin
+      case zone is
+         when builder => return zone_builders;
+         when summary => return zone_summary;
+         when action  => return zone_actions;
+      end case;
+   end zone_window;
 
 
    ------------------------------------------------------------------------
@@ -545,20 +596,9 @@ package body Display is
       next_column : TIC.Column_Position := 0)
    is
    begin
-      case zone is
-         when builder =>
-            TIC.Move_Cursor (Win    => zone_builders,
-                             Line   => next_line,
-                             Column => next_column);
-         when summary =>
-            TIC.Move_Cursor (Win    => zone_summary,
-                             Line   => next_line,
-                             Column => next_column);
-         when action =>
-            TIC.Move_Cursor (Win    => zone_actions,
-                             Line   => next_line,
-                             Column => next_column);
-      end case;
+      TIC.Move_Cursor (Win    => zone_window (zone),
+                       Line   => next_line,
+                       Column => next_column);
    exception
       when TIC.Curses_Exception => null;
    end Relocate;
@@ -569,14 +609,7 @@ package body Display is
    ------------------------------------------------------------------------
    procedure Scrawl (zone : zones; information : String) is
    begin
-      case zone is
-         when builder =>
-            TIC.Add (Win => zone_builders, Str => information);
-         when summary =>
-            TIC.Add (Win => zone_summary, Str => information);
-         when action =>
-            TIC.Add (Win => zone_actions, Str => information);
-      end case;
+      TIC.Add (Win => zone_window (zone), Str => information);
    exception
       when TIC.Curses_Exception => null;
    end Scrawl;
@@ -591,22 +624,45 @@ package body Display is
       pen_color   : TIC.Color_Pair)
    is
    begin
-      case zone is
-         when builder =>
-            TIC.Set_Character_Attributes (Win   => zone_builders,
-                                          Attr  => attribute,
-                                          Color => pen_color);
-         when summary =>
-            TIC.Set_Character_Attributes (Win   => zone_summary,
-                                          Attr  => attribute,
-                                          Color => pen_color);
-         when action =>
-            TIC.Set_Character_Attributes (Win   => zone_actions,
-                                          Attr  => attribute,
-                                          Color => pen_color);
-      end case;
+      TIC.Set_Character_Attributes (Win   => zone_window (zone),
+                                    Attr  => attribute,
+                                    Color => pen_color);
    exception
       when TIC.Curses_Exception => null;
    end Choose_Pen;
+
+
+   ------------------------------------------------------------------------
+   --  Return_To_Text_Mode
+   ------------------------------------------------------------------------
+   procedure Return_To_Text_Mode is
+   begin
+      TIC.End_Windows;
+   exception
+      when TIC.Curses_Exception => null;
+   end Return_To_Text_Mode;
+
+
+   ------------------------------------------------------------------------
+   --  Refresh_Zone
+   ------------------------------------------------------------------------
+   procedure Refresh_Zone (zone : zones) is
+   begin
+      TIC.Refresh (Win => zone_window (zone));
+   exception
+      when TIC.Curses_Exception => null;
+   end Refresh_Zone;
+
+
+   ------------------------------------------------------------------------
+   --  Start_Curses_Mode
+   ------------------------------------------------------------------------
+   function Start_Curses_Mode return Boolean is
+   begin
+      TIC.Init_Screen;
+      return True;
+   exception
+      when TIC.Curses_Exception => return False;
+   end Start_Curses_Mode;
 
 end Display;
