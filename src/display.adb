@@ -17,7 +17,7 @@ package body Display is
       if not Start_Curses_Mode then
          return False;
       end if;
-      if not TIC.Has_Colors and then not establish_colors then
+      if not TIC.Has_Colors or else not establish_colors then
          Return_To_Text_Mode;
          return False;
       end if;
