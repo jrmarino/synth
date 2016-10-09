@@ -585,24 +585,6 @@ package body Display is
 
 
    ------------------------------------------------------------------------
-   --  Relocate
-   ------------------------------------------------------------------------
-   function Relocate
-     (zone        : zones;
-      next_line   : TIC.Line_Position;
-      next_column : TIC.Column_Position) return Boolean
-   is
-   begin
-      TIC.Move_Cursor (Win    => zone_window (zone),
-                       Line   => next_line,
-                       Column => next_column);
-      return True;
-   exception
-      when TIC.Curses_Exception => return False;
-   end Relocate;
-
-
-   ------------------------------------------------------------------------
    --  Scrawl
    ------------------------------------------------------------------------
    procedure Scrawl (zone        : zones;
@@ -610,12 +592,11 @@ package body Display is
                      at_line     : TIC.Line_Position;
                      at_column   : TIC.Column_Position := 0) is
    begin
-      if Relocate (zone        => zone,
-                   next_line   => at_line,
-                   next_column => at_column)
-      then
-         TIC.Add (Win => zone_window (zone), Str => information);
-      end if;
+      TIC.Add (Win    => zone_window (zone),
+               Line   => at_line,
+               Column => at_column,
+               Str    => information,
+               Len    => information'Length);
    exception
       when TIC.Curses_Exception => null;
    end Scrawl;

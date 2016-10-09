@@ -154,11 +154,6 @@ private
       at_line     : TIC.Line_Position;
       at_column   : TIC.Column_Position := 0);
 
-   function Relocate
-     (zone        : zones;
-      next_line   : TIC.Line_Position;
-      next_column : TIC.Column_Position) return Boolean;
-
    procedure Return_To_Text_Mode;
    procedure Refresh_Zone (zone : zones);
 
