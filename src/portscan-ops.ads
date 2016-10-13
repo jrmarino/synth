@@ -109,6 +109,7 @@ private
    procedure write_summary_json
      (active            : Boolean;
       states            : dim_builder_state;
+      num_builders      : builders;
       num_history_files : Natural);
 
 end PortScan.Ops;

@@ -949,8 +949,8 @@ package body PortScan.Ops is
    --  initialize_web_report  --
    -----------------------------
    procedure initialize_web_report (num_builders : builders) is
-      idle_slaves  : constant dim_builder_state := (1 .. num_builders => idle);
-      reportdir    : constant String := JT.USS (PM.configuration.dir_logs) & "/report";
+      idle_slaves  : constant dim_builder_state := (others => idle);
+      reportdir    : constant String := JT.USS (PM.configuration.dir_logs) & "/Report";
       sharedir     : constant String := host_localbase & "/share/synth";
    begin
       AD.Create_Path (reportdir);
@@ -961,6 +961,7 @@ package body PortScan.Ops is
       AD.Copy_File (sharedir & "/progress.html", reportdir & "/index.html");
       write_summary_json (active            => True,
                           states            => idle_slaves,
+                          num_builders      => num_builders,
                           num_history_files => 0);
    end initialize_web_report;
 
@@ -971,6 +972,7 @@ package body PortScan.Ops is
    procedure write_summary_json
      (active            : Boolean;
       states            : dim_builder_state;
+      num_builders      : builders;
       num_history_files : Natural)
    is
       function nv (name, value : String) return String;
@@ -996,7 +998,7 @@ package body PortScan.Ops is
       end TF;
 
       jsonfile : TIO.File_Type;
-      filename : constant String := JT.USS (PM.configuration.dir_logs) & "/report/summary.json";
+      filename : constant String := JT.USS (PM.configuration.dir_logs) & "/Report/summary.json";
       leftover : constant Integer := bld_counter (total) - bld_counter (success) -
                  bld_counter (failure) - bld_counter (ignored) - bld_counter (skipped);
       slave    : DPY.builder_rec;
@@ -1028,7 +1030,7 @@ package body PortScan.Ops is
            "  }" & ASCII.LF &
            "  ," & ASCII.Quotation & "builders" & ASCII.Quotation & ASCII.Colon & "[" & ASCII.LF);
 
-      for b in states'Range loop
+      for b in builders'First .. num_builders loop
          if states (b) = shutdown then
             slave := CYC.builder_status (b, True, False);
          elsif states (b) = idle then
@@ -1036,7 +1038,7 @@ package body PortScan.Ops is
          else
             slave := CYC.builder_status (b);
          end if;
-         if b = states'First then
+         if b = builders'First then
             TIO.Put (jsonfile, "    {" & ASCII.LF);
          else
             TIO.Put (jsonfile, "    ,{" & ASCII.LF);
@@ -1045,10 +1047,10 @@ package body PortScan.Ops is
          TIO.Put
            (jsonfile,
               "       " & nv ("ID",      slave.slavid)  & ASCII.LF &
-              "      ," & nv ("elapsed", slave.Elapsed) & ASCII.LF &
-              "      ," & nv ("phase",   slave.phase)   & ASCII.LF &
-              "      ," & nv ("origin",  slave.origin)  & ASCII.LF &
-              "      ," & nv ("lines",   slave.LLines)  & ASCII.LF &
+              "      ," & nv ("elapsed", JT.trim (slave.Elapsed)) & ASCII.LF &
+              "      ," & nv ("phase",   JT.trim (slave.phase))   & ASCII.LF &
+              "      ," & nv ("origin",  JT.trim (slave.origin))  & ASCII.LF &
+              "      ," & nv ("lines",   JT.trim (slave.LLines))  & ASCII.LF &
               "    }" & ASCII.LF);
       end loop;
       TIO.Put (jsonfile, "  ]" & ASCII.LF & "}" & ASCII.LF);
