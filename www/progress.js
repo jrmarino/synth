@@ -172,6 +172,12 @@ function process_history_file(data, k) {
 	}
 }
 
+function cycle () {
+	if (run_active) {
+		setTimeout(update_summary_and_builders, SbInterval * 1000);
+	}
+}
+
 function update_history_success(kfile) {
 	if (kfile == kfiles) {
 		var full_history = [];
@@ -180,9 +186,7 @@ function update_history_success(kfile) {
 		}
 		$('#report_table').dataTable().fnClearTable();
 		$('#report_table').dataTable().fnAddData(full_history);
-		if (run_active) {
-			setTimeout(update_summary_and_builders, SbInterval * 1000);
-		}
+		cycle();
 	} else {
 		last_kfile = kfile + 1;
 		update_history();
@@ -190,6 +194,10 @@ function update_history_success(kfile) {
 }
 
 function update_history() {
+	if (kfiles == 0) {
+		cycle();
+		return;
+	}
 	clearInterval(update_history);
 	$.ajax({
 		url: digit2(last_kfile) + '_history.json',
