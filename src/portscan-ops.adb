@@ -945,4 +945,119 @@ package body PortScan.Ops is
    end package_name;
 
 
+   -----------------------------
+   --  initialize_web_report  --
+   -----------------------------
+   procedure initialize_web_report (num_builders : builders) is
+      idle_slaves  : constant dim_builder_state := (1 .. num_builders => idle);
+      reportdir    : constant String := JT.USS (PM.configuration.dir_logs) & "/report";
+      sharedir     : constant String := host_localbase & "/share/synth";
+   begin
+      AD.Create_Path (reportdir);
+      AD.Copy_File (sharedir & "/synth.png",     reportdir & "/synth.png");
+      AD.Copy_File (sharedir & "/favicon.png",   reportdir & "/favicon.png");
+      AD.Copy_File (sharedir & "/progress.js",   reportdir & "/progress.js");
+      AD.Copy_File (sharedir & "/progress.css",  reportdir & "/progress.css");
+      AD.Copy_File (sharedir & "/progress.html", reportdir & "/index.html");
+      write_summary_json (active            => True,
+                          states            => idle_slaves,
+                          num_history_files => 0);
+   end initialize_web_report;
+
+
+   --------------------------
+   --  write_summary_json  --
+   --------------------------
+   procedure write_summary_json
+     (active            : Boolean;
+      states            : dim_builder_state;
+      num_history_files : Natural)
+   is
+      function nv (name, value : String) return String;
+      function nv (name : String; value : Integer) return String;
+      function TF (value : Boolean) return Natural;
+
+      function nv (name, value : String) return String is
+      begin
+         return ASCII.Quotation & name & ASCII.Quotation & ASCII.Colon &
+           ASCII.Quotation & value & ASCII.Quotation;
+      end nv;
+      function nv (name : String; value : Integer) return String is
+      begin
+         return ASCII.Quotation & name & ASCII.Quotation & ASCII.Colon & JT.int2str (value);
+      end nv;
+      function TF (value : Boolean) return Natural is
+      begin
+         if value then
+            return 1;
+         else
+            return 0;
+         end if;
+      end TF;
+
+      jsonfile : TIO.File_Type;
+      filename : constant String := JT.USS (PM.configuration.dir_logs) & "/report/summary.json";
+      leftover : constant Integer := bld_counter (total) - bld_counter (success) -
+                 bld_counter (failure) - bld_counter (ignored) - bld_counter (skipped);
+      slave    : DPY.builder_rec;
+   begin
+      TIO.Create (File => jsonfile,
+                  Mode => TIO.Out_File,
+                  Name => filename);
+      TIO.Put (jsonfile, "{" & ASCII.LF &
+                 "   " & nv ("profile", JT.USS (PM.configuration.profile)) & ASCII.LF);
+      TIO.Put
+        (jsonfile,
+             "  ," & nv ("kickoff", timestamp (start_time)) & ASCII.LF &
+             "  ," & nv ("kfiles", num_history_files) & ASCII.LF &
+             "  ," & nv ("active", TF (active)) & ASCII.LF &
+             "  ," & ASCII.Quotation & "stats" & ASCII.Quotation & ASCII.Colon & "{" & ASCII.LF);
+      TIO.Put
+        (jsonfile,
+           "     " & nv ("queued",   bld_counter (total))   & ASCII.LF &
+           "    ," & nv ("built",    bld_counter (success)) & ASCII.LF &
+           "    ," & nv ("failed",   bld_counter (failure)) & ASCII.LF &
+           "    ," & nv ("ignored",  bld_counter (ignored)) & ASCII.LF &
+           "    ," & nv ("skipped",  bld_counter (skipped)) & ASCII.LF &
+           "    ," & nv ("remains",  leftover)              & ASCII.LF &
+           "    ," & nv ("elapsed",  CYC.elapsed_now)       & ASCII.LF &
+           "    ," & nv ("pkghour",  hourly_build_rate)     & ASCII.LF &
+           "    ," & nv ("impulse",  impulse_rate)          & ASCII.LF &
+           "    ," & nv ("swapinfo", DPY.fmtpc (get_swap_status, True))    & ASCII.LF &
+           "    ," & nv ("load",     DPY.fmtpc (get_instant_load, False))  & ASCII.LF &
+           "  }" & ASCII.LF &
+           "  ," & ASCII.Quotation & "builders" & ASCII.Quotation & ASCII.Colon & "[" & ASCII.LF);
+
+      for b in states'Range loop
+         if states (b) = shutdown then
+            slave := CYC.builder_status (b, True, False);
+         elsif states (b) = idle then
+            slave := CYC.builder_status (b, False, True);
+         else
+            slave := CYC.builder_status (b);
+         end if;
+         if b = states'First then
+            TIO.Put (jsonfile, "    {" & ASCII.LF);
+         else
+            TIO.Put (jsonfile, "    ,{" & ASCII.LF);
+         end if;
+
+         TIO.Put
+           (jsonfile,
+              "       " & nv ("ID",      slave.slavid)  & ASCII.LF &
+              "      ," & nv ("elapsed", slave.Elapsed) & ASCII.LF &
+              "      ," & nv ("phase",   slave.phase)   & ASCII.LF &
+              "      ," & nv ("origin",  slave.origin)  & ASCII.LF &
+              "      ," & nv ("lines",   slave.LLines)  & ASCII.LF &
+              "    }" & ASCII.LF);
+      end loop;
+      TIO.Put (jsonfile, "  ]" & ASCII.LF & "}" & ASCII.LF);
+      TIO.Close (jsonfile);
+   exception
+      when others =>
+         if TIO.Is_Open (jsonfile) then
+            TIO.Close (jsonfile);
+         end if;
+   end write_summary_json;
+
 end PortScan.Ops;

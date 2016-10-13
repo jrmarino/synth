@@ -12,6 +12,7 @@ package Display is
    subtype history_origin  is String (1 .. 45);
    subtype history_elapsed is String (1 .. 8);
    subtype history_action  is String (1 .. 8);
+   subtype fivelong        is String (1 .. 5);
    type history_rec is
       record
          id          : builders;
@@ -80,6 +81,9 @@ package Display is
    --  Clears and redraws the static portion of builder and summary zones
    --  (Realized when the regular zones are refreshed)
    procedure set_full_redraw_next_update;
+
+   --  Expose helper function that formats float values for www report
+   function fmtpc (f : Float; percent : Boolean) return fivelong;
 
 private
 

@@ -88,7 +88,11 @@ package body JohnnyText is
       raw : constant String := A'Img;
       len : constant Natural := raw'Length;
    begin
-      return raw (2 .. len);
+      if A < 0 then
+         return raw;
+      else
+         return raw (2 .. len);
+      end if;
    end int2str;
 
 

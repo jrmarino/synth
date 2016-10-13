@@ -220,9 +220,7 @@ package body Display is
    -----------------
    procedure summarize (data : summary_rec)
    is
-      subtype fivelong is String (1 .. 5);
       function pad (S : String; amount : Positive := 5) return String;
-      function fmtpc (f : Float; percent : Boolean) return fivelong;
       procedure colorado (S : String; color :  TIC.Color_Pair;
                           col : TIC.Column_Position;
                           row : TIC.Line_Position;
@@ -243,22 +241,7 @@ package body Display is
          end if;
          return result;
       end pad;
-      function fmtpc (f : Float; percent : Boolean) return fivelong
-      is
-         type loadtype is delta 0.01 digits 4;
-         result : fivelong := (others => ' ');
-         raw1   : constant loadtype := loadtype (f);
-         raw2   : constant String := raw1'Img;
-         raw3   : constant String := raw2 (2 .. raw2'Last);
-         rlen   : constant Natural := raw3'Length;
-         start  : constant Natural := 6 - rlen;
-      begin
-         result (start .. 5) := raw3;
-         if percent then
-            result (5) := '%';
-         end if;
-         return result;
-      end fmtpc;
+
       procedure colorado (S : String; color :  TIC.Color_Pair;
                           col : TIC.Column_Position;
                           row : TIC.Line_Position;
@@ -696,5 +679,26 @@ package body Display is
          return bright;
       end if;
    end emphasis;
+
+
+   ------------------------------------------------------------------------
+   --  fmtpc
+   ------------------------------------------------------------------------
+   function fmtpc (f : Float; percent : Boolean) return fivelong
+   is
+      type loadtype is delta 0.01 digits 4;
+      result : fivelong := (others => ' ');
+      raw1   : constant loadtype := loadtype (f);
+      raw2   : constant String := raw1'Img;
+      raw3   : constant String := raw2 (2 .. raw2'Last);
+      rlen   : constant Natural := raw3'Length;
+      start  : constant Natural := 6 - rlen;
+   begin
+      result (start .. 5) := raw3;
+      if percent then
+         result (5) := '%';
+      end if;
+      return result;
+   end fmtpc;
 
 end Display;

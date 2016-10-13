@@ -51,6 +51,10 @@ package PortScan.Ops is
    --  calling parallel_bulk_run.
    procedure initialize_display (num_builders : builders);
 
+   --  Unconditionally copies web assets to <log directory/report directory
+   --  It also provides an initial summary.json data file just the report has something to load
+   procedure initialize_web_report (num_builders : builders);
+
    --  Call before executing sanity check.  It checks the present of build
    --  hooks at the synth_conf location and caches the results.
    --  It also fires off the first hook (run_start)
@@ -102,5 +106,9 @@ private
    function  file_is_executable (filename : String) return Boolean;
    procedure delete_rank (id : port_id);
    procedure run_hook (hook : hook_type; envvar_list : String);
+   procedure write_summary_json
+     (active            : Boolean;
+      states            : dim_builder_state;
+      num_history_files : Natural);
 
 end PortScan.Ops;

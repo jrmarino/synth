@@ -22,7 +22,6 @@ package PortScan.Buildcycle is
                            interphase  : phases  := fetch) return Boolean;
 
    --  Expose for overall build log
-   function timestamp (hack : CAL.Time) return String;
    function log_duration (start, stop : CAL.Time) return String;
    function elapsed_now return String;
    function elapsed_build (id : builders) return String;

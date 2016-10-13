@@ -201,6 +201,7 @@ private
    function scan_progress return String;
    function get_max_lots return scanners;
    function get_pkg_name (origin : String) return String;
+   function timestamp (hack : CAL.Time) return String;
 
    type dim_counters is array (count_type) of Natural;
 

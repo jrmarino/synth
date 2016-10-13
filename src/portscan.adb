@@ -2,6 +2,7 @@
 --  Reference: ../License.txt
 
 with Ada.Strings.Hash;
+with Ada.Calendar.Formatting;
 with GNAT.Regpat;
 with GNAT.String_Split;
 with Ada.Exceptions;
@@ -11,6 +12,7 @@ with Unix;
 package body PortScan is
 
    package EX  renames Ada.Exceptions;
+   package ACF renames Ada.Calendar.Formatting;
    package RGX renames GNAT.Regpat;
    package GSS renames GNAT.String_Split;
    package SIG renames Signals;
@@ -993,5 +995,49 @@ package body PortScan is
          return " (port deleted)";
       end if;
    end obvious_problem;
+
+
+   -----------------
+   --  timestamp  --
+   -----------------
+   function timestamp (hack : CAL.Time) return String
+   is
+      function MON   (num : CAL.Month_Number) return String;
+      function WKDAY (day : ACF.Day_Name) return String;
+
+      function MON (num : CAL.Month_Number) return String is
+      begin
+         case num is
+            when 1 => return "JAN";
+            when 2 => return "FEB";
+            when 3 => return "MAR";
+            when 4 => return "APR";
+            when 5 => return "MAY";
+            when 6 => return "JUN";
+            when 7 => return "JUL";
+            when 8 => return "AUG";
+            when 9 => return "SEP";
+            when 10 => return "OCT";
+            when 11 => return "NOV";
+            when 12 => return "DEC";
+         end case;
+      end MON;
+      function WKDAY (day : ACF.Day_Name) return String is
+      begin
+         case day is
+            when ACF.Monday    => return "Monday";
+            when ACF.Tuesday   => return "Tuesday";
+            when ACF.Wednesday => return "Wednesday";
+            when ACF.Thursday  => return "Thursday";
+            when ACF.Friday    => return "Friday";
+            when ACF.Saturday  => return "Saturday";
+            when ACF.Sunday    => return "Sunday";
+         end case;
+      end WKDAY;
+   begin
+      return WKDAY (ACF.Day_Of_Week (hack)) & "," & CAL.Day (hack)'Img & " " &
+        MON (CAL.Month (hack)) & CAL.Year (hack)'Img & " at" &
+        ACF.Image (hack)(11 .. 19) & " UTC";
+   end timestamp;
 
 end PortScan;

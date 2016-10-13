@@ -1,4 +1,4 @@
-var SbInterval = 8;
+var SbInterval = 6;
 var progwidth = 950;
 var progheight = 14;
 var progtop    = 2;
@@ -192,7 +192,7 @@ function update_history_success(kfile) {
 function update_history() {
 	clearInterval(update_history);
 	$.ajax({
-		url: 'z' + digit2(last_kfile) + '_history.json',
+		url: digit2(last_kfile) + '_history.json',
 		dataType: 'json',
 		success: function(data) {
 			process_history_file(data, last_kfile);
@@ -207,7 +207,7 @@ function update_history() {
 
 function update_summary_and_builders() {
 	$.ajax({
-		url: 'test.data.json',
+		url: 'summary.json',
 		dataType: 'json',
 		success: function(data) {
 			process_summary(data);

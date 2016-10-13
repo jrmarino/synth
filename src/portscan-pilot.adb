@@ -356,6 +356,7 @@ package body PortScan.Pilot is
       else
          REP.initialize (testmode, PortScan.cores_available);
          CYC.initialize (testmode, REP.jail_environment);
+         OPS.initialize_web_report (num_builders);
          OPS.initialize_display (num_builders);
          OPS.parallel_bulk_run (num_builders, Flog);
          REP.finalize;
@@ -677,7 +678,7 @@ package body PortScan.Pilot is
                   Name => logpath);
       if flavor = total then
          TIO.Put_Line (Flog (flavor), "-=>  Chronology of last build  <=-");
-         TIO.Put_Line (Flog (flavor), "Started: " & CYC.timestamp (start_time));
+         TIO.Put_Line (Flog (flavor), "Started: " & timestamp (start_time));
          TIO.Put_Line (Flog (flavor), "Ports to build:" &
                                       PKG.original_queue_size'Img);
          TIO.Put_Line (Flog (flavor), "");
@@ -698,7 +699,7 @@ package body PortScan.Pilot is
    procedure stop_logging (flavor : count_type) is
    begin
       if flavor = total then
-         TIO.Put_Line (Flog (flavor), "Finished: " & CYC.timestamp (stop_time));
+         TIO.Put_Line (Flog (flavor), "Finished: " & timestamp (stop_time));
          TIO.Put_Line (Flog (flavor), CYC.log_duration (start => start_time,
                                                         stop  => stop_time));
       end if;
