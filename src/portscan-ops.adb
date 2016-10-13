@@ -34,14 +34,16 @@ package body PortScan.Ops is
    -------------------------
    procedure parallel_bulk_run (num_builders : builders; logs : dim_handlers)
    is
-      subtype cycle_count is Natural range 1 .. 9;
+      subtype cycle_count   is Natural range 1 .. 9;
       subtype refresh_count is Natural range 1 .. 4;
-      subtype alert_count is Natural range 1 .. 200;
+      subtype www_count     is Natural range 1 .. 3;
+      subtype alert_count   is Natural range 1 .. 200;
       instructions   : dim_instruction   := (others => port_match_failed);
       builder_states : dim_builder_state := (others => idle);
       cntcycle       : cycle_count       := cycle_count'First;
       cntrefresh     : refresh_count     := refresh_count'First;
       cntalert       : alert_count       := alert_count'First;
+      cntwww         : www_count         := www_count'First;
       run_complete   : Boolean           := False;
       available      : Positive          := Integer (num_builders);
       target         : port_id;
@@ -346,6 +348,20 @@ package body PortScan.Ops is
                   cntrefresh := cntrefresh + 1;
                end if;
             end if;
+
+            --  Generate latest history file every 3 seconds.
+            --  With a poll period of 6 seconds, we need twice that frequency to avoid aliasing
+            --  Note that in text mode, the logs are updated every 4 seconds, so in this mode
+            --  the log lines will often be identical for a cycle.
+            if cntwww = www_count'Last then
+               cntwww := www_count'First;
+               write_summary_json (active            => True,
+                                   states            => builder_states,
+                                   num_builders      => num_builders,
+                                   num_history_files => 0);
+            else
+               cntwww := cntwww + 1;
+            end if;
          else
             cntcycle := cntcycle + 1;
          end if;
@@ -355,6 +371,10 @@ package body PortScan.Ops is
       then
          DPY.terminate_monitor;
       end if;
+      write_summary_json (active            => False,
+                          states            => builder_states,
+                          num_builders      => num_builders,
+                          num_history_files => 0);
       run_hook (run_end, "PORTS_BUILT=" & JT.int2str (bld_counter (success)) &
                   " PORTS_FAILED=" & JT.int2str (bld_counter (failure)) &
                   " PORTS_IGNORED=" & JT.int2str (bld_counter (ignored)) &

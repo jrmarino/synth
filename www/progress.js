@@ -2,7 +2,6 @@ var SbInterval = 6;
 var progwidth = 950;
 var progheight = 14;
 var progtop    = 2;
-var summary_success = 0;
 var run_active;
 var kfiles = 0;
 var last_kfile = 1;
@@ -78,8 +77,8 @@ function process_summary(data) {
 	var B = '<td>';
 	var E = '</td>';
 
-	kfiles = data.kfiles;
-	run_active = data.active;
+	kfiles = parseInt (data.kfiles);
+	run_active = parseInt (data.active);
 	$('#profile').html(data.profile);
 	$('#kickoff').html(data.kickoff);
 	if (data.stats) {
