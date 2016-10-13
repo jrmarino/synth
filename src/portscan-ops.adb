@@ -1030,7 +1030,7 @@ package body PortScan.Ops is
                  "   " & nv ("profile", JT.USS (PM.configuration.profile)) & ASCII.LF);
       TIO.Put
         (jsonfile,
-             "  ," & nv ("kickoff", timestamp (start_time)) & ASCII.LF &
+             "  ," & nv ("kickoff", timestamp (start_time, True)) & ASCII.LF &
              "  ," & nv ("kfiles", num_history_files) & ASCII.LF &
              "  ," & nv ("active", TF (active)) & ASCII.LF &
              "  ," & ASCII.Quotation & "stats" & ASCII.Quotation & ASCII.Colon & "{" & ASCII.LF);

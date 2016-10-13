@@ -1000,7 +1000,7 @@ package body PortScan is
    -----------------
    --  timestamp  --
    -----------------
-   function timestamp (hack : CAL.Time) return String
+   function timestamp (hack : CAL.Time; www_format : Boolean := False) return String
    is
       function MON   (num : CAL.Month_Number) return String;
       function WKDAY (day : ACF.Day_Name) return String;
@@ -1035,6 +1035,11 @@ package body PortScan is
          end case;
       end WKDAY;
    begin
+      if www_format then
+         return CAL.Day (hack)'Img & " " & MON (CAL.Month (hack)) & CAL.Year (hack)'Img & ", " &
+           ACF.Image (hack)(11 .. 19) & " UTC";
+      end if;
+
       return WKDAY (ACF.Day_Of_Week (hack)) & "," & CAL.Day (hack)'Img & " " &
         MON (CAL.Month (hack)) & CAL.Year (hack)'Img & " at" &
         ACF.Image (hack)(11 .. 19) & " UTC";
