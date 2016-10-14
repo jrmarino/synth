@@ -73,7 +73,7 @@ private
    kfile_unit_maxsize : constant Positive := 512;
 
     --  Each history segment is limited to this many log lines
-   kfile_units_limit : constant Positive := 3;
+   kfile_units_limit : constant Positive := 500;
 
    subtype impulse_range is Integer range 1 .. 500;
    subtype kfile_content  is String (1 .. kfile_unit_maxsize * kfile_units_limit);
