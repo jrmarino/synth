@@ -143,7 +143,7 @@ private
       num_builders      : builders;
       num_history_files : Natural);
 
-   procedure write_history_json (segment : Positive);
+   procedure write_history_json (segment : Natural);
 
    procedure assimulate_substring
      (history   : in out progress_history;

@@ -1108,7 +1108,7 @@ package body PortScan.Ops is
    ----------------------------
    --  write_history_json  --
    ----------------------------
-   procedure write_history_json (segment : Positive)
+   procedure write_history_json (segment : Natural)
    is
       jsonfile : TIO.File_Type;
       filename : constant String := JT.USS (PM.configuration.dir_logs) &
@@ -1145,6 +1145,7 @@ package body PortScan.Ops is
       if last < kfile_content'Last then
          history.content (first .. last) := substring;
       end if;
+      history.last_index := last;
    end assimulate_substring;
 
 
