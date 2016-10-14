@@ -1151,10 +1151,10 @@ package body PortScan.Ops is
    ----------------------------
    procedure handle_first_history_entry is
    begin
-      if history.log_entry = 1 then
+      if history.segment_count = 1 then
          assimulate_substring (history, "[" & ASCII.LF & "  {" & ASCII.LF);
       else
-         assimulate_substring (history, "[" & ASCII.LF & "  ,{" & ASCII.LF);
+         assimulate_substring (history, "  ,{" & ASCII.LF);
       end if;
    end handle_first_history_entry;
 
@@ -1171,6 +1171,7 @@ package body PortScan.Ops is
       ID : constant String := JT.zeropad (Integer (slave_id), 2);
    begin
       history.log_entry := history.log_entry + 1;
+      history.segment_count := history.segment_count + 1;
       handle_first_history_entry;
 
       assimulate_substring (history, "     " & nv ("entry", history.log_entry) & ASCII.LF);
@@ -1182,7 +1183,6 @@ package body PortScan.Ops is
       assimulate_substring (history, "    ," & nv ("duration", duration) & ASCII.LF);
       assimulate_substring (history, "  }" & ASCII.LF);
 
-      history.segment_count := history.segment_count + 1;
       check_history_segment_capacity;
    end record_history_built;
 
@@ -1202,6 +1202,7 @@ package body PortScan.Ops is
       ID   : constant String := JT.zeropad (Integer (slave_id), 2);
    begin
       history.log_entry := history.log_entry + 1;
+      history.segment_count := history.segment_count + 1;
       handle_first_history_entry;
 
       assimulate_substring (history, "     " & nv ("entry", history.log_entry) & ASCII.LF);
@@ -1213,7 +1214,6 @@ package body PortScan.Ops is
       assimulate_substring (history, "    ," & nv ("duration", duration) & ASCII.LF);
       assimulate_substring (history, "  }" & ASCII.LF);
 
-      history.segment_count := history.segment_count + 1;
       check_history_segment_capacity;
    end record_history_failed;
 
@@ -1230,6 +1230,7 @@ package body PortScan.Ops is
       info : constant String := reason & ":|:" & JT.int2str (skips);
    begin
       history.log_entry := history.log_entry + 1;
+      history.segment_count := history.segment_count + 1;
       handle_first_history_entry;
 
       assimulate_substring (history, "     " & nv ("entry", history.log_entry) & ASCII.LF);
@@ -1241,7 +1242,6 @@ package body PortScan.Ops is
       assimulate_substring (history, "    ," & nv ("duration", "--:--:--") & ASCII.LF);
       assimulate_substring (history, "  }" & ASCII.LF);
 
-      history.segment_count := history.segment_count + 1;
       check_history_segment_capacity;
    end record_history_ignored;
 
@@ -1256,6 +1256,7 @@ package body PortScan.Ops is
    is
    begin
       history.log_entry := history.log_entry + 1;
+      history.segment_count := history.segment_count + 1;
       handle_first_history_entry;
 
       assimulate_substring (history, "     " & nv ("entry", history.log_entry) & ASCII.LF);
@@ -1267,7 +1268,6 @@ package body PortScan.Ops is
       assimulate_substring (history, "    ," & nv ("duration", "--:--:--") & ASCII.LF);
       assimulate_substring (history, "  }" & ASCII.LF);
 
-      history.segment_count := history.segment_count + 1;
       check_history_segment_capacity;
    end record_history_skipped;
 
