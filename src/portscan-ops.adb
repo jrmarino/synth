@@ -365,7 +365,7 @@ package body PortScan.Ops is
             --  the log lines will often be identical for a cycle.
             if cntwww = www_count'Last then
                cntwww := www_count'First;
-               write_history_json (segment           => history.segment);
+               write_history_json;
                write_summary_json (active            => True,
                                    states            => builder_states,
                                    num_builders      => num_builders,
@@ -382,7 +382,7 @@ package body PortScan.Ops is
       then
          DPY.terminate_monitor;
       end if;
-      write_history_json (segment           => history.segment);
+      write_history_json;
       write_summary_json (active            => False,
                           states            => builder_states,
                           num_builders      => num_builders,
@@ -1108,13 +1108,13 @@ package body PortScan.Ops is
    ----------------------------
    --  write_history_json  --
    ----------------------------
-   procedure write_history_json (segment : Natural)
+   procedure write_history_json
    is
       jsonfile : TIO.File_Type;
       filename : constant String := JT.USS (PM.configuration.dir_logs) &
-                 "/Report/" & JT.zeropad (segment, 2) & "_history.json";
+                 "/Report/" & JT.zeropad (history.segment, 2) & "_history.json";
    begin
-      if segment = 0 then
+      if history.segment_count = 0 then
          return;
       end if;
       TIO.Create (File => jsonfile,
@@ -1287,7 +1287,7 @@ package body PortScan.Ops is
       if history.segment_count < kfile_units_limit then
          return;
       end if;
-      write_history_json (segment => history.segment);
+      write_history_json;
 
       history.last_index    := 0;
       history.segment_count := 0;
