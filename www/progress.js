@@ -136,7 +136,7 @@ function information (result, origin, info) {
 		return '<a href="' + logfile (origin) + '">logfile</a>';
 	} else if (result == "failed") {
 		parts = info.split(':');
-		return parts[0] + ' phase failed (<a href="' + logfile (origin) +
+		return 'Failed ' + parts[0] + ' phase (<a href="' + logfile (origin) +
 			'">logfile</a>), ' + format_skips (parts[1]);
 	} else if (result == "skipped") {
 		return 'Issue with ' + info;
