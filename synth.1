@@ -1,4 +1,4 @@
-.Dd March 27, 2016
+.Dd October 14, 2016
 .Dt SYNTH 1
 .Os
 .Sh NAME
@@ -501,6 +501,18 @@ Whenever a status command is run, and the option to use suitable prebuilt
 packages has been selected, a list of packages that will be fetched as a
 result will be written to
 .Pa /tmp/synth_prefetch_list.txt
+.It index.html
+For every build run, Synth installs a web summary at the Report subdirectory
+of the build logs directory.  For the default profile, the file would be
+located at
+.Pa /var/synth/logs/Report/index.html .
+To remotely view the web report with a browser, a web server must be present
+and configured to expose the logs directory.  The web report is dynamic and
+updated 10 times per minute.  The complete history is available and
+searchable, with quick-filters on "Built", "Failed", "Ignored" and "Skipped"
+fields as well as on the "No." column which is useful to examine cascaded 
+skips.  The search filter can be quickly cleared by clicking on the "Total" 
+field.
 .It port logs
 Every single attempt at building a port results in a build log. The name of
 the log is always in the form of [category]___[port].log so that subsequent
