@@ -1171,17 +1171,18 @@ package body PortScan.Ops is
       origin    : String;
       duration  : String)
    is
+      ID : constant String := JT.zeropad (Integer (slave_id), 2);
    begin
       history.log_entry := history.log_entry + 1;
       handle_first_history_entry;
 
-      assimulate_substring (history, "     " & nv ("entry", history.log_entry));
-      assimulate_substring (history, "    ," & nv ("elapsed", elapsed));
-      assimulate_substring (history, "    ," & nv ("ID", JT.zeropad (Integer (slave_id), 2)));
-      assimulate_substring (history, "    ," & nv ("result", "built"));
-      assimulate_substring (history, "    ," & nv ("origin", origin));
-      assimulate_substring (history, "    ," & nv ("info", ""));
-      assimulate_substring (history, "    ," & nv ("duration", duration));
+      assimulate_substring (history, "     " & nv ("entry", history.log_entry) & ASCII.LF);
+      assimulate_substring (history, "    ," & nv ("elapsed", elapsed) & ASCII.LF);
+      assimulate_substring (history, "    ," & nv ("ID", ID) & ASCII.LF);
+      assimulate_substring (history, "    ," & nv ("result", "built") & ASCII.LF);
+      assimulate_substring (history, "    ," & nv ("origin", origin) & ASCII.LF);
+      assimulate_substring (history, "    ," & nv ("info", "") & ASCII.LF);
+      assimulate_substring (history, "    ," & nv ("duration", duration) & ASCII.LF);
       assimulate_substring (history, "  }" & ASCII.LF);
 
       history.segment_count := history.segment_count + 1;
@@ -1201,17 +1202,18 @@ package body PortScan.Ops is
       skips     : Natural)
    is
       info : constant String := die_phase & ":" & JT.int2str (skips);
+      ID   : constant String := JT.zeropad (Integer (slave_id), 2);
    begin
       history.log_entry := history.log_entry + 1;
       handle_first_history_entry;
 
-      assimulate_substring (history, "     " & nv ("entry", history.log_entry));
-      assimulate_substring (history, "    ," & nv ("elapsed", elapsed));
-      assimulate_substring (history, "    ," & nv ("ID", JT.zeropad (Integer (slave_id), 2)));
-      assimulate_substring (history, "    ," & nv ("result", "failed"));
-      assimulate_substring (history, "    ," & nv ("origin", origin));
-      assimulate_substring (history, "    ," & nv ("info", info));
-      assimulate_substring (history, "    ," & nv ("duration", duration));
+      assimulate_substring (history, "     " & nv ("entry", history.log_entry) & ASCII.LF);
+      assimulate_substring (history, "    ," & nv ("elapsed", elapsed) & ASCII.LF);
+      assimulate_substring (history, "    ," & nv ("ID", ID)  & ASCII.LF);
+      assimulate_substring (history, "    ," & nv ("result", "failed") & ASCII.LF);
+      assimulate_substring (history, "    ," & nv ("origin", origin) & ASCII.LF);
+      assimulate_substring (history, "    ," & nv ("info", info) & ASCII.LF);
+      assimulate_substring (history, "    ," & nv ("duration", duration) & ASCII.LF);
       assimulate_substring (history, "  }" & ASCII.LF);
 
       history.segment_count := history.segment_count + 1;
@@ -1233,13 +1235,13 @@ package body PortScan.Ops is
       history.log_entry := history.log_entry + 1;
       handle_first_history_entry;
 
-      assimulate_substring (history, "     " & nv ("entry", history.log_entry));
-      assimulate_substring (history, "    ," & nv ("elapsed", elapsed));
-      assimulate_substring (history, "    ," & nv ("ID", "--"));
-      assimulate_substring (history, "    ," & nv ("result", "ignored"));
-      assimulate_substring (history, "    ," & nv ("origin", origin));
-      assimulate_substring (history, "    ," & nv ("info", info));
-      assimulate_substring (history, "    ," & nv ("duration", "--:--:--"));
+      assimulate_substring (history, "     " & nv ("entry", history.log_entry) & ASCII.LF);
+      assimulate_substring (history, "    ," & nv ("elapsed", elapsed) & ASCII.LF);
+      assimulate_substring (history, "    ," & nv ("ID", "--") & ASCII.LF);
+      assimulate_substring (history, "    ," & nv ("result", "ignored") & ASCII.LF);
+      assimulate_substring (history, "    ," & nv ("origin", origin) & ASCII.LF);
+      assimulate_substring (history, "    ," & nv ("info", info) & ASCII.LF);
+      assimulate_substring (history, "    ," & nv ("duration", "--:--:--") & ASCII.LF);
       assimulate_substring (history, "  }" & ASCII.LF);
 
       history.segment_count := history.segment_count + 1;
@@ -1259,13 +1261,13 @@ package body PortScan.Ops is
       history.log_entry := history.log_entry + 1;
       handle_first_history_entry;
 
-      assimulate_substring (history, "     " & nv ("entry", history.log_entry));
-      assimulate_substring (history, "    ," & nv ("elapsed", elapsed));
-      assimulate_substring (history, "    ," & nv ("ID", "--"));
-      assimulate_substring (history, "    ," & nv ("result", "skipped"));
-      assimulate_substring (history, "    ," & nv ("origin", origin));
-      assimulate_substring (history, "    ," & nv ("info", reason));
-      assimulate_substring (history, "    ," & nv ("duration", "--:--:--"));
+      assimulate_substring (history, "     " & nv ("entry", history.log_entry) & ASCII.LF);
+      assimulate_substring (history, "    ," & nv ("elapsed", elapsed) & ASCII.LF);
+      assimulate_substring (history, "    ," & nv ("ID", "--") & ASCII.LF);
+      assimulate_substring (history, "    ," & nv ("result", "skipped") & ASCII.LF);
+      assimulate_substring (history, "    ," & nv ("origin", origin) & ASCII.LF);
+      assimulate_substring (history, "    ," & nv ("info", reason) & ASCII.LF);
+      assimulate_substring (history, "    ," & nv ("duration", "--:--:--") & ASCII.LF);
       assimulate_substring (history, "  }" & ASCII.LF);
 
       history.segment_count := history.segment_count + 1;
