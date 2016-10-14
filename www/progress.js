@@ -55,9 +55,8 @@ function update_canvas(stats) {
 
 	var context = canvas.getContext('2d');
 
-	context.rect(0, progtop, progwidth, progheight + 2);
 	context.fillStyle = '#D8D8D8';
-	context.fillRect(0, progtop + 1, progwidth, progheight);
+	context.fillRect(0, progtop + 1, progwidth, progheight + 2);
 	var x = 0;
 	var mcw = maxcatwidth (built, failed, ignored, skipped, queued);
 	x += minidraw(x, context, "#339966", queued, built, mcw);
