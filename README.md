@@ -205,6 +205,29 @@ than the curses-based screen, but if curses is acting up, the text mode gets
 the job done just fine.  Also, when cron launches Synth, it is required that
 it be using a profile that has disabled the curses display.
 
+#### Web interface
+
+Starting with version 1.60, a dynamic web report is automatically generated
+for every build.  The report is created in the _Report_ subdirectory of the
+logs directory (/var/log/synth/Report/index.html by default).
+
+![web report](http://downloads.dragonlace.net/misc/synth-img/synth_www_3.png)
+
+The report is updated 10 times per minute.  The entire build history is
+retained and searchable during the run; it's reset upon subsequent runs.
+In addition to the standard search and navigation options, several areas
+of the report are clickable.  Click on the *Built*, *Failed*, *Ignored*,
+and *Skipped* fields to click filter for results.  Clicking on the *Total*
+field will remove all search filters.  Additionally, every cell in the
+*No.* column will filter the history for the port origin, which is
+particularly useful for finding all the ports that the builders skipped
+due to build failures or finding the port set to IGNORE.
+
+To view the report on a localhost, simply navigate the browser to the
+reports directory.  To view it remotely, a web server has to be installed,
+running and configured to expose the Synth logs directory for remote
+browsers.
+
 ## Frequently Asked Questions
 
 ### Synth fails when I run it inside a jail.  What can I do?
