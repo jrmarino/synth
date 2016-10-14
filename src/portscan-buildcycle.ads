@@ -25,6 +25,7 @@ package PortScan.Buildcycle is
    function log_duration (start, stop : CAL.Time) return String;
    function elapsed_now return String;
    function elapsed_build (id : builders) return String;
+   function last_build_phase (id : builders) return String;
 
    --  Was private, but expose so Pilot can use it.
    function generic_system_command (command : String) return JT.Text;

@@ -1039,6 +1039,15 @@ package body PortScan.Buildcycle is
    end elapsed_build;
 
 
+   ------------------------
+   --  last_build_phase  --
+   ------------------------
+   function last_build_phase (id : builders) return String is
+   begin
+      return phase2str (phase => trackers (id).phase);
+   end last_build_phase;
+
+
    -----------------------------
    --  get_packages_per_hour  --
    -----------------------------

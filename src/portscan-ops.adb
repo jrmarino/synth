@@ -265,7 +265,7 @@ package body PortScan.Ops is
                                             slave_id  => slave,
                                             origin    => port_name (instructions (slave)),
                                             duration  => CYC.elapsed_build (slave),
-                                            die_phase => "unknown",
+                                            die_phase => CYC.last_build_phase (slave),
                                             skips     => cntskip);
                      run_hook (pkg_failure, "RESULT=failure ORIGIN=" &
                                  port_name (instructions (slave)) & " PKGNAME="
