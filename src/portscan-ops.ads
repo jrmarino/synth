@@ -60,9 +60,33 @@ package PortScan.Ops is
    --  It also fires off the first hook (run_start)
    procedure initialize_hooks;
 
+   --  Exposed for pilot which eliminated ignored ports during the sanity check
+   procedure record_history_ignored
+     (elapsed   : String;
+      origin    : String;
+      reason    : String;
+      skips     : Natural);
+
 private
 
+   --  History log entries average less than 200 bytes.  Allot more than twice this amount.
+   kfile_unit_maxsize : constant Positive := 512;
+
+    --  Each history segment is limited to this many log lines
+   kfile_units_limit : constant Positive := 3;
+
    subtype impulse_range is Integer range 1 .. 500;
+   subtype kfile_content  is String (1 .. kfile_unit_maxsize * kfile_units_limit);
+
+   type progress_history is
+      record
+         segment       : Natural := 0;
+         segment_count : Natural := 0;
+         log_entry     : Natural := 0;
+         last_index    : Natural := 0;
+         content       : kfile_content;
+      end record;
+
    type impulse_rec is
       record
          hack     : CAL.Time;
@@ -79,6 +103,7 @@ private
    type dim_hooks         is array (hook_type) of Boolean;
    type dim_hooksloc      is array (hook_type) of JT.Text;
 
+   history         : progress_history;
    impulse_counter : impulse_range := impulse_range'Last;
    impulse_data    : dim_impulse;
    curses_support  : Boolean;
@@ -104,12 +129,43 @@ private
                           action : DPY.history_action)
                           return DPY.history_rec;
    function  file_is_executable (filename : String) return Boolean;
+   function  nv (name, value : String) return String;
+   function  nv (name : String; value : Integer) return String;
+
    procedure delete_rank (id : port_id);
    procedure run_hook (hook : hook_type; envvar_list : String);
+   procedure check_history_segment_capacity;
+   procedure handle_first_history_entry;
+
    procedure write_summary_json
      (active            : Boolean;
       states            : dim_builder_state;
       num_builders      : builders;
       num_history_files : Natural);
+
+   procedure write_history_json (segment : Positive);
+
+   procedure assimulate_substring
+     (history   : in out progress_history;
+      substring : String);
+
+   procedure record_history_built
+     (elapsed   : String;
+      slave_id  : builders;
+      origin    : String;
+      duration  : String);
+
+   procedure record_history_failed
+     (elapsed   : String;
+      slave_id  : builders;
+      origin    : String;
+      duration  : String;
+      die_phase : String;
+      skips     : Natural);
+
+   procedure record_history_skipped
+     (elapsed   : String;
+      origin    : String;
+      reason    : String);
 
 end PortScan.Ops;

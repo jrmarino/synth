@@ -108,7 +108,7 @@ function digit2(n){
 
 function logfile (origin) {
 	var parts = origin.split('/');
-	return parts[0] + '___' + parts[1] + '.log';
+	return '../' + parts[0] + '___' + parts[1] + '.log';
 }
 
 function format_skips (s) {

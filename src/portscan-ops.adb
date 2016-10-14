@@ -223,6 +223,10 @@ package body PortScan.Ops is
                                         " Success " &
                                         port_name (instructions (slave)));
                      end if;
+                     record_history_built (elapsed   => CYC.elapsed_now,
+                                           slave_id  => slave,
+                                           origin    => port_name (instructions (slave)),
+                                           duration  => CYC.elapsed_build (slave));
                      run_hook (pkg_success, "RESULT=success ORIGIN=" &
                                  port_name (instructions (slave)) & " PKGNAME="
                                & package_name (instructions (slave)) & " ");
@@ -257,6 +261,12 @@ package body PortScan.Ops is
                                         " Failure " &
                                         port_name (instructions (slave)));
                      end if;
+                     record_history_failed (elapsed   => CYC.elapsed_now,
+                                            slave_id  => slave,
+                                            origin    => port_name (instructions (slave)),
+                                            duration  => CYC.elapsed_build (slave),
+                                            die_phase => "unknown",
+                                            skips     => cntskip);
                      run_hook (pkg_failure, "RESULT=failure ORIGIN=" &
                                  port_name (instructions (slave)) & " PKGNAME="
                                & package_name (instructions (slave)) & " ");
@@ -355,10 +365,11 @@ package body PortScan.Ops is
             --  the log lines will often be identical for a cycle.
             if cntwww = www_count'Last then
                cntwww := www_count'First;
+               write_history_json (segment           => history.segment);
                write_summary_json (active            => True,
                                    states            => builder_states,
                                    num_builders      => num_builders,
-                                   num_history_files => 0);
+                                   num_history_files => history.segment);
             else
                cntwww := cntwww + 1;
             end if;
@@ -371,10 +382,11 @@ package body PortScan.Ops is
       then
          DPY.terminate_monitor;
       end if;
+      write_history_json (segment           => history.segment);
       write_summary_json (active            => False,
                           states            => builder_states,
                           num_builders      => num_builders,
-                          num_history_files => 0);
+                          num_history_files => history.segment);
       run_hook (run_end, "PORTS_BUILT=" & JT.int2str (bld_counter (success)) &
                   " PORTS_FAILED=" & JT.int2str (bld_counter (failure)) &
                   " PORTS_IGNORED=" & JT.int2str (bld_counter (ignored)) &
@@ -410,9 +422,12 @@ package body PortScan.Ops is
             numskipped := numskipped + 1;
             TIO.Put_Line (logs (total), "           Skipped: " &
                             port_name (purged));
-            TIO.Put_Line (logs (skipped), port_name (purged) &
-                            " by " & culprit);
+            TIO.Put_Line (logs (skipped),
+                          port_name (purged) & " by " & culprit);
             DPY.insert_history (assemble_HR (1, purged, DPY.action_skipped));
+            record_history_skipped (elapsed => CYC.elapsed_now,
+                                    origin  => port_name (purged),
+                                    reason  => culprit);
             run_hook (pkg_skipped, "RESULT=skipped ORIGIN=" & port_name (purged)
                       & " PKGNAME=" & package_name (purged) & " ");
          end if;
@@ -983,7 +998,25 @@ package body PortScan.Ops is
                           states            => idle_slaves,
                           num_builders      => num_builders,
                           num_history_files => 0);
+
+      --  Prepare history json too
+      assimulate_substring (history, "[" & ASCII.LF);
    end initialize_web_report;
+
+
+   -----------------------
+   --  nv (2 versions)  --
+   -----------------------
+   function nv (name, value : String) return String is
+   begin
+      return ASCII.Quotation & name & ASCII.Quotation & ASCII.Colon &
+        ASCII.Quotation & value & ASCII.Quotation;
+   end nv;
+
+   function nv (name : String; value : Integer) return String is
+   begin
+      return ASCII.Quotation & name & ASCII.Quotation & ASCII.Colon & JT.int2str (value);
+   end nv;
 
 
    --------------------------
@@ -995,19 +1028,8 @@ package body PortScan.Ops is
       num_builders      : builders;
       num_history_files : Natural)
    is
-      function nv (name, value : String) return String;
-      function nv (name : String; value : Integer) return String;
       function TF (value : Boolean) return Natural;
 
-      function nv (name, value : String) return String is
-      begin
-         return ASCII.Quotation & name & ASCII.Quotation & ASCII.Colon &
-           ASCII.Quotation & value & ASCII.Quotation;
-      end nv;
-      function nv (name : String; value : Integer) return String is
-      begin
-         return ASCII.Quotation & name & ASCII.Quotation & ASCII.Colon & JT.int2str (value);
-      end nv;
       function TF (value : Boolean) return Natural is
       begin
          if value then
@@ -1081,5 +1103,192 @@ package body PortScan.Ops is
             TIO.Close (jsonfile);
          end if;
    end write_summary_json;
+
+
+   ----------------------------
+   --  write_history_json  --
+   ----------------------------
+   procedure write_history_json (segment : Positive)
+   is
+      jsonfile : TIO.File_Type;
+      filename : constant String := JT.USS (PM.configuration.dir_logs) &
+                 "/Report/" & JT.zeropad (segment, 2) & "_history.json";
+   begin
+      if segment = 0 then
+         return;
+      end if;
+      TIO.Create (File => jsonfile,
+                  Mode => TIO.Out_File,
+                  Name => filename);
+      TIO.Put (jsonfile, history.content (1 .. history.last_index));
+      TIO.Put (jsonfile, "]" & ASCII.LF);
+      TIO.Close (jsonfile);
+   exception
+      when others =>
+         if TIO.Is_Open (jsonfile) then
+            TIO.Close (jsonfile);
+         end if;
+   end write_history_json;
+
+
+   ----------------------------
+   --  assimulate_substring  --
+   ----------------------------
+   procedure assimulate_substring
+     (history : in out progress_history;
+      substring : String)
+   is
+      first : constant Positive := history.last_index + 1;
+      last  : constant Positive := history.last_index + substring'Length;
+   begin
+      --  silently fail (this shouldn't be practically possible)
+      if last < kfile_content'Last then
+         history.content (first .. last) := substring;
+      end if;
+   end assimulate_substring;
+
+
+   ----------------------------
+   --  record_history_built  --
+   ----------------------------
+   procedure handle_first_history_entry is
+   begin
+      if history.log_entry = 1 then
+         assimulate_substring (history, "  {" & ASCII.LF);
+      else
+         assimulate_substring (history, "  ,{" & ASCII.LF);
+      end if;
+   end handle_first_history_entry;
+
+
+   ----------------------------
+   --  record_history_built  --
+   ----------------------------
+   procedure record_history_built
+     (elapsed   : String;
+      slave_id  : builders;
+      origin    : String;
+      duration  : String)
+   is
+   begin
+      history.log_entry := history.log_entry + 1;
+      handle_first_history_entry;
+
+      assimulate_substring (history, "     " & nv ("entry", history.log_entry));
+      assimulate_substring (history, "    ," & nv ("elapsed", elapsed));
+      assimulate_substring (history, "    ," & nv ("ID", JT.zeropad (Integer (slave_id), 2)));
+      assimulate_substring (history, "    ," & nv ("result", "built"));
+      assimulate_substring (history, "    ," & nv ("origin", origin));
+      assimulate_substring (history, "    ," & nv ("info", ""));
+      assimulate_substring (history, "    ," & nv ("duration", duration));
+      assimulate_substring (history, "  }" & ASCII.LF);
+
+      history.segment_count := history.segment_count + 1;
+      check_history_segment_capacity;
+   end record_history_built;
+
+
+   -----------------------------
+   --  record_history_failed  --
+   -----------------------------
+   procedure record_history_failed
+     (elapsed   : String;
+      slave_id  : builders;
+      origin    : String;
+      duration  : String;
+      die_phase : String;
+      skips     : Natural)
+   is
+      info : constant String := die_phase & ":" & JT.int2str (skips);
+   begin
+      history.log_entry := history.log_entry + 1;
+      handle_first_history_entry;
+
+      assimulate_substring (history, "     " & nv ("entry", history.log_entry));
+      assimulate_substring (history, "    ," & nv ("elapsed", elapsed));
+      assimulate_substring (history, "    ," & nv ("ID", JT.zeropad (Integer (slave_id), 2)));
+      assimulate_substring (history, "    ," & nv ("result", "failed"));
+      assimulate_substring (history, "    ," & nv ("origin", origin));
+      assimulate_substring (history, "    ," & nv ("info", info));
+      assimulate_substring (history, "    ," & nv ("duration", duration));
+      assimulate_substring (history, "  }" & ASCII.LF);
+
+      history.segment_count := history.segment_count + 1;
+      check_history_segment_capacity;
+   end record_history_failed;
+
+
+   ------------------------------
+   --  record_history_ignored  --
+   ------------------------------
+   procedure record_history_ignored
+     (elapsed   : String;
+      origin    : String;
+      reason    : String;
+      skips     : Natural)
+   is
+      info : constant String := reason & ":|:" & JT.int2str (skips);
+   begin
+      history.log_entry := history.log_entry + 1;
+      handle_first_history_entry;
+
+      assimulate_substring (history, "     " & nv ("entry", history.log_entry));
+      assimulate_substring (history, "    ," & nv ("elapsed", elapsed));
+      assimulate_substring (history, "    ," & nv ("ID", "--"));
+      assimulate_substring (history, "    ," & nv ("result", "ignored"));
+      assimulate_substring (history, "    ," & nv ("origin", origin));
+      assimulate_substring (history, "    ," & nv ("info", info));
+      assimulate_substring (history, "    ," & nv ("duration", "--:--:--"));
+      assimulate_substring (history, "  }" & ASCII.LF);
+
+      history.segment_count := history.segment_count + 1;
+      check_history_segment_capacity;
+   end record_history_ignored;
+
+
+   ------------------------------
+   --  record_history_skipped  --
+   ------------------------------
+   procedure record_history_skipped
+     (elapsed   : String;
+      origin    : String;
+      reason    : String)
+   is
+   begin
+      history.log_entry := history.log_entry + 1;
+      handle_first_history_entry;
+
+      assimulate_substring (history, "     " & nv ("entry", history.log_entry));
+      assimulate_substring (history, "    ," & nv ("elapsed", elapsed));
+      assimulate_substring (history, "    ," & nv ("ID", "--"));
+      assimulate_substring (history, "    ," & nv ("result", "skipped"));
+      assimulate_substring (history, "    ," & nv ("origin", origin));
+      assimulate_substring (history, "    ," & nv ("info", reason));
+      assimulate_substring (history, "    ," & nv ("duration", "--:--:--"));
+      assimulate_substring (history, "  }" & ASCII.LF);
+
+      history.segment_count := history.segment_count + 1;
+      check_history_segment_capacity;
+   end record_history_skipped;
+
+
+   --------------------------------------
+   --  check_history_segment_capacity  --
+   --------------------------------------
+   procedure check_history_segment_capacity is
+   begin
+      if history.segment_count = 1 then
+         history.segment := history.segment + 1;
+         return;
+      end if;
+      if history.segment_count < kfile_units_limit then
+         return;
+      end if;
+      write_history_json (segment => history.segment);
+
+      history.last_index    := 0;
+      history.segment_count := 0;
+
+   end check_history_segment_capacity;
 
 end PortScan.Ops;

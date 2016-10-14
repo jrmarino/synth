@@ -315,6 +315,10 @@ package body PortScan.Pilot is
          OPS.cascade_failed_build (id         => ptid,
                                    numskipped => num_skipped,
                                    logs       => Flog);
+         OPS.record_history_ignored (elapsed   => CYC.elapsed_now,
+                                     origin    => OPS.port_name (ptid),
+                                     reason    => OPS.ignore_reason (ptid),
+                                     skips     => num_skipped);
          bld_counter (skipped) := bld_counter (skipped) + num_skipped;
       end loop;
       stop_logging (ignored);
