@@ -998,9 +998,6 @@ package body PortScan.Ops is
                           states            => idle_slaves,
                           num_builders      => num_builders,
                           num_history_files => 0);
-
-      --  Prepare history json too
-      assimulate_substring (history, "[" & ASCII.LF);
    end initialize_web_report;
 
 
@@ -1155,9 +1152,9 @@ package body PortScan.Ops is
    procedure handle_first_history_entry is
    begin
       if history.log_entry = 1 then
-         assimulate_substring (history, "  {" & ASCII.LF);
+         assimulate_substring (history, "[" & ASCII.LF) & "  {" & ASCII.LF);
       else
-         assimulate_substring (history, "  ,{" & ASCII.LF);
+         assimulate_substring (history, "[" & ASCII.LF) & "  ,{" & ASCII.LF);
       end if;
    end handle_first_history_entry;
 
