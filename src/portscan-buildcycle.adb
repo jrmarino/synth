@@ -519,12 +519,13 @@ package body PortScan.Buildcycle is
    -------------------
    function log_section (title : String; header : Boolean) return String
    is
-      first_part : constant String := "[ " & title;
+      hyphens : constant String := (1 .. 50 => '-');
+      dashes  : constant String := (1 .. 50 => '=');
    begin
       if header then
-         return first_part & " HEAD ]";
+         return LAT.LF & hyphens & LAT.LF & "--  " & title & LAT.LF & hyphens;
       else
-         return first_part & " TAIL ]";
+         return dashes;
       end if;
    end log_section;
 
@@ -534,9 +535,9 @@ package body PortScan.Buildcycle is
    ---------------------
    procedure log_phase_end (id : builders)
    is
-      dash : constant String := "=========================";
+      dashes  : constant String := (1 .. 80 => '=');
    begin
-      TIO.Put_Line (trackers (id).log_handle, dash & dash & dash & LAT.LF);
+      TIO.Put_Line (trackers (id).log_handle, dashes & LAT.LF);
    end log_phase_end;
 
 
@@ -545,12 +546,11 @@ package body PortScan.Buildcycle is
    -----------------------
    procedure log_phase_begin (phase : String; id : builders)
    is
-      plast  : constant Natural := 10 + phase'Length;
-      dash   : constant String := "========================";
-      middle :          String := "< phase :                 >";
+      hyphens : constant String := (1 .. 80 => '-');
+      middle  : constant String := "--  Phase: " & phase;
    begin
-      middle (11 .. plast) := phase;
-      TIO.Put_Line (trackers (id).log_handle, dash & middle & dash);
+      TIO.Put_Line (trackers (id).log_handle,
+                    LAT.LF & hyphens & LAT.LF & middle & LAT.LF & hyphens);
    end log_phase_begin;
 
 
