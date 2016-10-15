@@ -182,7 +182,7 @@ th, td { border: 1px solid black; }
 
 .builders_table td {
 	border: 0;
-	padding: 2px 4px;
+	padding: 1px 4px;
 }
 
 .builders_table thead td {
@@ -190,6 +190,7 @@ th, td { border: 1px solid black; }
 	color: #D8D8D8;
 	font-size: 12pt;
 	font-weight: bold;
+	padding: 2px 4px;
 }
 
 .builders_table td:nth-child(1) {
