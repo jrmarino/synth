@@ -52,4 +52,10 @@ package JohnnyText is
    --  Numeric image with left-padded zeros
    function zeropad (N : Natural; places : Positive) return String;
 
+    --  Returns number of instances of a given character in a given string
+   function count_char (S : String; focus : Character) return Natural;
+
+   --  Search entire string S for focus character and replace all instances with substring
+   function replace_char (S : String; focus : Character; substring : String) return String;
+
 end JohnnyText;
