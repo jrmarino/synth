@@ -216,6 +216,9 @@ th, td { border: 1px solid black; }
 	padding-right: 15px;
 }
 
+.builders_table tbody td:nth-child(1) {
+	cursor: pointer;
+}
 .builders_table tbody td:nth-child(2) {
 	color: #CCC;
 }

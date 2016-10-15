@@ -91,7 +91,10 @@ function process_summary(data) {
 
 	$('#builders_body tbody').empty();
 	for (n = 0; n < data.builders.length; n++) {
-		var trow = RB + '<td class="b' + data.builders[n].ID + '">'
+		var trow = RB + '<td class="b' + data.builders[n].ID + 
+			'" onclick="filter(\'[' + data.builders[n].ID +
+			']\')" title="Click to filter for work done by builder ' +
+			data.builders[n].ID + '">'
 			  + data.builders[n].ID + E +
 			B + data.builders[n].elapsed + E +
 			B + data.builders[n].phase + E +
