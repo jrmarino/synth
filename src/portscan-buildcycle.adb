@@ -146,6 +146,7 @@ package body PortScan.Buildcycle is
    --------------------
    procedure finalize_log (id : builders) is
    begin
+      TIO.Put_Line (trackers (id).log_handle, log_section ("Termination", True));
       trackers (id).tail_time := CAL.Clock;
       TIO.Put_Line (trackers (id).log_handle,
                     "Finished: " & timestamp (trackers (id).tail_time));
@@ -525,7 +526,8 @@ package body PortScan.Buildcycle is
       if header then
          return LAT.LF & hyphens & LAT.LF & "--  " & title & LAT.LF & hyphens;
       else
-         return dashes;
+         return "";
+         --  return dashes;
       end if;
    end log_section;
 
@@ -537,7 +539,8 @@ package body PortScan.Buildcycle is
    is
       dashes  : constant String := (1 .. 80 => '=');
    begin
-      TIO.Put_Line (trackers (id).log_handle, dashes & LAT.LF);
+      null;
+      --  TIO.Put_Line (trackers (id).log_handle, dashes & LAT.LF);
    end log_phase_end;
 
 
