@@ -1227,9 +1227,10 @@ package body PortScan.Ops is
       reason    : String;
       skips     : Natural)
    is
+      cleantxt : constant String := JT.strip_control (reason);
       info : constant String :=
         JT.replace_char
-          (JT.replace_char (reason, ASCII.Quotation, "&nbsp;"), ASCII.Back_Slash, "&#93;")
+          (JT.replace_char (cleantxt, ASCII.Quotation, "&nbsp;"), ASCII.Back_Slash, "&#93;")
           & ":|:" & JT.int2str (skips);
    begin
       history.log_entry := history.log_entry + 1;

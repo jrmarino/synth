@@ -268,4 +268,22 @@ package body JohnnyText is
       end;
    end replace_char;
 
+
+   ---------------------
+   --  strip_control  --
+   ---------------------
+   function strip_control (S : String) return String
+   is
+      product : String (1 .. S'Length);
+      ndx     : Natural := 0;
+   begin
+      for x in S'Range loop
+         if Character'Pos (S (x)) >= 32 then
+            ndx := ndx + 1;
+            product (ndx) := S (x);
+         end if;
+      end loop;
+      return product (1 .. ndx);
+   end strip_control;
+
 end JohnnyText;

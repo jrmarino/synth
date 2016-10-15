@@ -58,4 +58,7 @@ package JohnnyText is
    --  Search entire string S for focus character and replace all instances with substring
    function replace_char (S : String; focus : Character; substring : String) return String;
 
+   --  Filters out control characters from String S
+   function strip_control (S : String) return String;
+
 end JohnnyText;
