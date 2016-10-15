@@ -222,7 +222,7 @@ field will remove all search filters.  Additionally, every cell in the
 *No.* column will filter the history for the port origin, which is
 particularly useful for finding all the ports that the builders skipped
 due to build failures or finding the port set to IGNORE.  The builder ID
-column cells also trigger a quick sort on all work performed by the builder.
+column cells also trigger a quick filter for all work performed by the builder.
 
 To view the report on a localhost, simply navigate the browser to the
 reports directory.  To view it remotely, a web server has to be installed,
