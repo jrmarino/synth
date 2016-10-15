@@ -521,7 +521,7 @@ package body PortScan.Buildcycle is
    function log_section (title : String; header : Boolean) return String
    is
       hyphens : constant String := (1 .. 50 => '-');
-      dashes  : constant String := (1 .. 50 => '=');
+      --  dashes  : constant String := (1 .. 50 => '=');
    begin
       if header then
          return LAT.LF & hyphens & LAT.LF & "--  " & title & LAT.LF & hyphens;
@@ -537,9 +537,9 @@ package body PortScan.Buildcycle is
    ---------------------
    procedure log_phase_end (id : builders)
    is
-      dashes  : constant String := (1 .. 80 => '=');
+      --  dashes  : constant String := (1 .. 80 => '=');
    begin
-      null;
+      TIO.Put_Line (trackers (id).log_handle, "");
       --  TIO.Put_Line (trackers (id).log_handle, dashes & LAT.LF);
    end log_phase_end;
 
