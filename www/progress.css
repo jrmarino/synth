@@ -153,13 +153,17 @@ th, td { border: 1px solid black; }
 #build_info table {
 	border: 0;
 	margin: 0;
-	text-align: left;
-	width: 240px;
 }
 
+#build_info th:nth-child(1) {
+	width: 60px;
+	padding: 1px 1px 2px 0px;
+	text-align: right;
+}
 #build_info td:nth-child(2) {
-	width: 180px;
-	padding-left: 10px;
+	width: 200px;
+	padding: 1px 0px 2px 7px;
+	text-align: left;
 	color: #03C;
 }
 
