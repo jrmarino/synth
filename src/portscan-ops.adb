@@ -1230,7 +1230,7 @@ package body PortScan.Ops is
       cleantxt : constant String := JT.strip_control (reason);
       info : constant String :=
         JT.replace_char
-          (JT.replace_char (cleantxt, ASCII.Quotation, "&nbsp;"), ASCII.Back_Slash, "&#93;")
+          (JT.replace_char (cleantxt, ASCII.Quotation, "&nbsp;"), ASCII.Back_Slash, "&#92;")
           & ":|:" & JT.int2str (skips);
    begin
       history.log_entry := history.log_entry + 1;
