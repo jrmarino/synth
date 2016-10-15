@@ -198,13 +198,13 @@ th, td { border: 1px solid black; }
 	text-align: center;
 }
 .builders_table td:nth-child(2) {
-	width: 70px;
+	width: 90px;
 }
 .builders_table td:nth-child(3) {
 	width: 160px;
 }
 .builders_table td:nth-child(4) {
-	width: 550px;
+	width: 530px;
 }
 .builders_table td:nth-child(5) {
 	width: 160px;
@@ -312,10 +312,13 @@ th, td { border: 1px solid black; }
 }
 
 #report_table th:nth-child(6) {
-        width: 40%;
+        width: 36%;
 	text-align: left;
 }
 #report_table th:nth-child(7) {
+	width: 4%;
+}
+#report_table th:nth-child(8) {
 	width: 6%;
 }
 

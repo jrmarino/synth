@@ -111,16 +111,6 @@ function logfile (origin) {
 	return '../' + parts[0] + '___' + parts[1] + '.log';
 }
 
-function format_skips (s) {
-	if (s == 0) {
-		return 'no ports were skipped';
-	} else if (s == 1) {
-		return 'caused 1 skip';
-	} else {
-		return 'caused ' + s + ' skips';
-	}
-}
-
 function format_result (result) {
 	return '<div class="' + result + ' result">' + result + '<div>';
 }
@@ -137,16 +127,28 @@ function information (result, origin, info) {
 	} else if (result == "failed") {
 		parts = info.split(':');
 		return 'Failed ' + parts[0] + ' phase (<a href="' + logfile (origin) +
-			'">logfile</a>), ' + format_skips (parts[1]);
+			'">logfile</a>)';
 	} else if (result == "skipped") {
 		return 'Issue with ' + info;
 	} else if (result == "ignored") {
 		parts = info.split(':|:');
-		return parts[0] + ' (' + format_skips (parts[1]) + ')';
+		return parts[0];
 	} else {
 		return "??";
 	}
+}
 
+function skip_info (result, info) {
+	var parts;
+	if (result == "failed") {
+		parts = info.split(':');
+		return parts[1];
+	} else if (result == "ignored") {
+		parts = info.split(':|:');
+		return parts[1];
+	} else {
+		return "";
+	}
 }
 
 function portsmon (origin) {
@@ -166,6 +168,7 @@ function process_history_file(data, k) {
 		trow.push(format_result (data[n].result));
 		trow.push(portsmon (data[n].origin));
 		trow.push(information (data[n].result, data[n].origin, data[n].info));
+		trow.push(skip_info (data[n].result, data[n].info));
 		trow.push(data[n].duration);
 		history [k].push (trow);
 	}
@@ -236,7 +239,7 @@ $(document).ready(function() {
 		"bDeferRender": true, // Defer creating TR/TD until needed
 		"aoColumnDefs": [
 			{"bSortable": false, "aTargets": [1,2,3,5]},
-			{"bSearchable": false, "aTargets": [0,1,6]},
+			{"bSearchable": false, "aTargets": [0,1,6,7]},
 		],
 		"bStateSave": true, // Enable cookie for keeping state
 		"aLengthMenu":[10,20,50, 100, 200],
