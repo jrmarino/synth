@@ -998,6 +998,24 @@ package body PortScan.Ops is
                           states            => idle_slaves,
                           num_builders      => num_builders,
                           num_history_files => 0);
+
+      --  Remove history files from previous runs
+      declare
+         search : AD.Search_Type;
+         dirent : AD.Directory_Entry_Type;
+         pattern : constant String := "*_history.json";
+         filter  : constant AD.Filter_Type := (AD.Ordinary_File => True, others => False);
+      begin
+         AD.Start_Search (Search    => search,
+                          Directory => reportdir,
+                          Pattern   => pattern,
+                          Filter    => filter);
+         while AD.More_Entries (search) loop
+            AD.Get_Next_Entry (search, dirent);
+            AD.Delete_File (AD.Simple_Name (dirent));
+         end loop;
+      end;
+
    end initialize_web_report;
 
 
