@@ -481,9 +481,7 @@ package body PortScan.Pilot is
    ---------------------------------
    --  rebuild_local_respository  --
    ---------------------------------
-   function rebuild_local_respository (remove_invalid_packages : Boolean;
-                                       use_full_scan : Boolean := True)
-                                       return Boolean
+   function rebuild_local_respository (remove_invalid_packages : Boolean) return Boolean
    is
       repo : constant String := JT.USS (PM.configuration.dir_repository);
       main : constant String := JT.USS (PM.configuration.dir_packages);
@@ -496,42 +494,42 @@ package body PortScan.Pilot is
          --  In case it was previously requested
          return False;
       end if;
-      if use_full_scan then
-         REP.initialize (testmode => False,
-                         num_cores => PortScan.cores_available);
-         REP.launch_slave (id => PortScan.scan_slave, opts => noprocs);
-         if remove_invalid_packages then
-            PKG.preclean_repository (repo);
-         end if;
-         REP.destroy_slave (id => PortScan.scan_slave, opts => noprocs);
-         REP.finalize;
+
+      REP.initialize (testmode => False,
+                      num_cores => PortScan.cores_available);
+      REP.launch_slave (id => PortScan.scan_slave, opts => noprocs);
+      if remove_invalid_packages then
+         PKG.preclean_repository (repo);
+      end if;
+      REP.destroy_slave (id => PortScan.scan_slave, opts => noprocs);
+      REP.finalize;
+      if SIG.graceful_shutdown_requested then
+         TIO.Put_Line (shutreq);
+         return False;
+      end if;
+      TIO.Put ("Stand by, recursively scanning");
+      if Natural (portlist.Length) = 1 then
+         TIO.Put (" 1 port");
+      else
+         TIO.Put (portlist.Length'Img & " ports");
+      end if;
+      TIO.Put_Line (" serially.");
+      for k in dim_all_ports'Range loop
+         all_ports (k).deletion_due := False;
+      end loop;
+      PortScan.reset_ports_tree;
+      if scan_stack_of_single_ports (testmode => False) then
+         PKG.limited_sanity_check (repository      => repo,
+                                   dry_run         => False,
+                                   suppress_remote => True);
          if SIG.graceful_shutdown_requested then
             TIO.Put_Line (shutreq);
             return False;
          end if;
-         TIO.Put ("Stand by, recursively scanning");
-         if Natural (portlist.Length) = 1 then
-            TIO.Put (" 1 port");
-         else
-            TIO.Put (portlist.Length'Img & " ports");
-         end if;
-         TIO.Put_Line (" serially.");
-         for k in dim_all_ports'Range loop
-            all_ports (k).deletion_due := False;
-         end loop;
-         PortScan.reset_ports_tree;
-         if scan_stack_of_single_ports (testmode => False) then
-            PKG.limited_sanity_check (repository      => repo,
-                                      dry_run         => False,
-                                      suppress_remote => True);
-            if SIG.graceful_shutdown_requested then
-               TIO.Put_Line (shutreq);
-               return False;
-            end if;
-         else
-            return False;
-         end if;
+      else
+         return False;
       end if;
+
       if AD.Exists (xz_meta) then
          AD.Delete_File (xz_meta);
       end if;

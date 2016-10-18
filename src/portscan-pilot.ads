@@ -53,9 +53,7 @@ package PortScan.Pilot is
 
    --  Post-build, rebuild the local repository with pkg(8)
    --  Returns True on success
-   function rebuild_local_respository (remove_invalid_packages : Boolean;
-                                       use_full_scan : Boolean := True)
-                                       return Boolean;
+   function rebuild_local_respository (remove_invalid_packages : Boolean) return Boolean;
 
    --  gather every single distfile in ports tree (via distinfo) and then
    --  search the actual package directory.  Remove non-matches without asking.

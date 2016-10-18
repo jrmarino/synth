@@ -343,8 +343,7 @@ begin
                then
                   PIL.perform_bulk_run (testmode => False);
                   if PIL.rebuild_local_respository
-                    (use_full_scan => False,
-                     remove_invalid_packages => True)
+                    (remove_invalid_packages => True)
                   then
                      null;
                   end if;
