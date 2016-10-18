@@ -1012,8 +1012,10 @@ package body PortScan.Ops is
                           Filter    => filter);
          while AD.More_Entries (search) loop
             AD.Get_Next_Entry (search, dirent);
-            AD.Delete_File (AD.Simple_Name (dirent));
+            AD.Delete_File (reportdir & "/" & AD.Simple_Name (dirent));
          end loop;
+      exception
+         when AD.Name_Error => null;
       end;
 
    end initialize_web_report;
