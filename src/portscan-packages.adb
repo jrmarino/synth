@@ -294,7 +294,8 @@ package body PortScan.Packages is
          fetch_list.Iterate (fetch'Access);
          if not JT.equivalent (package_list, JT.blank) then
             declare
-               cmd : constant String := host_pkg8 & " fetch -U -y --output " &
+               cmd : constant String := host_pkg8 & " fetch -r " &
+                 JT.USS (external_repository) & " -U -y --output " &
                  JT.USS (PM.configuration.dir_packages) & JT.USS (package_list);
             begin
                if Unix.external_command (cmd) then
