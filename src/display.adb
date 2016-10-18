@@ -115,8 +115,8 @@ package body Display is
                         pen_color => c_sumlabel);
 
       line2 : constant appline :=
-        custom_message (message   => "  Left        Failed        skipped      " &
-                                     "  swap  0.0%   Impulse       00:00:00 ",
+        custom_message (message   => "  Left        Failed        Skipped      " &
+                                     "  Swap  0.0%   Impulse       00:00:00 ",
                         attribute => bright,
                         pen_color => c_sumlabel);
    begin
