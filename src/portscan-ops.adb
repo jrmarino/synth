@@ -1172,9 +1172,9 @@ package body PortScan.Ops is
    procedure handle_first_history_entry is
    begin
       if history.segment_count = 1 then
-         assimulate_substring (history, "[" & ASCII.LF & "  {" & ASCII.LF);
+         assimulate_substring (history, "[" & ASCII.LF & " {" & ASCII.LF);
       else
-         assimulate_substring (history, "  ,{" & ASCII.LF);
+         assimulate_substring (history, " ,{" & ASCII.LF);
       end if;
    end handle_first_history_entry;
 
@@ -1194,14 +1194,14 @@ package body PortScan.Ops is
       history.segment_count := history.segment_count + 1;
       handle_first_history_entry;
 
-      assimulate_substring (history, "     " & nv ("entry", history.log_entry) & ASCII.LF);
-      assimulate_substring (history, "    ," & nv ("elapsed", elapsed) & ASCII.LF);
-      assimulate_substring (history, "    ," & nv ("ID", ID) & ASCII.LF);
-      assimulate_substring (history, "    ," & nv ("result", "built") & ASCII.LF);
-      assimulate_substring (history, "    ," & nv ("origin", origin) & ASCII.LF);
-      assimulate_substring (history, "    ," & nv ("info", "") & ASCII.LF);
-      assimulate_substring (history, "    ," & nv ("duration", duration) & ASCII.LF);
-      assimulate_substring (history, "  }" & ASCII.LF);
+      assimulate_substring (history, "   " & nv ("entry", history.log_entry) & ASCII.LF);
+      assimulate_substring (history, "  ," & nv ("elapsed", elapsed) & ASCII.LF);
+      assimulate_substring (history, "  ," & nv ("ID", ID) & ASCII.LF);
+      assimulate_substring (history, "  ," & nv ("result", "built") & ASCII.LF);
+      assimulate_substring (history, "  ," & nv ("origin", origin) & ASCII.LF);
+      assimulate_substring (history, "  ," & nv ("info", "") & ASCII.LF);
+      assimulate_substring (history, "  ," & nv ("duration", duration) & ASCII.LF);
+      assimulate_substring (history, " }" & ASCII.LF);
 
       check_history_segment_capacity;
    end record_history_built;
@@ -1225,14 +1225,14 @@ package body PortScan.Ops is
       history.segment_count := history.segment_count + 1;
       handle_first_history_entry;
 
-      assimulate_substring (history, "     " & nv ("entry", history.log_entry) & ASCII.LF);
-      assimulate_substring (history, "    ," & nv ("elapsed", elapsed) & ASCII.LF);
-      assimulate_substring (history, "    ," & nv ("ID", ID)  & ASCII.LF);
-      assimulate_substring (history, "    ," & nv ("result", "failed") & ASCII.LF);
-      assimulate_substring (history, "    ," & nv ("origin", origin) & ASCII.LF);
-      assimulate_substring (history, "    ," & nv ("info", info) & ASCII.LF);
-      assimulate_substring (history, "    ," & nv ("duration", duration) & ASCII.LF);
-      assimulate_substring (history, "  }" & ASCII.LF);
+      assimulate_substring (history, "   " & nv ("entry", history.log_entry) & ASCII.LF);
+      assimulate_substring (history, "  ," & nv ("elapsed", elapsed) & ASCII.LF);
+      assimulate_substring (history, "  ," & nv ("ID", ID)  & ASCII.LF);
+      assimulate_substring (history, "  ," & nv ("result", "failed") & ASCII.LF);
+      assimulate_substring (history, "  ," & nv ("origin", origin) & ASCII.LF);
+      assimulate_substring (history, "  ," & nv ("info", info) & ASCII.LF);
+      assimulate_substring (history, "  ," & nv ("duration", duration) & ASCII.LF);
+      assimulate_substring (history, " }" & ASCII.LF);
 
       check_history_segment_capacity;
    end record_history_failed;
@@ -1257,14 +1257,14 @@ package body PortScan.Ops is
       history.segment_count := history.segment_count + 1;
       handle_first_history_entry;
 
-      assimulate_substring (history, "     " & nv ("entry", history.log_entry) & ASCII.LF);
-      assimulate_substring (history, "    ," & nv ("elapsed", elapsed) & ASCII.LF);
-      assimulate_substring (history, "    ," & nv ("ID", "--") & ASCII.LF);
-      assimulate_substring (history, "    ," & nv ("result", "ignored") & ASCII.LF);
-      assimulate_substring (history, "    ," & nv ("origin", origin) & ASCII.LF);
-      assimulate_substring (history, "    ," & nv ("info", info) & ASCII.LF);
-      assimulate_substring (history, "    ," & nv ("duration", "--:--:--") & ASCII.LF);
-      assimulate_substring (history, "  }" & ASCII.LF);
+      assimulate_substring (history, "   " & nv ("entry", history.log_entry) & ASCII.LF);
+      assimulate_substring (history, "  ," & nv ("elapsed", elapsed) & ASCII.LF);
+      assimulate_substring (history, "  ," & nv ("ID", "--") & ASCII.LF);
+      assimulate_substring (history, "  ," & nv ("result", "ignored") & ASCII.LF);
+      assimulate_substring (history, "  ," & nv ("origin", origin) & ASCII.LF);
+      assimulate_substring (history, "  ," & nv ("info", info) & ASCII.LF);
+      assimulate_substring (history, "  ," & nv ("duration", "--:--:--") & ASCII.LF);
+      assimulate_substring (history, " }" & ASCII.LF);
 
       check_history_segment_capacity;
    end record_history_ignored;
@@ -1283,14 +1283,14 @@ package body PortScan.Ops is
       history.segment_count := history.segment_count + 1;
       handle_first_history_entry;
 
-      assimulate_substring (history, "     " & nv ("entry", history.log_entry) & ASCII.LF);
-      assimulate_substring (history, "    ," & nv ("elapsed", elapsed) & ASCII.LF);
-      assimulate_substring (history, "    ," & nv ("ID", "--") & ASCII.LF);
-      assimulate_substring (history, "    ," & nv ("result", "skipped") & ASCII.LF);
-      assimulate_substring (history, "    ," & nv ("origin", origin) & ASCII.LF);
-      assimulate_substring (history, "    ," & nv ("info", reason) & ASCII.LF);
-      assimulate_substring (history, "    ," & nv ("duration", "--:--:--") & ASCII.LF);
-      assimulate_substring (history, "  }" & ASCII.LF);
+      assimulate_substring (history, "   " & nv ("entry", history.log_entry) & ASCII.LF);
+      assimulate_substring (history, "  ," & nv ("elapsed", elapsed) & ASCII.LF);
+      assimulate_substring (history, "  ," & nv ("ID", "--") & ASCII.LF);
+      assimulate_substring (history, "  ," & nv ("result", "skipped") & ASCII.LF);
+      assimulate_substring (history, "  ," & nv ("origin", origin) & ASCII.LF);
+      assimulate_substring (history, "  ," & nv ("info", reason) & ASCII.LF);
+      assimulate_substring (history, "  ," & nv ("duration", "--:--:--") & ASCII.LF);
+      assimulate_substring (history, " }" & ASCII.LF);
 
       check_history_segment_capacity;
    end record_history_skipped;
