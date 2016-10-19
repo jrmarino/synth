@@ -1066,28 +1066,28 @@ package body PortScan.Ops is
                   Mode => TIO.Out_File,
                   Name => filename);
       TIO.Put (jsonfile, "{" & ASCII.LF &
-                 "   " & nv ("profile", JT.USS (PM.configuration.profile)) & ASCII.LF);
+           "  " & nv ("profile", JT.USS (PM.configuration.profile)) & ASCII.LF);
       TIO.Put
         (jsonfile,
-             "  ," & nv ("kickoff", timestamp (start_time, True)) & ASCII.LF &
-             "  ," & nv ("kfiles", num_history_files) & ASCII.LF &
-             "  ," & nv ("active", TF (active)) & ASCII.LF &
-             "  ," & ASCII.Quotation & "stats" & ASCII.Quotation & ASCII.Colon & "{" & ASCII.LF);
+           " ," & nv ("kickoff", timestamp (start_time, True)) & ASCII.LF &
+           " ," & nv ("kfiles", num_history_files) & ASCII.LF &
+           " ," & nv ("active", TF (active)) & ASCII.LF &
+           " ," & ASCII.Quotation & "stats" & ASCII.Quotation & ASCII.Colon & "{" & ASCII.LF);
       TIO.Put
         (jsonfile,
-           "     " & nv ("queued",   bld_counter (total))   & ASCII.LF &
-           "    ," & nv ("built",    bld_counter (success)) & ASCII.LF &
-           "    ," & nv ("failed",   bld_counter (failure)) & ASCII.LF &
-           "    ," & nv ("ignored",  bld_counter (ignored)) & ASCII.LF &
-           "    ," & nv ("skipped",  bld_counter (skipped)) & ASCII.LF &
-           "    ," & nv ("remains",  leftover)              & ASCII.LF &
-           "    ," & nv ("elapsed",  CYC.elapsed_now)       & ASCII.LF &
-           "    ," & nv ("pkghour",  hourly_build_rate)     & ASCII.LF &
-           "    ," & nv ("impulse",  impulse_rate)          & ASCII.LF &
-           "    ," & nv ("swapinfo", DPY.fmtpc (get_swap_status, True))    & ASCII.LF &
-           "    ," & nv ("load",     DPY.fmtpc (get_instant_load, False))  & ASCII.LF &
-           "  }" & ASCII.LF &
-           "  ," & ASCII.Quotation & "builders" & ASCII.Quotation & ASCII.Colon & "[" & ASCII.LF);
+           "   " & nv ("queued",   bld_counter (total))   & ASCII.LF &
+           "  ," & nv ("built",    bld_counter (success)) & ASCII.LF &
+           "  ," & nv ("failed",   bld_counter (failure)) & ASCII.LF &
+           "  ," & nv ("ignored",  bld_counter (ignored)) & ASCII.LF &
+           "  ," & nv ("skipped",  bld_counter (skipped)) & ASCII.LF &
+           "  ," & nv ("remains",  leftover)              & ASCII.LF &
+           "  ," & nv ("elapsed",  CYC.elapsed_now)       & ASCII.LF &
+           "  ," & nv ("pkghour",  hourly_build_rate)     & ASCII.LF &
+           "  ," & nv ("impulse",  impulse_rate)          & ASCII.LF &
+           "  ," & nv ("swapinfo", DPY.fmtpc (get_swap_status, True))    & ASCII.LF &
+           "  ," & nv ("load",     DPY.fmtpc (get_instant_load, False))  & ASCII.LF &
+           " }" & ASCII.LF &
+           " ," & ASCII.Quotation & "builders" & ASCII.Quotation & ASCII.Colon & "[" & ASCII.LF);
 
       for b in builders'First .. num_builders loop
          if states (b) = shutdown then
@@ -1098,21 +1098,21 @@ package body PortScan.Ops is
             slave := CYC.builder_status (b);
          end if;
          if b = builders'First then
-            TIO.Put (jsonfile, "    {" & ASCII.LF);
+            TIO.Put (jsonfile, "  {" & ASCII.LF);
          else
-            TIO.Put (jsonfile, "    ,{" & ASCII.LF);
+            TIO.Put (jsonfile, "  ,{" & ASCII.LF);
          end if;
 
          TIO.Put
            (jsonfile,
-              "       " & nv ("ID",      slave.slavid)  & ASCII.LF &
-              "      ," & nv ("elapsed", JT.trim (slave.Elapsed)) & ASCII.LF &
-              "      ," & nv ("phase",   JT.trim (slave.phase))   & ASCII.LF &
-              "      ," & nv ("origin",  JT.trim (slave.origin))  & ASCII.LF &
-              "      ," & nv ("lines",   JT.trim (slave.LLines))  & ASCII.LF &
-              "    }" & ASCII.LF);
+              "    " & nv ("ID",      slave.slavid)  & ASCII.LF &
+              "   ," & nv ("elapsed", JT.trim (slave.Elapsed)) & ASCII.LF &
+              "   ," & nv ("phase",   JT.trim (slave.phase))   & ASCII.LF &
+              "   ," & nv ("origin",  JT.trim (slave.origin))  & ASCII.LF &
+              "   ," & nv ("lines",   JT.trim (slave.LLines))  & ASCII.LF &
+              "  }" & ASCII.LF);
       end loop;
-      TIO.Put (jsonfile, "  ]" & ASCII.LF & "}" & ASCII.LF);
+      TIO.Put (jsonfile, " ]" & ASCII.LF & "}" & ASCII.LF);
       TIO.Close (jsonfile);
    exception
       when others =>
