@@ -84,6 +84,7 @@ private
          segment_count : Natural := 0;
          log_entry     : Natural := 0;
          last_index    : Natural := 0;
+         last_written  : Natural := 0;
          content       : kfile_content;
       end record;
 

@@ -1134,12 +1134,16 @@ package body PortScan.Ops is
       if history.segment_count = 0 then
          return;
       end if;
+      if history.last_written = history.last_index then
+         return;
+      end if;
       TIO.Create (File => jsonfile,
                   Mode => TIO.Out_File,
                   Name => filename);
       TIO.Put (jsonfile, history.content (1 .. history.last_index));
       TIO.Put (jsonfile, "]");
       TIO.Close (jsonfile);
+      history.last_written := history.last_index;
    exception
       when others =>
          if TIO.Is_Open (jsonfile) then
@@ -1311,6 +1315,7 @@ package body PortScan.Ops is
       write_history_json;
 
       history.last_index    := 0;
+      history.last_written  := 0;
       history.segment_count := 0;
 
    end check_history_segment_capacity;
