@@ -180,6 +180,9 @@ function process_history_file(data, k) {
 function cycle () {
 	if (run_active) {
 		setTimeout(update_summary_and_builders, SbInterval * 1000);
+	} else {
+		$('#builders_zone_2').fadeOut(2500);
+		$('#main').css('border-top', '1px solid #404066');
 	}
 }
 
