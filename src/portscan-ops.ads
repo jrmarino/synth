@@ -55,6 +55,9 @@ package PortScan.Ops is
    --  It also provides an initial summary.json data file just the report has something to load
    procedure initialize_web_report (num_builders : builders);
 
+   --  Removes ??_history.json files from previous runs
+   procedure delete_existing_web_history_files;
+
    --  Call before executing sanity check.  It checks the present of build
    --  hooks at the synth_conf location and caches the results.
    --  It also fires off the first hook (run_start)

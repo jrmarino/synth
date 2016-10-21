@@ -295,6 +295,8 @@ package body PortScan.Pilot is
          return False;
       end if;
 
+      OPS.delete_existing_web_history_files;
+
       start_logging (total);
       start_logging (ignored);
       start_logging (skipped);

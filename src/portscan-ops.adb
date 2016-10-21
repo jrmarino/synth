@@ -998,27 +998,34 @@ package body PortScan.Ops is
                           states            => idle_slaves,
                           num_builders      => num_builders,
                           num_history_files => 0);
-
-      --  Remove history files from previous runs
-      declare
-         search : AD.Search_Type;
-         dirent : AD.Directory_Entry_Type;
-         pattern : constant String := "*_history.json";
-         filter  : constant AD.Filter_Type := (AD.Ordinary_File => True, others => False);
-      begin
-         AD.Start_Search (Search    => search,
-                          Directory => reportdir,
-                          Pattern   => pattern,
-                          Filter    => filter);
-         while AD.More_Entries (search) loop
-            AD.Get_Next_Entry (search, dirent);
-            AD.Delete_File (reportdir & "/" & AD.Simple_Name (dirent));
-         end loop;
-      exception
-         when AD.Name_Error => null;
-      end;
-
    end initialize_web_report;
+
+
+   -----------------------------------------
+   --  delete_existing_web_history_files  --
+   -----------------------------------------
+   procedure delete_existing_web_history_files
+   is
+      search    : AD.Search_Type;
+      dirent    : AD.Directory_Entry_Type;
+      pattern   : constant String := "*_history.json";
+      filter    : constant AD.Filter_Type := (AD.Ordinary_File => True, others => False);
+      reportdir : constant String := JT.USS (PM.configuration.dir_logs) & "/Report";
+   begin
+      if not AD.Exists (reportdir) then
+         return;
+      end if;
+      AD.Start_Search (Search    => search,
+                       Directory => reportdir,
+                       Pattern   => pattern,
+                       Filter    => filter);
+      while AD.More_Entries (search) loop
+         AD.Get_Next_Entry (search, dirent);
+         AD.Delete_File (reportdir & "/" & AD.Simple_Name (dirent));
+      end loop;
+   exception
+      when AD.Name_Error => null;
+   end delete_existing_web_history_files;
 
 
    -----------------------
