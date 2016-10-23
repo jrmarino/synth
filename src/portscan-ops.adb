@@ -227,9 +227,7 @@ package body PortScan.Ops is
                                            slave_id  => slave,
                                            origin    => port_name (instructions (slave)),
                                            duration  => CYC.elapsed_build (slave));
-                     run_hook (pkg_success, "RESULT=success ORIGIN=" &
-                                 port_name (instructions (slave)) & " PKGNAME="
-                               & package_name (instructions (slave)) & " ");
+                     run_package_hook (pkg_success, instructions (slave));
                      cascade_successful_build (instructions (slave));
                      bld_counter (success) := bld_counter (success) + 1;
                      TIO.Put_Line (logs (success), CYC.elapsed_now & " " &
@@ -267,9 +265,7 @@ package body PortScan.Ops is
                                             duration  => CYC.elapsed_build (slave),
                                             die_phase => CYC.last_build_phase (slave),
                                             skips     => cntskip);
-                     run_hook (pkg_failure, "RESULT=failure ORIGIN=" &
-                                 port_name (instructions (slave)) & " PKGNAME="
-                               & package_name (instructions (slave)) & " ");
+                     run_package_hook (pkg_failure, instructions (slave));
                   end if;
                   instructions (slave) := port_match_failed;
                   if run_complete then
@@ -428,8 +424,7 @@ package body PortScan.Ops is
             record_history_skipped (elapsed => CYC.elapsed_now,
                                     origin  => port_name (purged),
                                     reason  => culprit);
-            run_hook (pkg_skipped, "RESULT=skipped ORIGIN=" & port_name (purged)
-                      & " PKGNAME=" & package_name (purged) & " ");
+            run_package_hook (pkg_skipped, purged);
          end if;
       end loop;
       unlist_port (id);
@@ -696,9 +691,7 @@ package body PortScan.Ops is
             result := QR.ap_index;
             DPY.insert_history (assemble_HR (1, QR.ap_index,
                                 DPY.action_ignored));
-            run_hook (pkg_ignored, "RESULT=ignored ORIGIN=" &
-                        port_name (QR.ap_index) & " PKGNAME="
-                      & package_name (QR.ap_index) & " ");
+            run_package_hook (pkg_ignored, QR.ap_index);
             exit;
          end if;
          cursor := ranking_crate.Next (Position => cursor);
@@ -960,6 +953,23 @@ package body PortScan.Ops is
          null;
       end if;
    end run_hook;
+
+
+   ------------------------
+   --  run_package_hook  --
+   ------------------------
+   procedure run_package_hook (hook : hook_type; id : port_id)
+   is
+      tail : String := " ORIGIN=" & port_name (id) & " PKGNAME=" & package_name (id) & " ";
+   begin
+      case hook is
+         when pkg_success => run_hook (hook, "RESULT=success" & tail);
+         when pkg_failure => run_hook (hook, "RESULT=failure" & tail);
+         when pkg_ignored => run_hook (hook, "RESULT=ignored" & tail);
+         when pkg_skipped => run_hook (hook, "RESULT=skipped" & tail);
+         when others => null;
+      end case;
+   end run_package_hook;
 
 
    --------------------

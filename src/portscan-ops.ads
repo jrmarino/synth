@@ -138,6 +138,7 @@ private
 
    procedure delete_rank (id : port_id);
    procedure run_hook (hook : hook_type; envvar_list : String);
+   procedure run_package_hook (hook : hook_type; id : port_id);
    procedure check_history_segment_capacity;
    procedure handle_first_history_entry;
 
