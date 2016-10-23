@@ -908,7 +908,7 @@ package body Replicant is
          annihilate_directory_tree (slave_work);
       end if;
 
-      if AD.Exists (root_usr_src) then
+      if AD.Exists (location (dir_system, usr_src)) then
          unmount (location (slave_base, usr_src));
       end if;
 
