@@ -972,6 +972,19 @@ package body PortScan.Ops is
    end run_package_hook;
 
 
+   ----------------------------
+   --  run_hook_after_build  --
+   ----------------------------
+   procedure run_hook_after_build (built : Boolean; id : port_id) is
+   begin
+      if built then
+         run_package_hook (pkg_success, id);
+      else
+         run_package_hook (pkg_failure, id);
+      end if;
+   end run_hook_after_build;
+
+
    --------------------
    --  package_name  --
    --------------------

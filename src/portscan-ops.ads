@@ -63,6 +63,9 @@ package PortScan.Ops is
    --  It also fires off the first hook (run_start)
    procedure initialize_hooks;
 
+   --  For the host pkg(8), trigger a success or failure hook based on if it built or not.
+   procedure run_hook_after_build (built : Boolean; id : port_id);
+
    --  Exposed for pilot which eliminated ignored ports during the sanity check
    procedure record_history_ignored
      (elapsed   : String;

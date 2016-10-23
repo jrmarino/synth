@@ -125,6 +125,8 @@ package body PortScan.Pilot is
 
       pkg_good := CYC.build_package (id => PortScan.scan_slave,
                                      sequence_id => selection);
+      OPS.run_hook_after_build (pkg_good, selection);
+
       if not pkg_good then
          TIO.Put_Line ("Failed!!" & bailing);
          result := False;
