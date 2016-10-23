@@ -89,6 +89,7 @@ package body PortScan.Pilot is
       selection : PortScan.port_id;
       result    : Boolean := True;
    begin
+      OPS.initialize_hooks;
       REP.initialize (testmode => False, num_cores => PortScan.cores_available);
       REP.launch_slave (id => PortScan.scan_slave, opts => noprocs);
       good_scan := PortScan.scan_single_port (catport => pkgng,
@@ -284,7 +285,6 @@ package body PortScan.Pilot is
          end if;
       end if;
 
-      OPS.initialize_hooks;
       PKG.limited_sanity_check
         (repository => JT.USS (PM.configuration.dir_repository),
          dry_run    => dry_run, suppress_remote => block_remote);
