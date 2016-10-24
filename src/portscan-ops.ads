@@ -60,10 +60,12 @@ package PortScan.Ops is
 
    --  Call before executing sanity check.  It checks the present of build
    --  hooks at the synth_conf location and caches the results.
-   --  It also fires off the first hook (run_start)
    procedure initialize_hooks;
 
-   --  For the host pkg(8), trigger a success or failure hook based on if it built or not.
+   --  Fire off first hook (run_start) after pkg(8) built as required
+   procedure run_start_hook;
+
+   --  For the pkg(8), trigger a success or failure hook based on if it built or not.
    procedure run_hook_after_build (built : Boolean; id : port_id);
 
    --  Exposed for pilot which eliminated ignored ports during the sanity check

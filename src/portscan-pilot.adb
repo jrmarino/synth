@@ -285,6 +285,7 @@ package body PortScan.Pilot is
          end if;
       end if;
 
+      OPS.run_start_hook;
       PKG.limited_sanity_check
         (repository => JT.USS (PM.configuration.dir_repository),
          dry_run    => dry_run, suppress_remote => block_remote);

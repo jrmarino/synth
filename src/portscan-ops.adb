@@ -919,8 +919,16 @@ package body PortScan.Ops is
               file_is_executable (script);
          end;
       end loop;
-      run_hook (run_start, "PORTS_QUEUED=" & JT.int2str (queue_length) & " ");
    end initialize_hooks;
+
+
+   ----------------------
+   --  run_start_hook  --
+   ----------------------
+   procedure run_start_hook is
+   begin
+      run_hook (run_start, "PORTS_QUEUED=" & JT.int2str (queue_length) & " ");
+   end run_start_hook;
 
 
    ----------------
