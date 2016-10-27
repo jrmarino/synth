@@ -156,7 +156,7 @@ package body Display is
                                                     attribute => bright,
                                                     pen_color => c_dashes);
       headtxt : constant appline :=
-        custom_message (message   => " ID  Elapsed   Build Phase      Origin  " &
+        custom_message (message   => " ID  Duration  Build Phase      Origin  " &
                                      "                                 Lines ",
                         attribute => normal,
                         pen_color => c_tableheader);
