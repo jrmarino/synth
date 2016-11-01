@@ -762,28 +762,50 @@ package body PortScan.Packages is
 
       function even (fileinfo : String) return String
       is
-         --  DF: ... DragonFly 4.0.501
+         --  DF  4.5-DEVELOPMENT: ... DragonFly 4.0.501
+         --  DF 4.10-RELEASE    : ... DragonFly 4.0.1000
+         --  DF 4.11-DEVELOPMENT: ... DragonFly 4.0.1102
+         --
+         --  Alternative future format (file version 2.0)
+         --  DFV 400702: ... DragonFly 4.7.2
+         --  DFV 401117: ..  DragonFly 4.11.17
          rest  : constant String := JT.part_2 (fileinfo, "DragonFly ");
          major : constant String := JT.part_1 (rest, ".");
          rest2 : constant String := JT.part_2 (rest, ".");
-         minor : constant String := JT.part_1 (rest2, ".");
-         rest3 : constant String := JT.part_2 (rest2, ".");
-         point : constant Character := rest3 (rest3'First);
-         final : Character := point;
+         part2 : constant String := JT.part_1 (rest2, ".");
+         part3 : constant String := JT.part_2 (rest2, ".");
+         lenp3 : constant Natural := part3'Length;
+         minor : String (1 .. 2) := "00";
+         point : Character;
       begin
-         case point is
-         when '1' => final := '2';
-         when '3' => final := '4';
-         when '5' => final := '6';
-         when '7' => final := '8';
-         when '9' => final := '0';
-         when others => null;
-         end case;
-         if minor = "0" then
-            return major & "." & final;
+         if part2 = "0" then
+            --  version format in October 2016
+            declare
+               mvers : String (1 .. 4) := "0000";
+            begin
+               mvers (mvers'Last - lenp3 + 1 .. mvers'Last) := part3;
+               minor := mvers (1 .. 2);
+            end;
          else
-            return major & "." & minor & final;
+            --  Alternative future format (file version 2.0)
+             minor (minor'Last - lenp3 + 1 .. minor'Last) := part3;
          end if;
+
+         point := minor (2);
+         case point is
+            when '1' => minor (2) := '2';
+            when '3' => minor (2) := '4';
+            when '5' => minor (2) := '6';
+            when '7' => minor (2) := '8';
+            when '9' => minor (2) := '0';
+            when others => null;
+         end case;
+         if minor (1) = '0' then
+            return major & minor (2);
+         else
+            return major & minor (1 .. 2);
+         end if;
+
       end even;
 
       function fbrel (fileinfo : String) return String
