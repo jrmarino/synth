@@ -774,7 +774,6 @@ package body PortScan.Packages is
          rest2 : constant String := JT.part_2 (rest, ".");
          part2 : constant String := JT.part_1 (rest2, ".");
          part3 : constant String := JT.part_2 (rest2, ".");
-         lenp3 : constant Natural := part3'Length;
          minor : String (1 .. 2) := "00";
          point : Character;
       begin
@@ -782,13 +781,18 @@ package body PortScan.Packages is
             --  version format in October 2016
             declare
                mvers : String (1 .. 4) := "0000";
+               lenp3 : constant Natural := part3'Length;
             begin
                mvers (mvers'Last - lenp3 + 1 .. mvers'Last) := part3;
                minor := mvers (1 .. 2);
             end;
          else
             --  Alternative future format (file version 2.0)
-             minor (minor'Last - lenp3 + 1 .. minor'Last) := part3;
+            declare
+               lenp2 : constant Natural := part2'Length;
+            begin
+               minor (minor'Last - lenp2 + 1 .. minor'Last) := part2;
+            end;
          end if;
 
          point := minor (2);
