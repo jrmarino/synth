@@ -803,6 +803,7 @@ package body PortScan.Packages is
             when '5' => minor (2) := '6';
             when '7' => minor (2) := '8';
             when '9' => minor (2) := '0';
+                        minor (1) := Character'Val (Character'Pos (minor (1)) + 1);
             when others => null;
          end case;
          if minor (1) = '0' then
