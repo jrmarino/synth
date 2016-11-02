@@ -774,7 +774,7 @@ package body PortScan.Packages is
          rest2 : constant String := JT.part_2 (rest, ".");
          part2 : constant String := JT.part_1 (rest2, ".");
          rest3 : constant String := JT.part_2 (rest2, ".");
-         part3 : constant String := JT.part_2 (rest3, ",");
+         part3 : constant String := JT.part_1 (rest3, ",");
          minor : String (1 .. 2) := "00";
          point : Character;
       begin
