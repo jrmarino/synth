@@ -773,7 +773,8 @@ package body PortScan.Packages is
          major : constant String := JT.part_1 (rest, ".");
          rest2 : constant String := JT.part_2 (rest, ".");
          part2 : constant String := JT.part_1 (rest2, ".");
-         part3 : constant String := JT.part_2 (rest2, ".");
+         rest3 : constant String := JT.part_2 (rest2, ".");
+         part3 : constant String := JT.part_2 (rest3, ",");
          minor : String (1 .. 2) := "00";
          point : Character;
       begin
@@ -805,9 +806,9 @@ package body PortScan.Packages is
             when others => null;
          end case;
          if minor (1) = '0' then
-            return major & minor (2);
+            return major & "." & minor (2);
          else
-            return major & minor (1 .. 2);
+            return major & "." & minor (1 .. 2);
          end if;
 
       end even;
