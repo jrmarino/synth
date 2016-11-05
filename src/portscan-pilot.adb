@@ -710,10 +710,10 @@ package body PortScan.Pilot is
          TIO.Put_Line (Flog (flavor), CYC.log_duration (start => start_time,
                                                         stop  => stop_time));
          TIO.Put_Line
-           (Flog (flavor), LAT.LF &
-              "---------------------------" & LAT.LF &
-              "-- Final Statistics" & LAT.LF &
-              "---------------------------" & LAT.LF &
+           (Flog (flavor), LAT.LF & LAT.LF & LAT.LF &
+              "--------------------------------------------------" & LAT.LF &
+              "--  Final Statistics" & LAT.LF &
+              "--------------------------------------------------" & LAT.LF &
               " Initial queue size:" & bld_counter (total)'Img & LAT.LF &
               "     packages built:" & bld_counter (success)'Img & LAT.LF &
               "            ignored:" & bld_counter (ignored)'Img & LAT.LF &
