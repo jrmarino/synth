@@ -124,7 +124,7 @@ private
    builder_env      : JT.Text;
    abnormal_log     : TIO.File_Type;
 
-   abnormal_cmd_logname : constant String := "05_abnormal_cmd.out";
+   abnormal_cmd_logname : constant String := "05_abnormal_command_output.log";
 
    --  Throws exception if mount attempt was unsuccessful
    procedure mount_nullfs (target, mount_point : String;
