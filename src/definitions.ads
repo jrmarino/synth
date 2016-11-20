@@ -15,5 +15,8 @@ package Definitions is
    type cpu_range is range 1 .. 32;
    type scanners  is range cpu_range'First .. cpu_range'Last;
    type builders  is range cpu_range'First .. cpu_range'Last * jobs_per_cpu;
+   type package_system is (ports_collection, pkgsrc);
+
+   software_framework : constant package_system := ports_collection;
 
 end Definitions;

@@ -94,6 +94,7 @@ private
    conf_location  : constant String := synth_confdir & "/synth.ini";
    std_ports_loc  : constant String := "/usr/ports";
    std_dports_loc : constant String := "/usr/dports";
+   std_pkgsrc_loc : constant String := "/usr/pkgsrc";
    std_distfiles  : constant String := "/usr/ports/distfiles";
    std_options    : constant String := "/var/db/ports";
    std_sysbase    : constant String := "/";

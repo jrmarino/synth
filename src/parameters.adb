@@ -98,11 +98,33 @@ package body Parameters is
    ---------------------------
    --  determine_portsdirs  --
    ---------------------------
-   function determine_portsdirs return String is
+   function determine_portsdirs return String
+   is
+      function get_varname return String;
+      function get_mkconf return String;
+
+      function get_varname return String is
+      begin
+         case software_framework is
+            when pkgsrc           => return "PKGSRCDIR";
+            when ports_collection => return "PORTSDIR";
+         end case;
+      end get_varname;
+
+      function get_mkconf return String is
+      begin
+         case software_framework is
+            when pkgsrc           => return "mk.conf";
+            when ports_collection => return "/etc/make.conf";
+         end case;
+      end get_mkconf;
+
+      varname : constant String := get_varname;
+      mkconf  : constant String := get_mkconf;
    begin
       --  PORTSDIR in environment takes precedence
       declare
-         portsdir : String := OSL.Getenv ("PORTSDIR").all;
+         portsdir : String := OSL.Getenv (varname).all;
       begin
          if portsdir /= "" then
             if AD.Exists (portsdir) then
@@ -110,26 +132,35 @@ package body Parameters is
             end if;
          end if;
       end;
-      declare
-         portsdir : String := query_portsdir;
-      begin
-         if portsdir = "" then
-            TIO.Put_Line ("It seems that an invalid PORTSDIR is defined in " &
-                            "/etc/make.conf");
-            return "";
-         end if;
-         if AD.Exists (portsdir) then
-            return portsdir;
-         end if;
-      end;
-      if AD.Exists (std_dports_loc) then
-         return std_dports_loc;
-      elsif AD.Exists (std_ports_loc) then
-         return std_ports_loc;
-      end if;
-      TIO.Put_Line ("PORTSDIR cannot be determined.");
+
+      case software_framework is
+         when pkgsrc =>
+            if AD.Exists (std_pkgsrc_loc) then
+               return std_pkgsrc_loc;
+            end if;
+         when ports_collection =>
+            declare
+               portsdir : String := query_portsdir;
+            begin
+               if portsdir = "" then
+                  TIO.Put_Line ("It seems that a blank " & varname &
+                                  " is defined in " & mkconf);
+                  return "";
+               end if;
+               if AD.Exists (portsdir) then
+                  return portsdir;
+               end if;
+            end;
+            if AD.Exists (std_dports_loc) then
+               return std_dports_loc;
+            elsif AD.Exists (std_ports_loc) then
+               return std_ports_loc;
+            end if;
+      end case;
+
+      TIO.Put_Line (varname & " cannot be determined.");
       TIO.Put_Line ("Please set it to a valid path in then environment or " &
-                    "/etc/make.conf");
+                    mkconf);
       return "";
    end determine_portsdirs;
 

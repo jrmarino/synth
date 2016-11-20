@@ -30,30 +30,32 @@ package body Actions is
                   synth_version_minor;
       copyright : constant String := "Copyright (C) " & copyright_years &
                   " John R. Marino";
-      tagline   : constant String := "Custom package repository builder for " &
-                  "FreeBSD and DragonFly " & version;
-      dashes    : constant String (1 .. tagline'Length + 4)
-                  := (others => LAT.Equals_Sign);
-      gap       : constant String (1 .. (dashes'Length - copyright'Length) / 2)
-                  := (others => LAT.Space);
-      zp        : constant String (1 .. 22) := (others => LAT.Space);
+      tagline : constant String := "Custom package repository builder for ";
+      tag1    : constant String := "FreeBSD and DragonFly " & version;
+      tag2    : constant String := "pkgsrc                " & version;
+      dashes  : constant String (1 .. tagline'Length + tag1'Length + 4)
+                := (others => LAT.Equals_Sign);
+      gap     : constant String (1 .. (dashes'Length - copyright'Length) / 2)
+                := (others => LAT.Space);
+      zp      : constant String (1 .. 22) := (others => LAT.Space);
    begin
       TIO.Put_Line (LAT.LF & dashes);
-      TIO.Put_Line ("  " & tagline);
+      if software_framework = pkgsrc then
+         TIO.Put_Line ("  " & tagline & tag1);
+      else
+         TIO.Put_Line ("  " & tagline & tag2);
+      end if;
       TIO.Put_Line (dashes);
       TIO.Put_Line (gap & copyright & LAT.LF & LAT.LF);
       TIO.Put_Line ("Usage: synth [zero-parameter-option]");
       TIO.Put_Line ("-or-   synth [list-option] " &
                       "<list of port origins | filename>" & LAT.LF);
-      TIO.Put_Line ("zero-parameter-option includes 'help', 'configure', " &
-                      "'version' (this screen),");
-      TIO.Put_Line (zp & "'status', 'upgrade-system', 'prepare-system',");
-      TIO.Put_Line (zp & "'status-everything', 'everything', " &
-                      "'purge-distfiles',");
-      TIO.Put_Line (zp & "'rebuild-repository'");
-      TIO.Put_Line ("list-option includes  'status', 'build', 'just-build', " &
-                      "'install', 'force'");
-      TIO.Put_Line (zp & "'test'" & LAT.LF);
+      TIO.Put_Line ("zero-parameter-option includes: help, configure, " &
+                      "version, status,");
+      TIO.Put_Line (zp & "upgrade-system, prepare-system, status-everything");
+      TIO.Put_Line (zp & "everything, purge-distfiles, rebuild-repository");
+      TIO.Put_Line ("list-option includes: status, build, just-build, " &
+                      "install, force, test" & LAT.LF);
    end print_version;
 
 
@@ -106,8 +108,15 @@ package body Actions is
                  blank & "asks before updating repository and system" &
          synth & opt11 & "Like 'build', but skips post-build questions" &
          synth & opt12 & "Like 'build', but upgrades system without asking" &
-         synth & opt13 & "Like 'build', but deletes existing packages first" &
-         synth & opt14 & "Just builds with DEVELOPER=yes; pre-deletes pkgs");
+         synth & opt13 & "Like 'build', but deletes existing packages first");
+      case software_framework is
+         when pkgsrc =>
+            TIO.Put_Line (synth & opt14 &
+                         "Just builds with PKG_DEVELOPER=yes; pre-deletes pkgs");
+         when ports_collection =>
+            TIO.Put_Line (synth & opt14 &
+                         "Just builds with DEVELOPER=yes; pre-deletes pkgs");
+      end case;
       TIO.Put_Line
                (LAT.LF & "[ports] is a space-delimited list of origins, " &
                          "e.g. editors/joe editors/emacs." &
@@ -140,7 +149,7 @@ package body Actions is
           "[I] Num. concurrent builders  ",
           "[J] Max. jobs per builder     ",
           "[K] Use tmpfs for work area   ",
-          "[L] Use tmpfs for /usr/local  ",
+          "[L] Use tmpfs for localbase   ",
           "[M] Display using ncurses     ",
           "[N] Fetch prebuilt packages   ");
 
