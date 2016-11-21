@@ -142,9 +142,11 @@ private
    function query_distfiles (portsdir : String) return String;
    function query_opsys (portsdir : String) return String;
    function query_portsdir return String;
-   function enough_memory (num_builders : builders) return Boolean;
+   function enough_memory (num_builders : builders; opsys : JT.Text) return Boolean;
    function determine_portsdirs return String;
    procedure query_physical_memory;
+   procedure query_physical_memory_linux;
+   procedure query_physical_memory_sunos;
    procedure mkdirp_from_file (filename : String);
 
 end Parameters;

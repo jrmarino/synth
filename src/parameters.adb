@@ -159,7 +159,7 @@ package body Parameters is
       end case;
 
       TIO.Put_Line (varname & " cannot be determined.");
-      TIO.Put_Line ("Please set it to a valid path in then environment or " &
+      TIO.Put_Line ("Please set " & varname & " to a valid path in the environment or " &
                     mkconf);
       return "";
    end determine_portsdirs;
@@ -177,8 +177,21 @@ package body Parameters is
       res          : configuration_record;
       function opsys_ok return Boolean is
       begin
-         return (JT.equivalent (res.operating_sys, "FreeBSD") or else
-                 JT.equivalent (res.operating_sys, "DragonFly"));
+         case software_framework is
+            when ports_collection =>
+               return (JT.equivalent (res.operating_sys, "FreeBSD") or else
+                       JT.equivalent (res.operating_sys, "DragonFly"));
+            when pkgsrc =>
+               return (JT.equivalent (res.operating_sys, "FreeBSD") or else
+                       JT.equivalent (res.operating_sys, "DragonFly") or else
+                       JT.equivalent (res.operating_sys, "NetBSD") or else
+                       JT.equivalent (res.operating_sys, "OpenBSD") or else
+                       JT.equivalent (res.operating_sys, "MirBSD") or else
+                       JT.equivalent (res.operating_sys, "Bitrig") or else
+                       JT.equivalent (res.operating_sys, "Linux") or else
+                       JT.equivalent (res.operating_sys, "SunOS")
+                      );
+         end case;
       end opsys_ok;
    begin
       --  The profile *must* exist before this procedure is called!
@@ -216,20 +229,6 @@ package body Parameters is
       res.jobs_limit := builders
         (extract_integer (profile, Field_09, def_jlimit));
 
-      if param_set (profile, Field_10) then
-         res.tmpfs_workdir := extract_boolean (profile, Field_10, False);
-      else
-         res.tmpfs_workdir := extract_boolean
-           (profile, Field_10, enough_memory (res.num_builders));
-      end if;
-
-      if param_set (profile, Field_11) then
-         res.tmpfs_localbase := extract_boolean (profile, Field_11, False);
-      else
-         res.tmpfs_localbase := extract_boolean
-           (profile, Field_11, enough_memory (res.num_builders));
-      end if;
-
       if param_set (profile, Field_12) then
          res.operating_sys := extract_string (profile, Field_12, std_opsys);
       else
@@ -238,13 +237,34 @@ package body Parameters is
       end if;
       if not opsys_ok then
          TIO.Put_Line ("Unknown operating system: " & JT.USS (res.operating_sys));
-         TIO.Put_Line ("This configuration entry must be either 'FreeBSD' or 'DragonFly'");
+         case software_framework is
+            when ports_collection =>
+               TIO.Put_Line ("This configuration entry must be either 'FreeBSD' or 'DragonFly'");
+            when pkgsrc =>
+               TIO.Put_Line ("This configuration entry must be one of: FreeBSD, DragonFly, " &
+                               "NetBSD, OpenBSD,");
+               TIO.Put_Line ("MirBSD, Bitrig, Linux, SunOS");
+         end case;
          TIO.Put_Line ("Manually edit " & Definitions.host_localbase &
                          "/etc/synth/synth.ini file to remove the line of the");
          TIO.Put_Line (profile & " profile starting with 'Operating_system='");
          TIO.Put_Line ("The synth.ini file should regenerate properly on the next Synth command.");
          TIO.Put_Line ("");
          raise bad_opsys;
+      end if;
+
+      if param_set (profile, Field_10) then
+         res.tmpfs_workdir := extract_boolean (profile, Field_10, False);
+      else
+         res.tmpfs_workdir := extract_boolean
+           (profile, Field_10, enough_memory (res.num_builders, res.operating_sys));
+      end if;
+
+      if param_set (profile, Field_11) then
+         res.tmpfs_localbase := extract_boolean (profile, Field_11, False);
+      else
+         res.tmpfs_localbase := extract_boolean
+           (profile, Field_11, enough_memory (res.num_builders, res.operating_sys));
       end if;
 
       res.dir_options    := extract_string (profile, Field_13, std_options);
@@ -461,7 +481,9 @@ package body Parameters is
    -----------------------
    --  query_distfiles  --
    -----------------------
-   function query_distfiles (portsdir : String) return  String is
+   function query_distfiles (portsdir : String) return  String
+   is
+      --  DISTDIR is used by both pkgsrc and ports collection
    begin
       return query_generic (portsdir, "DISTDIR");
    end query_distfiles;
@@ -470,7 +492,9 @@ package body Parameters is
    ------------------
    --  query_opsys  --
    -------------------
-   function query_opsys (portsdir : String) return String is
+   function query_opsys (portsdir : String) return String
+   is
+      --  OPSYS is used by both pkgsrc and ports collection
    begin
       return query_generic (portsdir, "OPSYS");
    end query_opsys;
@@ -481,8 +505,10 @@ package body Parameters is
    ---------------------
    function query_generic (portsdir, value : String) return String
    is
-      command  : constant String := "/usr/bin/make -C " & portsdir &
-                                    "/ports-mgmt/pkg -V " & value;
+      --  devel/gmake exists on both pkgsrc and the ports collection
+      --  The actual port is not significant
+      command  : constant String := host_make_program & " -C " & portsdir &
+                                    "/devel/gmake -V " & value;
    begin
       return query_generic_core (command);
    end query_generic;
@@ -513,8 +539,9 @@ package body Parameters is
    ----------------------
    function query_portsdir return String
    is
-      command  : constant String := "/usr/bin/make " &
-        "-f /usr/share/mk/bsd.port.mk -V PORTSDIR";
+      --  This is specific to the ports collection (invalid for pkgsrc)
+      command  : constant String := host_make_program &
+        " -f /usr/share/mk/bsd.port.mk -V PORTSDIR";
    begin
       return query_generic_core (command);
    exception
@@ -526,6 +553,7 @@ package body Parameters is
    --  query_physical_memory  --
    -----------------------------
    procedure query_physical_memory is
+      --  Works for *BSD, DragonFly, Bitrig
       command : constant String := "/sbin/sysctl hw.physmem";
       content : JT.Text;
       status  : Integer;
@@ -534,9 +562,6 @@ package body Parameters is
       CR      : constant String (1 .. 1) := (1 => Character'Val (10));
       SP      : constant String (1 .. 1) := (1 => LAT.Space);
    begin
-      if memory_megs > 0 then
-         return;
-      end if;
       content := Unix.piped_command (command, status);
       if status /= 0 then
          raise make_query with command;
@@ -556,16 +581,119 @@ package body Parameters is
    end query_physical_memory;
 
 
+   -----------------------------------
+   --  query_physical_memory_linux  --
+   -----------------------------------
+   procedure query_physical_memory_linux
+   is
+      --  On linux, MemTotal should be on first line and that's what we're looking for
+      command  : constant String := "/usr/bin/head /proc/meminfo";
+      found    : Boolean := False;
+      status   : Integer;
+      comres   : JT.Text;
+      topline  : JT.Text;
+      crlen1   : Natural;
+      crlen2   : Natural;
+   begin
+      comres := Unix.piped_command (command, status);
+      if status /= 0 then
+         raise make_query with command;
+      end if;
+      crlen1 := JT.SU.Length (comres);
+      loop
+         exit when found;
+         JT.nextline (lineblock => comres, firstline => topline);
+         crlen2 := JT.SU.Length (comres);
+         exit when crlen1 = crlen2;
+         crlen1 := crlen2;
+         if JT.SU.Length (topline) > 12 then
+            declare
+               line : String := JT.USS (topline);
+            begin
+               if line (line'First .. line'First + 8) = "MemTotal:" then
+                  declare
+                     type memtype is mod 2**64;
+                     numbers : String :=
+                       JT.part_1 (S         => JT.trim (line (line'First + 9 .. line'Last)),
+                                  separator => " ");
+                     kilobytes : constant memtype := memtype'Value (numbers);
+                     megs      : constant memtype := kilobytes / 1024;
+                  begin
+                     memory_megs := Natural (megs);
+                  end;
+                  found := True;
+               end if;
+            end;
+         end if;
+      end loop;
+   end query_physical_memory_linux;
+
+
+   -----------------------------------
+   --  query_physical_memory_sunos  --
+   -----------------------------------
+   procedure query_physical_memory_sunos
+   is
+         --  On Solaris, we're looking for "Memory size" which should be on second line
+      command  : constant String := "/usr/sbin/prtconf";
+      found    : Boolean := False;
+      status   : Integer;
+      comres   : JT.Text;
+      topline  : JT.Text;
+      crlen1   : Natural;
+      crlen2   : Natural;
+   begin
+      comres := Unix.piped_command (command, status);
+      if status /= 0 then
+         raise make_query with command;
+      end if;
+      crlen1 := JT.SU.Length (comres);
+      loop
+         exit when found;
+         JT.nextline (lineblock => comres, firstline => topline);
+         crlen2 := JT.SU.Length (comres);
+         exit when crlen1 = crlen2;
+         crlen1 := crlen2;
+         if JT.SU.Length (topline) > 12 then
+            declare
+               line : String := JT.USS (topline);
+            begin
+               if line (line'First .. line'First + 11) = "Memory size:" then
+                  declare
+                     type memtype is mod 2**64;
+                     numbers : String :=
+                       JT.part_1 (line (line'First + 13 .. line'Last), " ");
+                     megabytes : constant memtype := memtype'Value (numbers);
+                  begin
+                     memory_megs := Natural (megabytes);
+                  end;
+                  found := True;
+               end if;
+            end;
+         end if;
+      end loop;
+   end query_physical_memory_sunos;
+
+
    ---------------------
    --  enough_memory  --
    ---------------------
-   function enough_memory (num_builders : builders) return Boolean is
+   function enough_memory (num_builders : builders; opsys : JT.Text) return Boolean is
       megs_per_slave : Natural;
    begin
-      query_physical_memory;
+      if memory_megs = 0 then
+         if JT.equivalent (opsys, "Linux") then
+            query_physical_memory_linux;
+         elsif JT.equivalent (opsys, "SunOS") then
+            query_physical_memory_sunos;
+         else
+            query_physical_memory;
+         end if;
+      end if;
       megs_per_slave := memory_megs / Positive (num_builders);
       return megs_per_slave >= 1280;
    end enough_memory;
+
 
    ----------------------------
    --  write_master_section  --
@@ -642,8 +770,8 @@ package body Parameters is
       result.dir_options     := JT.SUS (std_options);
       result.num_builders    := builders (def_builders);
       result.jobs_limit      := builders (def_jlimit);
-      result.tmpfs_workdir   := enough_memory (result.num_builders);
-      result.tmpfs_localbase := enough_memory (result.num_builders);
+      result.tmpfs_workdir   := enough_memory (result.num_builders, result.operating_sys);
+      result.tmpfs_localbase := enough_memory (result.num_builders, result.operating_sys);
       result.avec_ncurses    := True;
       result.defer_prebuilt  := False;
 
