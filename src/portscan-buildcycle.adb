@@ -758,7 +758,8 @@ package body PortScan.Buildcycle is
                    Name => log_name (trackers (id).seq_id));
          if timed_out then
             TIO.Put_Line (trackers (id).log_handle,
-                          "###  Watchdog killed runaway process!  ###");
+                          "###  Watchdog killed runaway process!  (no activity for" &
+                            time_limit'Img & " minutes)  ###");
          end if;
          if not skip_footer then
             log_phase_end (id);
