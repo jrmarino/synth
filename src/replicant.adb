@@ -571,6 +571,7 @@ package body Replicant is
                   Mode => TIO.Out_File,
                   Name => path_to_etc & "/make.conf");
 
+      TIO.Put_Line (makeconf, "SYNTHPROFILE=" & JT.USS (PM.active_profile));
       TIO.Put_Line (makeconf, "USE_PACKAGE_DEPENDS=yes");
       TIO.Put_Line (makeconf, "PACKAGE_BUILDING=yes");
       TIO.Put_Line (makeconf, "BATCH=yes");
