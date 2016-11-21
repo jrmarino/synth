@@ -40,11 +40,10 @@ package body Actions is
       zp      : constant String (1 .. 22) := (others => LAT.Space);
    begin
       TIO.Put_Line (LAT.LF & dashes);
-      if software_framework = pkgsrc then
-         TIO.Put_Line ("  " & tagline & tag1);
-      else
-         TIO.Put_Line ("  " & tagline & tag2);
-      end if;
+      case software_framework is
+         when ports_collection => TIO.Put_Line ("  " & tagline & tag1);
+         when pkgsrc           => TIO.Put_Line ("  " & tagline & tag2);
+      end case;
       TIO.Put_Line (dashes);
       TIO.Put_Line (gap & copyright & LAT.LF & LAT.LF);
       TIO.Put_Line ("Usage: synth [zero-parameter-option]");
