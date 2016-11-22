@@ -400,10 +400,13 @@ package body Replicant is
       cmd_freebsd   : constant String := "/bin/chflags";
       cmd_dragonfly : constant String := "/usr/bin/chflags";
       cmd_linux     : constant String := "/usr/bin/chattr";
+      cmd_solaris   : constant String := "/usr/bin/chmod";
       flag_lock     : constant String := " schg ";
       flag_unlock   : constant String := " noschg ";
       chattr_lock   : constant String := " +i ";
       chattr_unlock : constant String := " -i ";
+      sol_lock      : constant String := " S+ci ";
+      sol_unlock    : constant String := " S-ci ";
       command       : JT.Text;
    begin
       if not AD.Exists (path) then
@@ -415,7 +418,7 @@ package body Replicant is
          when dragonfly |
               netbsd    => command := JT.SUS (cmd_dragonfly);
          when linux     => command := JT.SUS (cmd_linux);
-         when solaris   => return;  --  only ZFS has immutable flag support
+         when solaris   => command := JT.SUS (cmd_solaris);
          when unknown   =>
             raise scenario_unexpected with
               "Executing cflags on unknown operating system";
@@ -431,7 +434,11 @@ package body Replicant is
                when lock   => JT.SU.Append (command, chattr_lock & path);
                when unlock => JT.SU.Append (command, chattr_unlock & path);
             end case;
-         when solaris => null;
+         when solaris =>
+            case operation is
+               when lock   => JT.SU.Append (command, sol_lock & path);
+               when unlock => JT.SU.Append (command, sol_unlock & path);
+            end case;
          when unknown => null;
       end case;
       execute (JT.USS (command));
@@ -443,10 +450,19 @@ package body Replicant is
    ----------------------
    procedure create_symlink (destination, symbolic_link : String)
    is
-      command : constant String :=
-                         "/bin/ln -s " & destination & " " & symbolic_link;
+      bsd_command : constant String := "/bin/ln -s ";
+      lin_command : constant String := "/usr/bin/ln -s ";
    begin
-      execute (command);
+      case platform_type is
+         when dragonfly |
+              freebsd   |
+              netbsd    |
+              solaris   => execute (bsd_command & destination & " " & symbolic_link);
+         when linux     => execute (lin_command & destination & " " & symbolic_link);
+         when unknown   =>
+            raise scenario_unexpected with
+              "Executing ln on unknown operating system";
+      end case;
    end create_symlink;
 
 
@@ -455,10 +471,19 @@ package body Replicant is
    ---------------------------
    procedure populate_var_folder (path : String)
    is
-      command : constant String := "/usr/sbin/mtree -p " & path &
+      bsd_command : constant String := "/usr/sbin/mtree -p " & path &
         " -f /etc/mtree/BSD.var.dist -deqU";
+      net_command : constant String := "/usr/sbin/mtree -p " & path &
+        " -f /etc/mtree/special -deqU";
    begin
-      silent_exec (command);
+      case platform_type is
+         when dragonfly |
+              freebsd   => silent_exec (bsd_command);
+         when netbsd    => silent_exec (net_command);
+         when linux     => null;
+         when solaris   => null;
+         when unknown   => null;
+      end case;
    end populate_var_folder;
 
 
@@ -522,7 +547,7 @@ package body Replicant is
    procedure create_base_group (path_to_mm : String)
    is
       subtype sysgroup is String (1 .. 8);
-      type groupset is array (1 .. 34) of sysgroup;
+      type groupset is array (1 .. 52) of sysgroup;
       users       : constant groupset :=
         ("wheel   ", "daemon  ", "kmem    ", "sys     ",
          "tty     ", "operator", "mail    ", "bin     ",
@@ -532,7 +557,13 @@ package body Replicant is
          "unbound ", "ftp     ", "video   ", "hast    ",
          "uucp    ", "xten    ", "dialer  ", "network ",
          "_sdpd   ", "_dhcp   ", "www     ", "vknet   ",
-         "nogroup ", "nobody  ");
+         "nogroup ", "nobody  ",
+         --  Unique to NetBSD
+         "wsrc    ", "maildrop", "postfix ", "named   ",
+         "ntpd    ", "_rwhod  ", "_proxy  ", "_timedc ",
+         "_httpd  ", "_mdnsd  ", "_tests  ", "_tcpdump",
+         "_tss    ", "_gpio   ", "_rtadvd ", "_unbound",
+         "utmp    ", "users   ");
       group       : TIO.File_Type;
       live_file   : TIO.File_Type;
       keepit      : Boolean;
@@ -574,7 +605,7 @@ package body Replicant is
    procedure create_base_passwd (path_to_mm  : String)
    is
       subtype syspasswd is String (1 .. 10);
-      type passwdset is array (1 .. 28) of syspasswd;
+      type passwdset is array (1 .. 41) of syspasswd;
       users       : constant passwdset :=
         ("root      ", "toor      ", "daemon    ", "operator  ",
          "bin       ", "tty       ", "kmem      ", "mail      ",
@@ -582,7 +613,12 @@ package body Replicant is
          "smmsp     ", "mailnull  ", "bind      ", "unbound   ",
          "proxy     ", "_pflogd   ", "_dhcp     ", "uucp      ",
          "xten      ", "pop       ", "auditdistd", "_sdpd     ",
-         "www       ", "_ypldap   ", "hast      ", "nobody    ");
+         "www       ", "_ypldap   ", "hast      ", "nobody    ",
+         --  Unique to NetBSD
+         "postfix   ", "named     ", "ntpd      ", "_rwhod    ",
+         "_proxy    ", "_timedc   ", "_httpd    ", "_mdnsd    ",
+         "_tests    ", "_tcpdump  ", "_tss      ", "_rtadvd   ",
+         "_unbound  ");
       masterpwd   : TIO.File_Type;
       live_file   : TIO.File_Type;
       keepit      : Boolean;
@@ -662,13 +698,23 @@ package body Replicant is
       root  : constant String := "/BSD.root.dist";
       usr   : constant String := "/BSD.usr.dist";
       var   : constant String := "/BSD.var.dist";
+      spec  : constant String := "/special";
    begin
-      AD.Copy_File (Source_Name => mtree & root,
-                    Target_Name => path_to_mtree & root);
-      AD.Copy_File (Source_Name => mtree & usr,
-                    Target_Name => path_to_mtree & usr);
-      AD.Copy_File (Source_Name => mtree & var,
-                    Target_Name => path_to_mtree & var);
+      case platform_type is
+         when dragonfly | freebsd =>
+            AD.Copy_File (Source_Name => mtree & root,
+                          Target_Name => path_to_mtree & root);
+            AD.Copy_File (Source_Name => mtree & usr,
+                          Target_Name => path_to_mtree & usr);
+            AD.Copy_File (Source_Name => mtree & var,
+                          Target_Name => path_to_mtree & var);
+         when netbsd =>
+            AD.Copy_File (Source_Name => mtree & spec,
+                          Target_Name => path_to_mtree & spec);
+         when solaris => null;
+         when linux   => null;
+         when unknown => null;
+      end case;
    end copy_mtree_files;
 
 
@@ -681,32 +727,62 @@ package body Replicant is
       profilemc : constant String := PM.synth_confdir & "/" &
                   JT.USS (PM.configuration.profile) & "-make.conf";
       varcache  : constant String := get_master_mount & "/varcache.conf";
+      profile   : constant String := JT.USS (PM.configuration.profile);
+      mjnum     : constant Integer := Integer (PM.configuration.jobs_limit);
    begin
-      TIO.Create (File => makeconf,
-                  Mode => TIO.Out_File,
-                  Name => path_to_etc & "/make.conf");
+      case software_framework is
+         when ports_collection =>
+            TIO.Create (File => makeconf,
+                        Mode => TIO.Out_File,
+                        Name => path_to_etc & "/make.conf");
 
-      TIO.Put_Line (makeconf, "SYNTHPROFILE=" &
-                      JT.USS (PM.configuration.profile));
-      TIO.Put_Line (makeconf, "USE_PACKAGE_DEPENDS=yes");
-      TIO.Put_Line (makeconf, "PACKAGE_BUILDING=yes");
-      TIO.Put_Line (makeconf, "BATCH=yes");
-      TIO.Put_Line (makeconf, "PKG_CREATE_VERBOSE=yes");
-      TIO.Put_Line (makeconf, "PORTSDIR=/xports");
-      TIO.Put_Line (makeconf, "DISTDIR=/distfiles");
-      TIO.Put_Line (makeconf, "WRKDIRPREFIX=/construction");
-      TIO.Put_Line (makeconf, "PORT_DBDIR=/options");
-      TIO.Put_Line (makeconf, "PACKAGES=/packages");
-      TIO.Put_Line (makeconf, "MAKE_JOBS_NUMBER_LIMIT=" &
-                      (JT.trim (PM.configuration.jobs_limit'Img)));
+            TIO.Put_Line
+              (makeconf,
+                 "SYNTHPROFILE=" & profile & LAT.LF &
+                 "USE_PACKAGE_DEPENDS_ONLY=yes" & LAT.LF &
+                 "PACKAGE_BUILDING=yes" & LAT.LF &
+                 "BATCH=yes" & LAT.LF &
+                 "PKG_CREATE_VERBOSE=yes" & LAT.LF &
+                 "PORTSDIR=/xports" & LAT.LF &
+                 "DISTDIR=/distfiles" & LAT.LF &
+                 "WRKDIRPREFIX=/construction" & LAT.LF &
+                 "PORT_DBDIR=/options" & LAT.LF &
+                 "PACKAGES=/packages" & LAT.LF &
+                 "MAKE_JOBS_NUMBER_LIMIT=" & JT.int2str (mjnum));
 
-      if developer_mode then
-         TIO.Put_Line (makeconf, "DEVELOPER=1");
-      end if;
-      if AD.Exists (JT.USS (PM.configuration.dir_ccache)) then
-         TIO.Put_Line (makeconf, "WITH_CCACHE_BUILD=yes");
-         TIO.Put_Line (makeconf, "CCACHE_DIR=/ccache");
-      end if;
+            if developer_mode then
+               TIO.Put_Line (makeconf, "DEVELOPER=1");
+            end if;
+            if AD.Exists (JT.USS (PM.configuration.dir_ccache)) then
+               TIO.Put_Line (makeconf, "WITH_CCACHE_BUILD=yes");
+               TIO.Put_Line (makeconf, "CCACHE_DIR=/ccache");
+            end if;
+         when pkgsrc =>
+            TIO.Create (File => makeconf,
+                        Mode => TIO.Out_File,
+                        Name => path_to_etc & "/mk.conf");
+
+            --  Note there is no equivalent for PORT_DBDIR
+            --  Custom options must be set in <profile>-make.conf
+            TIO.Put_Line
+              (makeconf,
+                 "SYNTHPROFILE=" & profile & LAT.LF &
+                 "PACKAGE_BUILDING=yes" & LAT.LF &
+                 "PKG_CREATE_VERBOSE=yes" & LAT.LF &
+                 "PKGSRCDIR=/xports" & LAT.LF &
+                 "DISTDIR=/distfiles" & LAT.LF &
+                 "WRKOBJDIR=/construction" & LAT.LF &
+                 "PACKAGES=/packages" & LAT.LF &
+                 "MAKE_JOBS=" & JT.int2str (mjnum));
+
+            if developer_mode then
+               TIO.Put_Line (makeconf, "PKG_DEVELOPER=yes");
+            end if;
+            if AD.Exists (JT.USS (PM.configuration.dir_ccache)) then
+               TIO.Put_Line (makeconf, "PKGSRC_COMPILER=ccache gcc");
+               TIO.Put_Line (makeconf, "CCACHE_DIR=/ccache");
+            end if;
+      end case;
 
       concatenate_makeconf (makeconf, profilemc);
       concatenate_makeconf (makeconf, varcache);
