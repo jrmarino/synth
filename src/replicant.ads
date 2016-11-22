@@ -46,6 +46,12 @@ package Replicant is
    --  Returns True on success
    function standalone_pkg8_install (id : builders) return Boolean;
 
+   --  Required for building first pkg(8) and bmake(8) for pkgsrc
+   --  They are just copies of hosts versions
+   function host_pkgsrc_mk_install (id : builders) return Boolean;
+   function host_pkgsrc_bmake_install (id : builders) return Boolean;
+   function host_pkgsrc_pkg8_install (id : builders) return Boolean;
+
    --  The actual command to build a local repository (Returns True on success)
    function build_repository (id : builders; sign_command : String := "")
                               return Boolean;
@@ -229,5 +235,10 @@ private
    --  capture unexpected output while setting up builders (e.g. mount)
    procedure start_abnormal_logging;
    procedure stop_abnormal_logging;
+
+   --  Generic directory copy utility (ordinary files only)
+   function copy_directory_contents (src_directory : String;
+                                     tgt_directory : String;
+                                     pattern       : String) return Boolean;
 
 end Replicant;

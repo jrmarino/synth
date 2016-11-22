@@ -856,7 +856,14 @@ package body Replicant is
       TIO.Create (File => fstab,
                   Mode => TIO.Out_File,
                   Name => path_to_etc & "/fstab");
-      TIO.Put_Line (fstab, "linproc /usr/compat/proc linprocfs rw 0 0");
+      case platform_type is
+         when dragonfly | freebsd =>
+            TIO.Put_Line (fstab, "linproc /usr/compat/proc linprocfs rw 0 0");
+         when netbsd =>
+            TIO.Put_Line (fstab, "procfs /emul/linux/proc procfs ro,linux 0 0");
+         when linux | solaris => null;
+         when unknown => null;
+      end case;
       TIO.Close (fstab);
    end create_etc_fstab;
 
@@ -866,11 +873,18 @@ package body Replicant is
    ------------------------
    procedure execute_ldconfig (id : builders)
    is
-      smount  : constant String := get_slave_mount (id);
-      command : constant String := chroot & smount &
-                                   " /sbin/ldconfig -m /lib /usr/lib";
+      smount      : constant String := get_slave_mount (id);
+      bsd_command : constant String := chroot & smount &
+                                       " /sbin/ldconfig -m /lib /usr/lib";
+      lin_command : constant String := chroot & smount &
+                                       " /usr/sbin/ldconfig /lib /usr/lib";
    begin
-      execute (command);
+      case platform_type is
+         when dragonfly | freebsd => execute (bsd_command);
+         when linux => execute (lin_command);
+         when netbsd | solaris => null;
+         when unknown => null;
+      end case;
    end execute_ldconfig;
 
 
@@ -889,6 +903,100 @@ package body Replicant is
    exception
       when others => return False;
    end standalone_pkg8_install;
+
+
+   ------------------------------
+   --  host_pkgsrc_mk_install  --
+   ------------------------------
+   function host_pkgsrc_mk_install (id : builders) return Boolean
+   is
+      smount  : constant String := get_slave_mount (id);
+      src_dir : constant String := host_localbase & "/share/mk";
+      tgt_dir : constant String := smount & root_localbase & "/share/mk";
+   begin
+      return copy_directory_contents (src_dir, tgt_dir, "*.mk");
+   end host_pkgsrc_mk_install;
+
+
+   ---------------------------------
+   --  host_pkgsrc_bmake_install  --
+   ---------------------------------
+   function host_pkgsrc_bmake_install (id : builders) return Boolean
+   is
+      smount      : constant String := get_slave_mount (id);
+      host_bmake  : constant String := host_localbase & "/bin/bmake";
+      slave_path  : constant String := smount & root_localbase & "/bin";
+      slave_bmake : constant String := slave_path & "/bmake";
+   begin
+      if not AD.Exists (host_bmake) then
+         return False;
+      end if;
+      AD.Create_Path (slave_path);
+      AD.Copy_File (Source_Name => host_bmake,
+                    Target_Name => slave_bmake);
+      return True;
+   exception
+      when others => return False;
+   end host_pkgsrc_bmake_install;
+
+
+   --------------------------------
+   --  host_pkgsrc_pkg8_install  --
+   --------------------------------
+   function host_pkgsrc_pkg8_install (id : builders) return Boolean
+   is
+      smount      : constant String := get_slave_mount (id);
+      host_pkgst  : constant String := host_localbase & "/sbin/pkg-static";
+      host_admin  : constant String := host_localbase & "/sbin/pkgng_admin";
+      slave_path  : constant String := smount & root_localbase & "/sbin";
+      slave_pkg   : constant String := slave_path & "/pkg";
+      slave_admin : constant String := slave_path & "/pkgng_admin";
+   begin
+      if not AD.Exists (host_pkgst) or else not AD.Exists (host_admin) then
+         return False;
+      end if;
+      AD.Create_Path (slave_path);
+      AD.Copy_File (Source_Name => host_pkgst,
+                    Target_Name => slave_pkg);
+      AD.Copy_File (Source_Name => host_admin,
+                    Target_Name => slave_admin);
+      return True;
+   exception
+      when others => return False;
+   end host_pkgsrc_pkg8_install;
+
+
+   -------------------------------
+   --  copy_directory_contents  --
+   -------------------------------
+   function copy_directory_contents (src_directory : String;
+                                     tgt_directory : String;
+                                     pattern       : String) return Boolean
+   is
+      Search  : AD.Search_Type;
+      Dir_Ent : AD.Directory_Entry_Type;
+      Filter  : constant AD.Filter_Type := (AD.Ordinary_File => True,
+                                            AD.Special_File  => False,
+                                            AD.Directory     => False);
+   begin
+      if not AD.Exists (src_directory) then
+         return False;
+      end if;
+      AD.Create_Path (tgt_directory);
+      AD.Start_Search (Search    => Search,
+                       Directory => src_directory,
+                       Filter    => Filter,
+                       Pattern   => pattern);
+      while AD.More_Entries (Search => Search) loop
+         AD.Get_Next_Entry (Search => Search, Directory_Entry => Dir_Ent);
+         AD.Copy_File
+           (Source_Name => src_directory & "/" & AD.Simple_Name (Dir_Ent),
+            Target_Name => tgt_directory & "/" & AD.Simple_Name (Dir_Ent));
+      end loop;
+      return True;
+   exception
+      when others => return False;
+   end copy_directory_contents;
 
 
    ------------------------
