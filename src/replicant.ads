@@ -192,6 +192,7 @@ private
 
    --  mount the devices
    procedure mount_devices (path_to_dev : String);
+   procedure unmount_devices (path_to_dev : String);
 
    --  execute ldconfig as last action of slave creation
    procedure execute_ldconfig (id : builders);
@@ -208,6 +209,7 @@ private
 
    --  It turns out at least one major port uses procfs (gnustep)
    procedure mount_procfs (path_to_proc : String);
+   procedure unmount_procfs (path_to_proc : String);
 
    --  Cache variables that spawn to get populated to extended make.conf
    procedure cache_port_variables (path_to_mm : String);

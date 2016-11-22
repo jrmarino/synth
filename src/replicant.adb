@@ -128,7 +128,14 @@ package body Replicant is
       end if;
 
       AD.Create_Path (mm);
-      create_base_passwd (mm);
+      case platform_type is
+         when dragonfly |
+              netbsd    |
+              freebsd   => create_base_passwd (mm);
+         when linux     => null;  -- master.passwd not used
+         when solaris   => null;  -- master.passwd not used
+         when unknown   => null;
+      end case;
       execute (command);
       create_base_group (mm);
       cache_port_variables (mm);
@@ -224,11 +231,20 @@ package body Replicant is
    ---------------
    procedure unmount (device_or_node : String)
    is
-      command : constant String := "/sbin/umount " & device_or_node;
+      bsd_command : constant String := "/sbin/umount " & device_or_node;
+      sol_command : constant String := "/usr/sbin/umount " & device_or_node;
+      lin_command : constant String := "/usr/bin/umount " & device_or_node;
    begin
       --  failure to unmount causes stderr squawks which messes up curses display
       --  Just log it and ignore for now (Add robustness later)
-      execute (command);
+      case platform_type is
+         when dragonfly |
+              freebsd   |
+              netbsd    => execute (bsd_command);
+         when linux     => execute (lin_command);
+         when solaris   => execute (sol_command);
+         when unknown   => null;
+      end case;
    exception
       when others => null;  -- silently fail
    end unmount;
@@ -288,10 +304,36 @@ package body Replicant is
    ---------------------
    procedure mount_devices (path_to_dev : String)
    is
-      command : constant String := "/sbin/mount -t devfs devfs " & path_to_dev;
+      bsd_command : constant String :=
+        "/sbin/mount -t devfs devfs " & path_to_dev;
+      lin_command : constant String :=
+        "/usr/bin/mount --bind /dev " & path_to_dev;
    begin
-      execute (command);
+      case platform_type is
+         when dragonfly |
+              freebsd   => execute (bsd_command);
+         when linux     => execute (lin_command);
+         when netbsd    => null;
+         when solaris   => null;
+         when unknown   => null;
+      end case;
    end mount_devices;
+
+
+   -----------------------
+   --  unmount_devices  --
+   -----------------------
+   procedure unmount_devices (path_to_dev : String) is
+   begin
+      case platform_type is
+         when dragonfly |
+              freebsd   |
+              linux     => unmount (path_to_dev);
+         when netbsd    => null;
+         when solaris   => null;
+         when unknown   => null;
+      end case;
+   end unmount_devices;
 
 
    --------------------
@@ -299,10 +341,38 @@ package body Replicant is
    --------------------
    procedure mount_procfs (path_to_proc : String)
    is
-      command : constant String := "/sbin/mount -t procfs proc " & path_to_proc;
+      bsd_command : constant String :=
+        "/sbin/mount -t procfs proc " & path_to_proc;
+      net_command : constant String :=
+        "/sbin/mount_procfs /proc " & path_to_proc;
+      lin_command : constant String :=
+        "/usr/bin/mount --bind /proc " & path_to_proc;
    begin
-      execute (command);
+      case platform_type is
+         when dragonfly |
+              freebsd   => execute (bsd_command);
+         when netbsd    => execute (net_command);
+         when linux     => execute (lin_command);
+         when solaris   => null;
+         when unknown   => null;
+      end case;
    end mount_procfs;
+
+
+   ---------------------
+   --  umount_procfs  --
+   ---------------------
+   procedure unmount_procfs (path_to_proc : String) is
+   begin
+      case platform_type is
+         when dragonfly |
+              freebsd   |
+              netbsd    |
+              linux     => unmount (path_to_proc);
+         when solaris   => null;
+         when unknown   => null;
+      end case;
+   end unmount_procfs;
 
 
    ------------------
@@ -998,10 +1068,11 @@ package body Replicant is
       end case;
 
       if opts.need_procfs then
-         unmount (location (slave_base, proc));
+         unmount_procfs (location (slave_base, proc));
       end if;
 
-      unmount (location (slave_base, dev));
+      unmount_devices (location (slave_base, dev));
+
       unmount (location (slave_base, xports));
       unmount (location (slave_base, options));
       unmount (location (slave_base, packages));
