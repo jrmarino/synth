@@ -61,7 +61,7 @@ package Replicant is
 private
 
    type mount_mode is (readonly, readwrite);
-   type nullfs_flavor is (unknown, freebsd, dragonfly);
+   type flavors is (unknown, freebsd, dragonfly, netbsd, linux, solaris);
    type folder_operation is (lock, unlock);
    type folder is (bin, sbin, lib, libexec,
                    usr_bin,
@@ -116,8 +116,8 @@ private
    root_localbase   : constant String := "/usr/local";
    chroot           : constant String := "/usr/sbin/chroot ";
 
-   flavor           : nullfs_flavor   := unknown;
-   smp_cores        : cpu_range       := cpu_range'First;
+   platform_type    : flavors   := unknown;
+   smp_cores        : cpu_range := cpu_range'First;
    support_locks    : Boolean;
    developer_mode   : Boolean;
    abn_log_ready    : Boolean;

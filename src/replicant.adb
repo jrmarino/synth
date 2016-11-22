@@ -100,7 +100,6 @@ package body Replicant is
    ------------------
    procedure initialize (testmode : Boolean; num_cores : cpu_range)
    is
-      opsys   : nullfs_flavor   := dragonfly;
       mm      : constant String := get_master_mount;
       maspas  : constant String := "/master.passwd";
       etcmp   : constant String := "/etc" & maspas;
@@ -111,9 +110,16 @@ package body Replicant is
       developer_mode := testmode;
       support_locks := testmode and then Unix.env_variable_defined ("LOCK");
       if JT.equivalent (PM.configuration.operating_sys, "FreeBSD") then
-         opsys := freebsd;
+         platform_type := freebsd;
+      elsif JT.equivalent (PM.configuration.operating_sys, "NetBSD") then
+         platform_type := netbsd;
+      elsif JT.equivalent (PM.configuration.operating_sys, "Linux") then
+        platform_type := linux;
+      elsif JT.equivalent (PM.configuration.operating_sys, "SunOS") then
+         platform_type := solaris;
+      else
+         platform_type := dragonfly;
       end if;
-      flavor := opsys;
 
       start_abnormal_logging;
 
@@ -154,6 +160,8 @@ package body Replicant is
    is
       cmd_freebsd   : constant String := "/sbin/mount_nullfs";
       cmd_dragonfly : constant String := "/sbin/mount_null";
+      cmd_solaris   : constant String := "/usr/sbin/mount -F lofs";
+      cmd_linux     : constant String := "/usr/bin/mount --bind";
       command       : JT.Text;
    begin
       if not AD.Exists (mount_point) then
@@ -165,9 +173,12 @@ package body Replicant is
            "mount target " & target & " does not exist";
       end if;
 
-      case flavor is
+      case platform_type is
          when freebsd   => command := JT.SUS (cmd_freebsd);
-         when dragonfly => command := JT.SUS (cmd_dragonfly);
+         when dragonfly |
+              netbsd    => command := JT.SUS (cmd_dragonfly);
+         when solaris   => command := JT.SUS (cmd_solaris);
+         when linux     => command := JT.SUS (cmd_linux);
          when unknown   =>
             raise scenario_unexpected with
               "Mounting on unknown operating system";
@@ -187,17 +198,24 @@ package body Replicant is
    -----------------------
    procedure mount_linprocfs (mount_point : String)
    is
-      cmd_freebsd   : constant String := "/sbin/mount -t linprocfs linproc " &
-                                          mount_point;
+      cmd_freebsd : constant String :=
+        "/sbin/mount -t linprocfs linproc " & mount_point;
+      cmd_netbsd  : constant String :=
+        "/sbin/mount_procfs -o linux procfs " & mount_point;
    begin
       --  DragonFly has lost it's Linux Emulation capability.
       --  FreeBSD has it for both amd64 and i386
       --  We should return if FreeBSD arch is not amd64 or i386, but synth
       --  will not run on any other arches at the moment, so we don't have
       --  to check (and we don't have that information yet anyway)
-      if flavor = freebsd then
-         execute (cmd_freebsd);
-      end if;
+      case platform_type is
+         when freebsd   => execute (cmd_freebsd);
+         when netbsd    => execute (cmd_netbsd);
+         when dragonfly => null;
+         when solaris   => null;
+         when linux     => null;
+         when unknown   => null;
+      end case;
    end mount_linprocfs;
 
 
@@ -237,11 +255,15 @@ package body Replicant is
    is
       cmd_freebsd   : constant String := "/sbin/mount -t tmpfs";
       cmd_dragonfly : constant String := "/sbin/mount_tmpfs";
+      cmd_solaris   : constant String := "/sbin/mount -F tmpfs";
       command       : JT.Text;
    begin
-      case flavor is
-         when freebsd   => command := JT.SUS (cmd_freebsd);
+      case platform_type is
+         when freebsd   |
+              netbsd    |
+              linux     => command := JT.SUS (cmd_freebsd);
          when dragonfly => command := JT.SUS (cmd_dragonfly);
+         when solaris   => command := JT.SUS (cmd_solaris);
          when unknown   =>
             raise scenario_unexpected with
               "Mounting on unknown operating system";
@@ -249,7 +271,14 @@ package body Replicant is
       if max_size_M > 0 then
          JT.SU.Append (command, " -o size=" & JT.trim (max_size_M'Img) & "M");
       end if;
-      JT.SU.Append (command, " tmpfs " & mount_point);
+      case platform_type is
+         when solaris   => JT.SU.Append (command, " swap " & mount_point);
+         when freebsd   |
+              dragonfly |
+              netbsd    |
+              linux     => JT.SU.Append (command, " tmpfs " & mount_point);
+         when unknown   => null;
+      end case;
       execute (JT.USS (command));
    end mount_tmpfs;
 
@@ -300,24 +329,40 @@ package body Replicant is
    is
       cmd_freebsd   : constant String := "/bin/chflags";
       cmd_dragonfly : constant String := "/usr/bin/chflags";
+      cmd_linux     : constant String := "/usr/bin/chattr";
       flag_lock     : constant String := " schg ";
       flag_unlock   : constant String := " noschg ";
+      chattr_lock   : constant String := " +i ";
+      chattr_unlock : constant String := " -i ";
       command       : JT.Text;
    begin
       if not AD.Exists (path) then
          raise scenario_unexpected with
            "chflags: " & path & " path does not exist";
       end if;
-      case flavor is
+      case platform_type is
          when freebsd   => command := JT.SUS (cmd_freebsd);
-         when dragonfly => command := JT.SUS (cmd_dragonfly);
+         when dragonfly |
+              netbsd    => command := JT.SUS (cmd_dragonfly);
+         when linux     => command := JT.SUS (cmd_linux);
+         when solaris   => return;  --  only ZFS has immutable flag support
          when unknown   =>
             raise scenario_unexpected with
               "Executing cflags on unknown operating system";
       end case;
-      case operation is
-         when lock   => JT.SU.Append (command, flag_lock & path);
-         when unlock => JT.SU.Append (command, flag_unlock & path);
+      case platform_type is
+         when freebsd | dragonfly | netbsd =>
+            case operation is
+               when lock   => JT.SU.Append (command, flag_lock & path);
+               when unlock => JT.SU.Append (command, flag_unlock & path);
+            end case;
+         when linux =>
+            case operation is
+               when lock   => JT.SU.Append (command, chattr_lock & path);
+               when unlock => JT.SU.Append (command, chattr_unlock & path);
+            end case;
+         when solaris => null;
+         when unknown => null;
       end case;
       execute (JT.USS (command));
    end folder_access;
@@ -809,47 +854,54 @@ package body Replicant is
          mount_procfs (path_to_proc => location (slave_base, proc));
       end if;
 
-      if flavor = dragonfly then
-         declare
-            bootdir : String := clean_mount_point (boot);
-         begin
-            if AD.Exists (bootdir) then
-               mount_nullfs (target      => bootdir,
-                             mount_point => location (slave_base, boot));
-               mount_tmpfs (slave_base & root_lmodules, 100);
+      --  special platform handling
+      case platform_type is
+         when dragonfly =>
+            declare
+               bootdir : String := clean_mount_point (boot);
+            begin
+               if AD.Exists (bootdir) then
+                  mount_nullfs (target      => bootdir,
+                                mount_point => location (slave_base, boot));
+                  mount_tmpfs (slave_base & root_lmodules, 100);
+               end if;
+            end;
+         when freebsd =>
+            if opts.need_linprocfs then
+               if PM.configuration.tmpfs_localbase then
+                  mount_tmpfs (slave_base & root_linux, 12 * 1024);
+               else
+                  forge_directory (slave_linux);
+                  mount_nullfs (target      => slave_linux,
+                                mount_point => slave_base & root_linux,
+                                mode        => readwrite);
+               end if;
+               forge_directory (slave_base & root_linproc);
+               mount_linprocfs (mount_point => slave_base & root_linproc);
             end if;
-         end;
-      end if;
-
-      if flavor = freebsd then
-         if opts.need_linprocfs then
-            if PM.configuration.tmpfs_localbase then
-               mount_tmpfs (slave_base & root_linux, 12 * 1024);
-            else
-               forge_directory (slave_linux);
-               mount_nullfs (slave_linux, slave_base & root_linux, readwrite);
-            end if;
-            forge_directory (slave_base & root_linproc);
-            mount_linprocfs (mount_point => slave_base & root_linproc);
-         end if;
-         declare
-            lib32 : String := clean_mount_point (usr_lib32);
-         begin
-            if AD.Exists (lib32) then
-               mount_nullfs (target      => lib32,
-                             mount_point => location (slave_base, usr_lib32));
-            end if;
-         end;
-         declare
-            bootdir : String := clean_mount_point (boot);
-         begin
-            if AD.Exists (bootdir) then
-               mount_nullfs (target      => bootdir,
-                             mount_point => location (slave_base, boot));
-               mount_tmpfs (slave_base & root_kmodules, 100);
-            end if;
-         end;
-      end if;
+            declare
+               lib32 : String := clean_mount_point (usr_lib32);
+            begin
+               if AD.Exists (lib32) then
+                  mount_nullfs
+                    (target      => lib32,
+                     mount_point => location (slave_base, usr_lib32));
+               end if;
+            end;
+            declare
+               bootdir : String := clean_mount_point (boot);
+            begin
+               if AD.Exists (bootdir) then
+                  mount_nullfs (target      => bootdir,
+                                mount_point => location (slave_base, boot));
+                  mount_tmpfs (slave_base & root_kmodules, 100);
+               end if;
+            end;
+         when netbsd  => null;  -- for now
+         when linux   => null;  -- for now
+         when solaris => null;  -- for now
+         when unknown => null;
+      end case;
 
       declare
          srcdir : String := clean_mount_point (usr_src);
@@ -918,29 +970,32 @@ package body Replicant is
          unmount (location (slave_base, ccache));
       end if;
 
-      if flavor = dragonfly then
-         if AD.Exists (location (dir_system, boot)) then
-            unmount (slave_base & root_lmodules);
-            unmount (location (slave_base, boot));
-         end if;
-      end if;
-
-      if flavor = freebsd then
-         if opts.need_linprocfs then
-            unmount (slave_base & root_linproc);
-            unmount (slave_base & root_linux);
-            if not PM.configuration.tmpfs_localbase then
-               annihilate_directory_tree (slave_linux);
+      case platform_type is
+         when dragonfly =>
+            if AD.Exists (location (dir_system, boot)) then
+               unmount (slave_base & root_lmodules);
+               unmount (location (slave_base, boot));
             end if;
-         end if;
-         if AD.Exists (location (dir_system, usr_lib32)) then
-            unmount (location (slave_base, usr_lib32));
-         end if;
-         if AD.Exists (location (dir_system, boot)) then
-            unmount (slave_base & root_kmodules);
-            unmount (location (slave_base, boot));
-         end if;
-      end if;
+         when freebsd =>
+            if opts.need_linprocfs then
+               unmount (slave_base & root_linproc);
+               unmount (slave_base & root_linux);
+               if not PM.configuration.tmpfs_localbase then
+                  annihilate_directory_tree (slave_linux);
+               end if;
+            end if;
+            if AD.Exists (location (dir_system, usr_lib32)) then
+               unmount (location (slave_base, usr_lib32));
+            end if;
+            if AD.Exists (location (dir_system, boot)) then
+               unmount (slave_base & root_kmodules);
+               unmount (location (slave_base, boot));
+            end if;
+         when netbsd  => null;
+         when linux   => null;
+         when solaris => null;
+         when unknown => null;
+      end case;
 
       if opts.need_procfs then
          unmount (location (slave_base, proc));
@@ -1169,19 +1224,22 @@ package body Replicant is
          else
             MM := OSR (1 .. 2);
          end if;
-         if flavor = dragonfly then
-            if OSR (3) = '0' then
-               PP (2) := OSR (4);
-            else
-               PP := OSR (3 .. 4);
-            end if;
-         else
-            if OSR (FL) = '0' then
-               PP (2) := OSR (FL + 1);
-            else
-               PP := OSR (FL .. FL + 1);
-            end if;
-         end if;
+         case platform_type is
+            when dragonfly =>
+               if OSR (3) = '0' then
+                  PP (2) := OSR (4);
+               else
+                  PP := OSR (3 .. 4);
+               end if;
+            when freebsd =>
+               if OSR (FL) = '0' then
+                  PP (2) := OSR (FL + 1);
+               else
+                  PP := OSR (FL .. FL + 1);
+               end if;
+            when unknown => null;
+            when netbsd | linux | solaris => null;  --  TBD
+         end case;
          return JT.trim (MM) & "." & JT.trim (PP) & "-SYNTH";
       end create_OSRELEASE;
 
@@ -1214,7 +1272,7 @@ package body Replicant is
       TIO.Put_Line (vconf, "UID=0");
       TIO.Put_Line (vconf, "ARCH=" & ARCH);
       TIO.Put (vconf, "OPSYS=");
-      case flavor is
+      case platform_type is
          when freebsd   => TIO.Put_Line (vconf, "FreeBSD");
                            TIO.Put_Line (vconf, "OSVERSION=" & OSVER);
                            JT.SU.Append (builder_env, "UNAME_s=FreeBSD " &
@@ -1224,6 +1282,9 @@ package body Replicant is
                            TIO.Put_Line (vconf, "OSVERSION=9999999");
                            JT.SU.Append (builder_env, "UNAME_s=DragonFly " &
                                  "UNAME_v=DragonFly\ " & release);
+         when netbsd    => TIO.Put_Line (vconf, "NetBSD");
+         when linux     => TIO.Put_Line (vconf, "Linux");
+         when solaris   => TIO.Put_Line (vconf, "SunOS");
          when unknown   => TIO.Put_Line (vconf, "Unknown");
       end case;
       TIO.Put_Line (vconf, "OSREL=" & release (1 .. release'Last - 6));
@@ -1349,12 +1410,16 @@ package body Replicant is
       is
          DFVER  : constant String := "#define __DragonFly_version ";
          FBVER  : constant String := "#define __FreeBSD_version ";
+         NBVER  : constant String := "#define __NetBSD_version ";
          BADVER : constant String := "#define __Unknown_version ";
       begin
-         case flavor is
+         case platform_type is
             when freebsd   => return FBVER;
             when dragonfly => return DFVER;
+            when netbsd    => return NBVER;
             when unknown   => return BADVER;
+            when linux     => return BADVER; -- TBD
+            when solaris   => return BADVER; -- TBD
          end case;
       end get_pattern;
 
@@ -1415,9 +1480,12 @@ package body Replicant is
                     fileinfo (fileinfo'First + 27 .. fileinfo'First + 37);
       begin
          if arch (1 .. 6) = "x86-64" then
-            case flavor is
+            case platform_type is
                when freebsd   => return "amd64";
+               when netbsd    => return "amd64";
                when dragonfly => return "x86_64";
+               when linux     => return "x86_64";
+               when solaris   => return "x86_64";
                when unknown   => return badarch;
             end case;
          elsif arch = "Intel 80386" then

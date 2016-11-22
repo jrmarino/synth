@@ -26,5 +26,6 @@ package Definitions is
    --  1. Modify host_localbase to value of LOCALBASE
    --  2. Change software_framework to "pkgsrc" for pkgsrc version
    --  3. Change host_make_program to "host_bmake" for Non-NetBSD pkgsrc platforms
+   --  4. On replicant.ads, change "/usr/local" to "/usr/pkg" on pkgsrc
 
 end Definitions;

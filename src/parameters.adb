@@ -182,12 +182,10 @@ package body Parameters is
                return (JT.equivalent (res.operating_sys, "FreeBSD") or else
                        JT.equivalent (res.operating_sys, "DragonFly"));
             when pkgsrc =>
+               --  OpenBSD and derivatives are not supported because they lack mount_null (!)
                return (JT.equivalent (res.operating_sys, "FreeBSD") or else
                        JT.equivalent (res.operating_sys, "DragonFly") or else
                        JT.equivalent (res.operating_sys, "NetBSD") or else
-                       JT.equivalent (res.operating_sys, "OpenBSD") or else
-                       JT.equivalent (res.operating_sys, "MirBSD") or else
-                       JT.equivalent (res.operating_sys, "Bitrig") or else
                        JT.equivalent (res.operating_sys, "Linux") or else
                        JT.equivalent (res.operating_sys, "SunOS")
                       );
@@ -241,9 +239,8 @@ package body Parameters is
             when ports_collection =>
                TIO.Put_Line ("This configuration entry must be either 'FreeBSD' or 'DragonFly'");
             when pkgsrc =>
-               TIO.Put_Line ("This configuration entry must be one of: FreeBSD, DragonFly, " &
-                               "NetBSD, OpenBSD,");
-               TIO.Put_Line ("MirBSD, Bitrig, Linux, SunOS");
+               TIO.Put_Line ("This configuration entry must be one of: FreeBSD,DragonFly," &
+                               "NetBSD,Linux,SunOS");
          end case;
          TIO.Put_Line ("Manually edit " & Definitions.host_localbase &
                          "/etc/synth/synth.ini file to remove the line of the");
