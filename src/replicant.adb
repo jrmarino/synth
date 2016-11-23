@@ -1475,41 +1475,50 @@ package body Replicant is
 
       function create_OSRELEASE (OSRELEASE : String) return String
       is
-         --  FreeBSD OSVERSION is 6 or 7 digits
-         --          OSVERSION [M]MNNPPP
+         --  FreeBSD   OSVERSION is 6 or 7 digits
+         --            OSVERSION [M]MNNPPP
          --  DragonFly OSVERSION is 6 digits
          --            OSVERSION MNNNPP
+         --  NetBSD    OSVERSION is 9 or 10 digits
+         --            OSVERSION [M]MNNrrPP00
          len : constant Natural := OSRELEASE'Length;
-         FL  : constant Natural := len - 4;
          OSR : constant String (1 .. len) := OSRELEASE;
          MM  : String (1 .. 2) := "  ";
-         PP  : String (1 .. 2) := "  ";
+         NN  : String (1 .. 2) := "  ";
+         FL  : Natural;
+         one_digit : Boolean := True;
       begin
          if len < 6 then
             return "1.0-SYNTH";
          end if;
-         if len = 6 then
+         case platform_type is
+            when dragonfly =>
+               MM (2) := OSR (1);
+               FL := 3;
+            when freebsd =>
+               if len > 6 then
+                  one_digit := False;
+               end if;
+               FL := len - 4;
+            when netbsd =>
+               if len > 9 then
+                  one_digit := False;
+               end if;
+               FL := len - 7;
+            when unknown => null;
+            when linux | solaris => null;  --  TBD
+         end case;
+         if one_digit then
             MM (2) := OSR (1);
          else
             MM := OSR (1 .. 2);
          end if;
-         case platform_type is
-            when dragonfly =>
-               if OSR (3) = '0' then
-                  PP (2) := OSR (4);
-               else
-                  PP := OSR (3 .. 4);
-               end if;
-            when freebsd =>
-               if OSR (FL) = '0' then
-                  PP (2) := OSR (FL + 1);
-               else
-                  PP := OSR (FL .. FL + 1);
-               end if;
-            when unknown => null;
-            when netbsd | linux | solaris => null;  --  TBD
-         end case;
-         return JT.trim (MM) & "." & JT.trim (PP) & "-SYNTH";
+         if OSR (FL) = '0' then
+            NN (2) := OSR (FL + 1);
+         else
+            NN := OSR (FL .. FL + 1);
+         end if;
+         return JT.trim (MM) & "." & JT.trim (NN) & "-SYNTH";
       end create_OSRELEASE;
 
       release : constant String := create_OSRELEASE (OSVER);
