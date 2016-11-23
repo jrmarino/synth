@@ -241,4 +241,7 @@ private
                                      tgt_directory : String;
                                      pattern       : String) return Boolean;
 
+   --  returns Platform-specific df command
+   function df_command return String;
+
 end Replicant;

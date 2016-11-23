@@ -1278,19 +1278,34 @@ package body Replicant is
    end destroy_slave;
 
 
+   ------------------
+   --  df_command  --
+   ------------------
+   function df_command return String is
+   begin
+      case platform_type is
+         when dragonfly |
+              freebsd   |
+              netbsd    => return "/bin/df -h";
+         when solaris   => return "/usr/sbin/df -h";
+         when linux     => return "/usr/bin/df -h";
+         when unknown   => return "skip";
+      end case;
+   end df_command;
+
+
    --------------------------
    --  synth_mounts_exist  --
    --------------------------
    function synth_mounts_exist return Boolean
    is
-      buildbase : constant String := JT.USS (PM.configuration.dir_buildbase);
-      command   : constant String := "/bin/df -h";
-      comres    : JT.Text;
-      topline   : JT.Text;
-      crlen1    : Natural;
-      crlen2    : Natural;
+      buildbase   : constant String := JT.USS (PM.configuration.dir_buildbase);
+      comres      : JT.Text;
+      topline     : JT.Text;
+      crlen1      : Natural;
+      crlen2      : Natural;
    begin
-      comres := internal_system_command (command);
+      comres := internal_system_command (df_command);
       crlen1 := JT.SU.Length (comres);
       loop
          JT.nextline (lineblock => comres, firstline => topline);
@@ -1319,7 +1334,6 @@ package body Replicant is
       procedure annihilate (cursor : crate.Cursor);
 
       buildbase : constant String := JT.USS (PM.configuration.dir_buildbase);
-      command1  : constant String := "/bin/df -h";
       comres    : JT.Text;
       topline   : JT.Text;
       crlen1    : Natural;
@@ -1340,7 +1354,7 @@ package body Replicant is
          when others => null;
       end annihilate;
    begin
-      comres := internal_system_command (command1);
+      comres := internal_system_command (df_command);
       crlen1 := JT.SU.Length (comres);
       loop
          JT.nextline (lineblock => comres, firstline => topline);
@@ -1450,7 +1464,7 @@ package body Replicant is
       portsdir : constant String := JT.USS (PM.configuration.dir_portsdir);
       fullport : constant String := portsdir & "/ports-mgmt/pkg";
       command  : constant String :=
-                 "/usr/bin/make __MAKE_CONF=/dev/null -C " & fullport &
+                 host_make & " __MAKE_CONF=/dev/null -C " & fullport &
                  " -VHAVE_COMPAT_IA32_KERN -VCONFIGURE_MAX_CMD_LEN";
       content  : JT.Text;
       topline  : JT.Text;
@@ -1665,16 +1679,16 @@ package body Replicant is
       is
          DFVER  : constant String := "#define __DragonFly_version ";
          FBVER  : constant String := "#define __FreeBSD_version ";
-         NBVER  : constant String := "#define __NetBSD_version ";
+         NBVER  : constant String := "#define __NetBSD_Version ";
          BADVER : constant String := "#define __Unknown_version ";
       begin
          case platform_type is
             when freebsd   => return FBVER;
             when dragonfly => return DFVER;
             when netbsd    => return NBVER;
-            when unknown   => return BADVER;
             when linux     => return BADVER; -- TBD
             when solaris   => return BADVER; -- TBD
+            when unknown   => return BADVER;
          end case;
       end get_pattern;
 
@@ -1691,17 +1705,20 @@ package body Replicant is
          begin
             if JT.contains (Line, pattern) then
                declare
-                  OSVER : constant String := JT.part_2 (Line, pattern);
+                  OSVER : constant String :=
+                          JT.trim (JT.part_2 (Line, pattern));
                   len   : constant Natural := OSVER'Length;
+                  final : Integer;
                begin
                   exit when len < 7;
                   TIO.Close (header);
-                  case OSVER (OSVER'First + 6) is
-                     when '0' .. '9' =>
-                        return JT.trim (OSVER (OSVER'First .. OSVER'First + 6));
-                     when others =>
-                        return JT.trim (OSVER (OSVER'First .. OSVER'First + 5));
-                  end case;
+                  final := OSVER'First + 5;
+                  for x in final + 1 .. OSVER'Last loop
+                     case OSVER (x) is
+                        when '0' .. '9' => final := x;
+                        when others => return OSVER (OSVER'First .. final);
+                     end case;
+                  end loop;
                end;
             end if;
          end;
@@ -1722,19 +1739,21 @@ package body Replicant is
    ----------------------------------
    function get_arch_from_bourne_shell return String
    is
-      command : constant String := "/usr/bin/file -b " &
-                JT.USS (PM.configuration.dir_system) & "/bin/sh";
+      function translate_arch (arch : String) return String;
+      bsd_command : constant String := "/usr/bin/file -b " &
+                    JT.USS (PM.configuration.dir_system) & "/bin/sh";
+      lin_command : constant String := "/usr/bin/file -b " &
+                    JT.USS (PM.configuration.dir_system) & "/usr/bin/bash";
+      sol_command : constant String := "/usr/bin/file " &
+                    JT.USS (PM.configuration.dir_system) & "/usr/sbin/sh";
       badarch : constant String := "BADARCH";
       comres  : JT.Text;
-   begin
-      comres := internal_system_command (command);
-      declare
-         unlen    : constant Natural := JT.SU.Length (comres) - 1;
-         fileinfo : constant String := JT.USS (comres)(1 .. unlen);
-         arch     : constant String (1 .. 11) :=
-                    fileinfo (fileinfo'First + 27 .. fileinfo'First + 37);
+
+      function translate_arch (arch : String) return String is
       begin
-         if arch (1 .. 6) = "x86-64" then
+         if arch (arch'First .. arch'First + 5) = "x86-64" or else
+           arch (arch'First .. arch'First + 4) = "AMD64"
+         then
             case platform_type is
                when freebsd   => return "amd64";
                when netbsd    => return "amd64";
@@ -1748,6 +1767,38 @@ package body Replicant is
          else
             return badarch;
          end if;
+      end translate_arch;
+   begin
+      case platform_type is
+         when freebsd | dragonfly | netbsd =>
+            comres := internal_system_command (bsd_command);
+         when linux =>
+            comres := internal_system_command (lin_command);
+         when solaris =>
+            comres := internal_system_command (sol_command);
+         when unknown =>
+            return badarch;
+      end case;
+      declare
+         unlen    : constant Natural := JT.SU.Length (comres) - 1;
+         fileinfo : constant String := JT.USS (comres)(1 .. unlen);
+         arch     : String (1 .. 11);
+      begin
+         case platform_type is
+            when freebsd | netbsd | dragonfly | linux =>
+               arch := fileinfo (fileinfo'First + 27 .. fileinfo'First + 37);
+            when solaris =>
+               --  Solaris has no brief mode, so we need to search for arch.
+               --  We could do this for all platforms but it's not efficient
+               --  The solaris format is also slightly different than rest
+               declare
+                  rest : String := JT.part_2 (fileinfo, "executable ");
+               begin
+                  arch := rest (rest'First .. rest'First + 10);
+               end;
+            when unknown => return badarch;
+         end case;
+         return translate_arch (arch);
       end;
    exception
       when others =>
