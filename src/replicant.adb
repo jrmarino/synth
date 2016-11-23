@@ -1525,52 +1525,113 @@ package body Replicant is
 
    begin
       builder_env := JT.blank;
-      content := Unix.piped_command (command, status);
-      if status /= 0 then
-         raise scenario_unexpected with
-           "cache_port_variables: return code =" & status'Img;
-      end if;
 
       TIO.Create (File => vconf,
                   Mode => TIO.Out_File,
                   Name => path_to_mm & "/varcache.conf");
 
-      for k in result_range loop
-         JT.nextline (lineblock => content, firstline => topline);
-         declare
-            value : constant String := JT.USS (topline);
-         begin
-            case k is
-               when 1 => TIO.Put_Line (vconf, "HAVE_COMPAT_IA32_KERN=" & value);
-               when 2 => TIO.Put_Line (vconf, "CONFIGURE_MAX_CMD_LEN=" & value);
+      --  framework specific parts
+      case software_framework is
+         when ports_collection =>
+            content := Unix.piped_command (command, status);
+            if status = 0 then
+               for k in result_range loop
+                  JT.nextline (lineblock => content, firstline => topline);
+                  declare
+                     value : constant String := JT.USS (topline);
+                  begin
+                     case k is
+                     when 1 => TIO.Put_Line (vconf, "HAVE_COMPAT_IA32_KERN=" & value);
+                     when 2 => TIO.Put_Line (vconf, "CONFIGURE_MAX_CMD_LEN=" & value);
+                     end case;
+                  end;
+               end loop;
+            end if;
+            TIO.Put_Line (vconf, "_SMP_CPUS=" & JT.int2str (Integer (smp_cores)));
+            TIO.Put_Line (vconf, "UID=0");
+            TIO.Put_Line (vconf, "ARCH=" & ARCH);
+            case platform_type is
+               when freebsd =>
+                  TIO.Put_Line (vconf, "OPSYS=FreeBSD");
+                  TIO.Put_Line (vconf, "OSVERSION=" & OSVER);
+               when dragonfly =>
+                  TIO.Put_Line (vconf, "OPSYS=DragonFly");
+                  TIO.Put_Line (vconf, "DFLYVERSION=" & OSVER);
+                  TIO.Put_Line (vconf, "OSVERSION=9999999");
+               when netbsd | linux | solaris => null;
+               when unknown => null;
             end case;
-         end;
-      end loop;
-      TIO.Put_Line (vconf, "_SMP_CPUS=" & JT.int2str (Integer (smp_cores)));
-      TIO.Put_Line (vconf, "UID=0");
-      TIO.Put_Line (vconf, "ARCH=" & ARCH);
-      TIO.Put (vconf, "OPSYS=");
-      case platform_type is
-         when freebsd   => TIO.Put_Line (vconf, "FreeBSD");
-                           TIO.Put_Line (vconf, "OSVERSION=" & OSVER);
-                           JT.SU.Append (builder_env, "UNAME_s=FreeBSD " &
-                                 "UNAME_v=FreeBSD\ " & release);
-         when dragonfly => TIO.Put_Line (vconf, "DragonFly");
-                           TIO.Put_Line (vconf, "DFLYVERSION=" & OSVER);
-                           TIO.Put_Line (vconf, "OSVERSION=9999999");
-                           JT.SU.Append (builder_env, "UNAME_s=DragonFly " &
-                                 "UNAME_v=DragonFly\ " & release);
-         when netbsd    => TIO.Put_Line (vconf, "NetBSD");
-         when linux     => TIO.Put_Line (vconf, "Linux");
-         when solaris   => TIO.Put_Line (vconf, "SunOS");
-         when unknown   => TIO.Put_Line (vconf, "Unknown");
+            TIO.Put_Line (vconf, "OSREL=" & release (1 .. release'Last - 6));
+            TIO.Put_Line (vconf, "_OSRELEASE=" & release);
+
+         when pkgsrc =>
+            TIO.Put_Line (vconf, "OS_VERSION= " & release);
+            TIO.Put_Line (vconf, "HOST_MACHINE_ARCH= " & ARCH);
+            case platform_type is
+               when freebsd =>
+                  TIO.Put_Line
+                    (vconf,
+                       "OPSYS= FreeBSD" & LAT.LF &
+                       "LOWER_OPSYS= freebsd" & LAT.LF &
+                       "MAKEFLAGS= OPSYS=FreeBSD");
+               when dragonfly =>
+                  TIO.Put_Line
+                    (vconf,
+                       "OPSYS= DragonFly" & LAT.LF &
+                       "LOWER_OPSYS= dragonfly" & LAT.LF &
+                       "MAKEFLAGS= OPSYS=DragonFly");
+               when netbsd =>
+                  TIO.Put_Line
+                    (vconf,
+                       "OPSYS= NetBSD" & LAT.LF &
+                       "LOWER_OPSYS= netbsd" & LAT.LF &
+                       "MAKEFLAGS= OPSYS=NetBSD");
+               when linux =>
+                  TIO.Put_Line
+                    (vconf,
+                       "OPSYS= Linux" & LAT.LF &
+                       "LOWER_OPSYS= linux" & LAT.LF &
+                       "MAKEFLAGS= OPSYS=Linux");
+               when solaris =>
+                  TIO.Put_Line
+                    (vconf,
+                       "OPSYS= SunOS" & LAT.LF &
+                       "LOWER_OPSYS= solaris" & LAT.LF &
+                       "MAKEFLAGS= OPSYS=SunOS");
+               when unknown => null;
+            end case;
+            TIO.Put_Line
+              (vconf,
+                 "MAKEFLAGS+= OS_VERSION=" & release & LAT.LF &
+                 "MAKEFLAGS+= HOST_MACHINE_ARCH=" & ARCH & LAT.LF &
+                 "MAKEFLAGS+=  _PKGSRCDIR=/xports");
       end case;
-      TIO.Put_Line (vconf, "OSREL=" & release (1 .. release'Last - 6));
-      TIO.Put_Line (vconf, "_OSRELEASE=" & release);
       TIO.Close (vconf);
+
       JT.SU.Append (builder_env, " UNAME_p=" & ARCH);
       JT.SU.Append (builder_env, " UNAME_m=" & ARCH);
       JT.SU.Append (builder_env, " UNAME_r=" & release & " ");
+
+      case platform_type is
+         when freebsd =>
+            JT.SU.Append (builder_env, "UNAME_s=FreeBSD " &
+                            "UNAME_v=FreeBSD\ " & release);
+         when dragonfly =>
+            JT.SU.Append (builder_env, "UNAME_s=DragonFly " &
+                            "UNAME_v=DragonFly\ " & release);
+         when netbsd =>
+            JT.SU.Append (builder_env, "UNAME_s=NetBSD " &
+                            "UNAME_v=NetBSD\ " & release);
+         when linux =>
+            JT.SU.Append (builder_env, "UNAME_s=Linux " &
+                            "UNAME_v=Linux\ " & release);
+         when solaris =>
+            JT.SU.Append (builder_env, "UNAME_s=SunOS " &
+                            "UNAME_v=SunOS\ " & release);
+         when unknown => null;
+      end case;
+
+
    end cache_port_variables;
 
 
@@ -1619,32 +1680,59 @@ package body Replicant is
    --------------------------------
    procedure write_preinstall_section (mtreefile : TIO.File_Type) is
    begin
-      TIO.Put_Line
-        (mtreefile,
-           "./etc/group" & LAT.LF
-         & "./etc/make.conf" & LAT.LF
-         & "./etc/make.conf.bak" & LAT.LF
-         & "./etc/make.nxb.conf" & LAT.LF
-         & "./etc/master.passwd" & LAT.LF
-         & "./etc/passwd" & LAT.LF
-         & "./etc/pwd.db" & LAT.LF
-         & "./etc/shells" & LAT.LF
-         & "./etc/spwd.db" & LAT.LF
-         & "./var/db" & LAT.LF
-         & "./var/log" & LAT.LF
-         & "./var/mail" & LAT.LF
-         & "./var/spool" & LAT.LF
-         & "./var/tmp" & LAT.LF
-         & "./usr/local/etc/gconf/gconf.xml.defaults/%gconf-tree*.xml" & LAT.LF
-         & "./usr/local/lib/gio/modules/giomodule.cache" & LAT.LF
-         & "./usr/local/info/dir" & LAT.LF
-         & "./usr/local/info" & LAT.LF
-         & "./usr/local/*/info/dir" & LAT.LF
-         & "./usr/local/*/info" & LAT.LF
-         & "./usr/local/*/ls-R" & LAT.LF
-         & "./usr/local/share/octave/octave_packages" & LAT.LF
-         & "./usr/local/share/xml/catalog.ports"
-        );
+      case software_framework is
+         when ports_collection =>
+            TIO.Put_Line
+              (mtreefile,
+                 "./etc/group" & LAT.LF
+               & "./etc/make.conf" & LAT.LF
+               & "./etc/make.conf.bak" & LAT.LF
+               & "./etc/make.nxb.conf" & LAT.LF
+               & "./etc/master.passwd" & LAT.LF
+               & "./etc/passwd" & LAT.LF
+               & "./etc/pwd.db" & LAT.LF
+               & "./etc/shells" & LAT.LF
+               & "./etc/spwd.db" & LAT.LF
+               & "./var/db" & LAT.LF
+               & "./var/log" & LAT.LF
+               & "./var/mail" & LAT.LF
+               & "./var/spool" & LAT.LF
+               & "./var/tmp" & LAT.LF
+               & "./usr/local/etc/gconf/gconf.xml.defaults/%gconf-tree*.xml" & LAT.LF
+               & "./usr/local/lib/gio/modules/giomodule.cache" & LAT.LF
+               & "./usr/local/info/dir" & LAT.LF
+               & "./usr/local/info" & LAT.LF
+               & "./usr/local/*/info/dir" & LAT.LF
+               & "./usr/local/*/info" & LAT.LF
+               & "./usr/local/*/ls-R" & LAT.LF
+               & "./usr/local/share/octave/octave_packages" & LAT.LF
+               & "./usr/local/share/xml/catalog.ports"
+              );
+         when pkgsrc =>
+            TIO.Put_Line
+              (mtreefile,
+                 "./etc/group" & LAT.LF
+               & "./etc/mk.conf" & LAT.LF
+               & "./etc/master.passwd" & LAT.LF
+               & "./etc/passwd" & LAT.LF
+               & "./etc/pwd.db" & LAT.LF
+               & "./etc/shells" & LAT.LF
+               & "./etc/spwd.db" & LAT.LF
+               & "./var/db" & LAT.LF
+               & "./var/log" & LAT.LF
+               & "./var/mail" & LAT.LF
+               & "./var/spool" & LAT.LF
+               & "./var/tmp" & LAT.LF
+               & "./usr/pkg/etc/gconf/gconf.xml.defaults/%gconf-tree*.xml" & LAT.LF
+               & "./usr/pkg/lib/gio/modules/giomodule.cache" & LAT.LF
+               & "./usr/pkg/info/dir" & LAT.LF
+               & "./usr/pkg/info" & LAT.LF
+               & "./usr/pkg/*/info/dir" & LAT.LF
+               & "./usr/pkg/*/info" & LAT.LF
+               & "./usr/pkg/*/ls-R" & LAT.LF
+               & "./usr/pkg/share/xml/catalog.ports"
+              );
+      end case;
    end write_preinstall_section;
 
 
