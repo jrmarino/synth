@@ -90,7 +90,9 @@ begin
          end case;
 
          PortScan.set_cores;
-         if not Parameters.load_configuration (PortScan.cores_available) then
+         if Parameters.load_configuration (PortScan.cores_available) then
+            PIL.set_replicant_platform;
+         else
             TIO.Put_Line (badcfg);
             return;
          end if;
@@ -262,7 +264,9 @@ begin
          end if;
 
          PortScan.set_cores;
-         if not Parameters.load_configuration (PortScan.cores_available) then
+         if Parameters.load_configuration (PortScan.cores_available) then
+            PIL.set_replicant_platform;
+         else
             TIO.Put_Line (badcfg);
             return;
          end if;

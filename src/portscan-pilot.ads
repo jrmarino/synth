@@ -122,6 +122,10 @@ package PortScan.Pilot is
    --  returns True if CONSERVATIVE_UPGRADE option on host pkg(8) is enabled
    function host_pkg8_conservative_upgrade_set return Boolean;
 
+   --  Pre-initialized replicant because some functionality differs depending
+   --  on the platform
+   procedure set_replicant_platform;
+
    pilot_log : exception;
 
 private

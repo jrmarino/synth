@@ -1129,6 +1129,15 @@ package body PortScan.Pilot is
    end create_pidfile;
 
 
+   ------------------------------
+   --  set_replicant_platform  --
+   ------------------------------
+   procedure set_replicant_platform is
+   begin
+      REP.set_platform;
+   end set_replicant_platform;
+
+
    ------------------------------------
    --  previous_run_mounts_detected  --
    ------------------------------------

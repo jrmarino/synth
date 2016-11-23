@@ -95,6 +95,24 @@ package body Replicant is
    end get_slave_mount;
 
 
+   ------------------------------
+   --  procedure set_platform  --
+   ------------------------------
+   procedure set_platform is
+   begin
+      if JT.equivalent (PM.configuration.operating_sys, "FreeBSD") then
+         platform_type := freebsd;
+      elsif JT.equivalent (PM.configuration.operating_sys, "NetBSD") then
+         platform_type := netbsd;
+      elsif JT.equivalent (PM.configuration.operating_sys, "Linux") then
+        platform_type := linux;
+      elsif JT.equivalent (PM.configuration.operating_sys, "SunOS") then
+         platform_type := solaris;
+      else
+         platform_type := dragonfly;
+      end if;
+   end set_platform;
+
    ------------------
    --  initialize  --
    ------------------
@@ -109,17 +127,6 @@ package body Replicant is
       smp_cores := num_cores;
       developer_mode := testmode;
       support_locks := testmode and then Unix.env_variable_defined ("LOCK");
-      if JT.equivalent (PM.configuration.operating_sys, "FreeBSD") then
-         platform_type := freebsd;
-      elsif JT.equivalent (PM.configuration.operating_sys, "NetBSD") then
-         platform_type := netbsd;
-      elsif JT.equivalent (PM.configuration.operating_sys, "Linux") then
-        platform_type := linux;
-      elsif JT.equivalent (PM.configuration.operating_sys, "SunOS") then
-         platform_type := solaris;
-      else
-         platform_type := dragonfly;
-      end if;
 
       start_abnormal_logging;
 

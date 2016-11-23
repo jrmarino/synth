@@ -22,6 +22,10 @@ package Replicant is
    procedure launch_slave  (id : builders; opts : slave_options);
    procedure destroy_slave (id : builders; opts : slave_options);
 
+   --  This needs to be run as soon as the configuration profile is loaded,
+   --  env before the "initialize" function
+   procedure set_platform;
+
    --  This procedure needs to be run once.
    --  It basically sets the operating system "flavor" which affects the
    --  mount command spawning.  It also creates the password database
