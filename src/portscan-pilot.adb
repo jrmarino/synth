@@ -79,6 +79,18 @@ package body PortScan.Pilot is
 
 
    -------------------------------
+   --  prerequisites_available  --
+   -------------------------------
+   function prerequisites_available return Boolean is
+   begin
+      case software_framework is
+         when ports_collection => return build_pkg8_as_necessary;
+         when pkgsrc           => return False;
+      end case;
+   end prerequisites_available;
+
+
+   -------------------------------
    --  build_pkg8_as_necessary  --
    -------------------------------
    function build_pkg8_as_necessary return Boolean

@@ -156,7 +156,7 @@ begin
                --  we don't want to disable full coverage
                null;
             when status =>
-               if PIL.build_pkg8_as_necessary and then
+               if PIL.prerequisites_available and then
                  PIL.scan_stack_of_single_ports (testmode => False) and then
                  PIL.sanity_check_then_prefail (delete_first => False,
                                                 dry_run => True)
@@ -164,14 +164,14 @@ begin
                   PIL.display_results_of_dry_run;
                end if;
             when just_build =>
-               if PIL.build_pkg8_as_necessary and then
+               if PIL.prerequisites_available and then
                  PIL.scan_stack_of_single_ports (testmode => False) and then
                  PIL.sanity_check_then_prefail
                then
                   PIL.perform_bulk_run (testmode => False);
                end if;
             when build =>
-               if PIL.build_pkg8_as_necessary and then
+               if PIL.prerequisites_available and then
                  PIL.scan_stack_of_single_ports (testmode => False) and then
                  PIL.sanity_check_then_prefail
                then
@@ -186,7 +186,7 @@ begin
                   end if;
                end if;
             when force =>
-               if PIL.build_pkg8_as_necessary and then
+               if PIL.prerequisites_available and then
                  PIL.scan_stack_of_single_ports (testmode => False,
                                                  always_build => True) and then
                  PIL.sanity_check_then_prefail (delete_first => True)
@@ -202,7 +202,7 @@ begin
                   end if;
                end if;
             when install =>
-               if PIL.build_pkg8_as_necessary and then
+               if PIL.prerequisites_available and then
                  PIL.scan_stack_of_single_ports (testmode => False) and then
                  PIL.sanity_check_then_prefail
                then
@@ -215,7 +215,7 @@ begin
                   end if;
                end if;
             when test =>
-               if PIL.build_pkg8_as_necessary and then
+               if PIL.prerequisites_available and then
                  PIL.scan_stack_of_single_ports (testmode => True,
                                                  always_build => True) and then
                  PIL.sanity_check_then_prefail (delete_first => True)
@@ -327,7 +327,7 @@ begin
             when prep_system =>
                PIL.upgrade_system_everything (skip_installation => True);
             when gen_repo =>
-               if PIL.build_pkg8_as_necessary and then
+               if PIL.prerequisites_available and then
                  PIL.rebuild_local_respository
                    (remove_invalid_packages => True)
                then
@@ -341,7 +341,7 @@ begin
             when purge =>
                PIL.purge_distfiles;
             when everything =>
-               if PIL.build_pkg8_as_necessary and then
+               if PIL.prerequisites_available and then
                  PIL.fully_scan_ports_tree and then
                  PIL.sanity_check_then_prefail
                then
@@ -353,7 +353,7 @@ begin
                   end if;
                end if;
             when status_everything =>
-               if PIL.build_pkg8_as_necessary and then
+               if PIL.prerequisites_available and then
                  PIL.fully_scan_ports_tree and then
                  PIL.sanity_check_then_prefail (delete_first => False,
                                                 dry_run => True)

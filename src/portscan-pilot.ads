@@ -15,10 +15,6 @@ package PortScan.Pilot is
    --  (command line or inside file) are verified and arguments are correct.
    function store_origins return Boolean;
 
-   --  Prebuilds pkg(8) in scan builder if necessary.
-   --  Returns True unless a failure was encountered.
-   function build_pkg8_as_necessary return Boolean;
-
    --  Iterate through stack of individual build requests and scan each one.
    --  If any scan fails, return False.
    function scan_stack_of_single_ports (testmode : Boolean;
@@ -126,6 +122,12 @@ package PortScan.Pilot is
    --  on the platform
    procedure set_replicant_platform;
 
+   --  framework specific
+   --  On FreeBSD ports collection, it prebuilds pkg(8) if necessary
+   --  On Pkgsrc, it prebuilds bmake, bootstrap files and pkg(8) as necessary
+   --  Returns True unless a failure was encountered.
+   function prerequisites_available return Boolean;
+
    pilot_log : exception;
 
 private
@@ -207,5 +209,9 @@ private
 
    --  converts file contents (limited to 1 line) of given file to a string
    function one_line_file_contents (filename : String) return String;
+
+   --  Prebuilds pkg(8) in scan builder if necessary.
+   --  Returns True unless a failure was encountered.
+   function build_pkg8_as_necessary return Boolean;
 
 end PortScan.Pilot;
