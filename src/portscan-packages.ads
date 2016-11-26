@@ -1,6 +1,8 @@
 --  This file is covered by the Internet Software Consortium (ISC) License
 --  Reference: ../License.txt
 
+private with Replicant;
+
 package PortScan.Packages is
 
    --  This routine first removes all invalid packages (package from removed
@@ -58,10 +60,7 @@ private
    stored_origins      : dim_packages;
    pkgscan_progress    : dim_progress := (others => 0);
    pkgscan_total       : Natural := 0;
-   calculated_abi      : JT.Text;
-   calculated_alt_abi  : JT.Text;
-   calc_abi_noarch     : JT.Text;
-   calc_alt_abi_noarch : JT.Text;
+   abi_formats         : Replicant.package_abi;
    external_repository : JT.Text;
    original_queue_len  : AC.Count_Type;
 

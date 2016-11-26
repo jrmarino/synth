@@ -17,6 +17,13 @@ package Replicant is
       need_linprocfs : Boolean := False;
    end record;
 
+   type package_abi is record
+      calculated_abi      : JT.Text;
+      calculated_alt_abi  : JT.Text;
+      calc_abi_noarch     : JT.Text;
+      calc_alt_abi_noarch : JT.Text;
+   end record;
+
    --  For every single port to be built, the build need to first be created
    --  and then destroyed when the build is complete.
    procedure launch_slave  (id : builders; opts : slave_options);
@@ -68,6 +75,9 @@ package Replicant is
    --  This is a pre-run validity check
    function boot_modules_directory_missing return Boolean;
 
+   --  Calculate both types of package ABI as a function of platform
+   function determine_package_architecture return package_abi;
+
 private
 
    type mount_mode is (readonly, readwrite);
@@ -86,6 +96,7 @@ private
                    proc, root, tmp, var, wrkdirs, usr_local, usr_src, ccache,
                    boot);
    subtype subfolder is folder range bin .. usr_share;
+   subtype filearch is String (1 .. 11);
 
    --  home and root need to be set readonly
    reference_base   : constant String := "Base";
@@ -245,7 +256,11 @@ private
                                      tgt_directory : String;
                                      pattern       : String) return Boolean;
 
-   --  returns Platform-specific df command
+   --  returns platform-specific df command
    function df_command return String;
+
+   --  platform-specific version of file command
+   function file_type_command return String;
+   function isolate_arch_from_file_type (fileinfo : String) return filearch;
 
 end Replicant;

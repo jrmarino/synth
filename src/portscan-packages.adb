@@ -688,16 +688,16 @@ package body PortScan.Packages is
          when pkgng_execution => return False;
       end;
       JT.nextline (lineblock => content, firstline => topline);
-      if JT.equivalent (topline, calculated_abi) then
+      if JT.equivalent (topline, abi_formats.calculated_abi) then
          return True;
       end if;
-      if JT.equivalent (topline, calc_abi_noarch) then
+      if JT.equivalent (topline, abi_formats.calc_abi_noarch) then
          return True;
       end if;
-      if JT.equivalent (topline, calculated_alt_abi) then
+      if JT.equivalent (topline, abi_formats.calculated_alt_abi) then
          return True;
       end if;
-      if JT.equivalent (topline, calc_alt_abi_noarch) then
+      if JT.equivalent (topline, abi_formats.calc_alt_abi_noarch) then
          return True;
       end if;
       return False;
@@ -718,148 +718,9 @@ package body PortScan.Packages is
    --------------------------------------
    --  establish_package_architecture  --
    --------------------------------------
-   procedure establish_package_architecture
-   is
-      function newsuffix (fileinfo : String) return String;
-      function suffix (fileinfo : String) return String;
-      function fbrel (fileinfo : String) return String;
-      function even (fileinfo : String) return String;
-
-      command : constant String := "/usr/bin/file -b " &
-        JT.USS (PM.configuration.dir_system) & "/bin/sh";
-      UN : JT.Text;
-
-      function suffix (fileinfo : String) return String
-      is
-         --  DF: ELF 64-bit LSB executable, x86-64
-         --  FB: ELF 64-bit LSB executable, x86-64
-         --  FB: ELF 32-bit LSB executable, Intel 80386
-         arch : constant String (1 .. 11) :=
-           fileinfo (fileinfo'First + 27 .. fileinfo'First + 37);
-      begin
-         if arch (1 .. 6) = "x86-64" then
-            return "x86:64";
-         elsif arch = "Intel 80386" then
-            return "x86:32";
-         else
-            return "unknown:" & arch;
-         end if;
-      end suffix;
-
-      function newsuffix (fileinfo : String) return String
-      is
-         arch : constant String (1 .. 11) :=
-           fileinfo (fileinfo'First + 27 .. fileinfo'First + 37);
-      begin
-         if arch (1 .. 6) = "x86-64" then
-            return "amd64";
-         elsif arch = "Intel 80386" then
-            return "i386";
-         else
-            return "unknown:" & arch;
-         end if;
-      end newsuffix;
-
-      function even (fileinfo : String) return String
-      is
-         --  DF  4.5-DEVELOPMENT: ... DragonFly 4.0.501
-         --  DF 4.10-RELEASE    : ... DragonFly 4.0.1000
-         --  DF 4.11-DEVELOPMENT: ... DragonFly 4.0.1102
-         --
-         --  Alternative future format (file version 2.0)
-         --  DFV 400702: ... DragonFly 4.7.2
-         --  DFV 401117: ..  DragonFly 4.11.17
-         rest  : constant String := JT.part_2 (fileinfo, "DragonFly ");
-         major : constant String := JT.part_1 (rest, ".");
-         rest2 : constant String := JT.part_2 (rest, ".");
-         part2 : constant String := JT.part_1 (rest2, ".");
-         rest3 : constant String := JT.part_2 (rest2, ".");
-         part3 : constant String := JT.part_1 (rest3, ",");
-         minor : String (1 .. 2) := "00";
-         point : Character;
-      begin
-         if part2 = "0" then
-            --  version format in October 2016
-            declare
-               mvers : String (1 .. 4) := "0000";
-               lenp3 : constant Natural := part3'Length;
-            begin
-               mvers (mvers'Last - lenp3 + 1 .. mvers'Last) := part3;
-               minor := mvers (1 .. 2);
-            end;
-         else
-            --  Alternative future format (file version 2.0)
-            declare
-               lenp2 : constant Natural := part2'Length;
-            begin
-               minor (minor'Last - lenp2 + 1 .. minor'Last) := part2;
-            end;
-         end if;
-
-         point := minor (2);
-         case point is
-            when '1' => minor (2) := '2';
-            when '3' => minor (2) := '4';
-            when '5' => minor (2) := '6';
-            when '7' => minor (2) := '8';
-            when '9' => minor (2) := '0';
-                        minor (1) := Character'Val (Character'Pos (minor (1)) + 1);
-            when others => null;
-         end case;
-         if minor (1) = '0' then
-            return major & "." & minor (2);
-         else
-            return major & "." & minor (1 .. 2);
-         end if;
-
-      end even;
-
-      function fbrel (fileinfo : String) return String
-      is
-         --  FreeBSD 10.2, stripped
-         --  FreeBSD 11.0 (1100093), stripped
-         rest  : constant String := JT.part_2 (fileinfo, "FreeBSD ");
-         major : constant String := JT.part_1 (rest, ".");
-      begin
-         return major;
-      end fbrel;
-
+   procedure establish_package_architecture is
    begin
-      UN := generic_system_command (command);
-      if JT.equivalent (PM.configuration.operating_sys, "DragonFly") then
-         declare
-            dfly     : constant String := "dragonfly:";
-            unlen    : constant Natural := JT.SU.Length (UN) - 1;
-            fileinfo : constant String := JT.USS (UN)(1 .. unlen);
-         begin
-            calculated_abi := JT.SUS (dfly);
-            JT.SU.Append (calculated_abi, even (fileinfo) & ":");
-            calc_abi_noarch := calculated_abi;
-            JT.SU.Append (calculated_abi, suffix (fileinfo));
-            JT.SU.Append (calc_abi_noarch, "*");
-            calculated_alt_abi  := calculated_abi;
-            calc_alt_abi_noarch := calc_abi_noarch;
-         end;
-      else
-         declare
-            fbsd1    : constant String := "FreeBSD:";
-            fbsd2    : constant String := "freebsd:";
-            unlen    : constant Natural := JT.SU.Length (UN) - 1;
-            fileinfo : constant String := JT.USS (UN)(1 .. unlen);
-            release  : constant String := fbrel (fileinfo);
-         begin
-            calculated_abi     := JT.SUS (fbsd1);
-            calculated_alt_abi := JT.SUS (fbsd2);
-            JT.SU.Append (calculated_abi, release & ":");
-            JT.SU.Append (calculated_alt_abi, release & ":");
-            calc_abi_noarch     := calculated_abi;
-            calc_alt_abi_noarch := calculated_alt_abi;
-            JT.SU.Append (calculated_abi, newsuffix (fileinfo));
-            JT.SU.Append (calculated_alt_abi, suffix (fileinfo));
-            JT.SU.Append (calc_abi_noarch, "*");
-            JT.SU.Append (calc_alt_abi_noarch, "*");
-         end;
-      end if;
+      abi_formats := Replicant.determine_package_architecture;
    end establish_package_architecture;
 
 

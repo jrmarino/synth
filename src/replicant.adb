@@ -1838,22 +1838,71 @@ package body Replicant is
    end get_osversion_from_param_header;
 
 
-   ----------------------------------
-   --  get_arch_from_bourne_shell  --
-   ----------------------------------
-   function get_arch_from_bourne_shell return String
+   -------------------------
+   --  file_type_command  --
+   -------------------------
+   function file_type_command return String
    is
-      function translate_arch (arch : String) return String;
       bsd_command : constant String := "/usr/bin/file -b " &
                     JT.USS (PM.configuration.dir_system) & "/bin/sh";
       lin_command : constant String := "/usr/bin/file -b " &
                     JT.USS (PM.configuration.dir_system) & "/usr/bin/bash";
       sol_command : constant String := "/usr/bin/file " &
                     JT.USS (PM.configuration.dir_system) & "/usr/sbin/sh";
+   begin
+      case platform_type is
+         when freebsd | dragonfly | netbsd =>
+            return bsd_command;
+         when linux =>
+            return lin_command;
+         when solaris =>
+            return sol_command;
+         when unknown =>
+            return "bad file_type_command invocation";
+      end case;
+   end file_type_command;
+
+
+   -----------------------------------
+   --  isolate_arch_from_file_type  --
+   -----------------------------------
+   function isolate_arch_from_file_type (fileinfo : String) return filearch
+   is
+      --  DF: ELF 64-bit LSB executable, x86-64
+      --  FB: ELF 64-bit LSB executable, x86-64
+      --  FB: ELF 32-bit LSB executable, Intel 80386
+      --  NB: ELF 64-bit LSB executable, x86-64
+      --   L: ELF 64-bit LSB executable, x86-64
+      --   S: /usr/bin/sh:    ELF 64-bit LSB executable AMD64 Version 1
+   begin
+      case platform_type is
+         when freebsd | netbsd | dragonfly | linux =>
+            return fileinfo (fileinfo'First + 27 .. fileinfo'First + 37);
+         when solaris =>
+            --  Solaris has no brief mode, so we need to search for arch.
+            --  We could do this for all platforms but it's not efficient
+            --  The solaris format is also slightly different than rest
+            declare
+               rest : String := JT.part_2 (fileinfo, "executable ");
+            begin
+               return rest (rest'First .. rest'First + 10);
+            end;
+         when unknown => return "XXX XXX XXX";
+      end case;
+   end isolate_arch_from_file_type;
+
+
+   ----------------------------------
+   --  get_arch_from_bourne_shell  --
+   ----------------------------------
+   function get_arch_from_bourne_shell return String
+   is
+      function translate_arch (arch : filearch) return String;
       badarch : constant String := "BADARCH";
       comres  : JT.Text;
+      arch    : filearch;
 
-      function translate_arch (arch : String) return String is
+      function translate_arch (arch : filearch) return String is
       begin
          if arch (arch'First .. arch'First + 5) = "x86-64" or else
            arch (arch'First .. arch'First + 4) = "AMD64"
@@ -1873,41 +1922,179 @@ package body Replicant is
          end if;
       end translate_arch;
    begin
-      case platform_type is
-         when freebsd | dragonfly | netbsd =>
-            comres := internal_system_command (bsd_command);
-         when linux =>
-            comres := internal_system_command (lin_command);
-         when solaris =>
-            comres := internal_system_command (sol_command);
-         when unknown =>
-            return badarch;
-      end case;
-      declare
-         unlen    : constant Natural := JT.SU.Length (comres) - 1;
-         fileinfo : constant String := JT.USS (comres)(1 .. unlen);
-         arch     : String (1 .. 11);
-      begin
-         case platform_type is
-            when freebsd | netbsd | dragonfly | linux =>
-               arch := fileinfo (fileinfo'First + 27 .. fileinfo'First + 37);
-            when solaris =>
-               --  Solaris has no brief mode, so we need to search for arch.
-               --  We could do this for all platforms but it's not efficient
-               --  The solaris format is also slightly different than rest
-               declare
-                  rest : String := JT.part_2 (fileinfo, "executable ");
-               begin
-                  arch := rest (rest'First .. rest'First + 10);
-               end;
-            when unknown => return badarch;
-         end case;
-         return translate_arch (arch);
-      end;
+      comres := internal_system_command (file_type_command);
+      arch   := isolate_arch_from_file_type (JT.USS (comres));
+      return translate_arch (arch);
    exception
       when others =>
          return badarch;
    end get_arch_from_bourne_shell;
+
+
+   --------------------------------------
+   --  determine_package_architecture  --
+   --------------------------------------
+   function determine_package_architecture return package_abi
+   is
+      function newsuffix (arch : filearch) return String;
+      function suffix    (arch : filearch) return String;
+      function get_major (fileinfo : String; OS : String) return String;
+      function even      (fileinfo : String) return String;
+
+      command : constant String := file_type_command;
+      res     : package_abi;
+      arch    : filearch;
+      UN      : JT.Text;
+
+      function suffix (arch : filearch) return String is
+      begin
+         if arch (arch'First .. arch'First + 5) = "x86-64" or else
+           arch (arch'First .. arch'First + 4) = "AMD64"
+         then
+            return "x86:64";
+         elsif arch = "Intel 80386" then
+            return "x86:32";
+         else
+            return "unknown:" & arch;
+         end if;
+      end suffix;
+
+      function newsuffix (arch : filearch) return String is
+      begin
+         if arch (arch'First .. arch'First + 5) = "x86-64" or else
+           arch (arch'First .. arch'First + 4) = "AMD64"
+         then
+            return "amd64";
+         elsif arch = "Intel 80386" then
+            return "i386";
+         else
+            return "unknown:" & arch;
+         end if;
+      end newsuffix;
+
+      function even (fileinfo : String) return String
+      is
+         --  DF  4.5-DEVELOPMENT: ... DragonFly 4.0.501
+         --  DF 4.10-RELEASE    : ... DragonFly 4.0.1000
+         --  DF 4.11-DEVELOPMENT: ... DragonFly 4.0.1102
+         --
+         --  Alternative future format (file version 2.0)
+         --  DFV 400702: ... DragonFly 4.7.2
+         --  DFV 401117: ..  DragonFly 4.11.17
+         rest  : constant String := JT.part_2 (fileinfo, "DragonFly ");
+         major : constant String := JT.part_1 (rest, ".");
+         rest2 : constant String := JT.part_2 (rest, ".");
+         part2 : constant String := JT.part_1 (rest2, ".");
+         rest3 : constant String := JT.part_2 (rest2, ".");
+         part3 : constant String := JT.part_1 (rest3, ",");
+         minor : String (1 .. 2) := "00";
+         point : Character;
+      begin
+         if part2 = "0" then
+            --  version format in October 2016
+            declare
+               mvers : String (1 .. 4) := "0000";
+               lenp3 : constant Natural := part3'Length;
+            begin
+               mvers (mvers'Last - lenp3 + 1 .. mvers'Last) := part3;
+               minor := mvers (1 .. 2);
+            end;
+         else
+            --  Alternative future format (file version 2.0)
+            declare
+               lenp2 : constant Natural := part2'Length;
+            begin
+               minor (minor'Last - lenp2 + 1 .. minor'Last) := part2;
+            end;
+         end if;
+
+         point := minor (2);
+         case point is
+            when '1' => minor (2) := '2';
+            when '3' => minor (2) := '4';
+            when '5' => minor (2) := '6';
+            when '7' => minor (2) := '8';
+            when '9' => minor (2) := '0';
+                        minor (1) := Character'Val (Character'Pos (minor (1)) + 1);
+            when others => null;
+         end case;
+         if minor (1) = '0' then
+            return major & "." & minor (2);
+         else
+            return major & "." & minor (1 .. 2);
+         end if;
+
+      end even;
+
+      function get_major (fileinfo : String; OS : String) return String
+      is
+         --  FreeBSD 10.2, stripped
+         --  FreeBSD 11.0 (1100093), stripped
+         --  NetBSD 7.0.1, not stripped
+         rest  : constant String := JT.part_2 (fileinfo, OS);
+         major : constant String := JT.part_1 (rest, ".");
+      begin
+         return major;
+      end get_major;
+
+   begin
+      UN := internal_system_command (file_type_command);
+      arch   := isolate_arch_from_file_type (JT.USS (UN));
+      case platform_type is
+         when dragonfly =>
+            declare
+               dfly     : constant String := "dragonfly:";
+            begin
+               res.calculated_abi := JT.SUS (dfly);
+               JT.SU.Append (res.calculated_abi, even (arch) & ":");
+               res.calc_abi_noarch := res.calculated_abi;
+               JT.SU.Append (res.calculated_abi, suffix (arch));
+               JT.SU.Append (res.calc_abi_noarch, "*");
+               res.calculated_alt_abi  := res.calculated_abi;
+               res.calc_alt_abi_noarch := res.calc_abi_noarch;
+            end;
+         when freebsd =>
+            declare
+               fbsd1    : constant String := "FreeBSD:";
+               fbsd2    : constant String := "freebsd:";
+               release  : constant String := get_major (JT.USS (UN),
+                                                        "FreeBSD ");
+            begin
+               res.calculated_abi     := JT.SUS (fbsd1);
+               res.calculated_alt_abi := JT.SUS (fbsd2);
+               JT.SU.Append (res.calculated_abi, release & ":");
+               JT.SU.Append (res.calculated_alt_abi, release & ":");
+               res.calc_abi_noarch     := res.calculated_abi;
+               res.calc_alt_abi_noarch := res.calculated_alt_abi;
+               JT.SU.Append (res.calculated_abi, newsuffix (arch));
+               JT.SU.Append (res.calculated_alt_abi, suffix (arch));
+               JT.SU.Append (res.calc_abi_noarch, "*");
+               JT.SU.Append (res.calc_alt_abi_noarch, "*");
+            end;
+         when netbsd =>
+            declare
+               net1     : constant String := "NetBSD:";
+               net2     : constant String := "netbsd:";
+               release  : constant String := get_major (JT.USS (UN),
+                                                        "NetBSD ");
+            begin
+               res.calculated_abi     := JT.SUS (net1);
+               res.calculated_alt_abi := JT.SUS (net2);
+               JT.SU.Append (res.calculated_abi, release & ":");
+               JT.SU.Append (res.calculated_alt_abi, release & ":");
+               res.calc_abi_noarch     := res.calculated_abi;
+               res.calc_alt_abi_noarch := res.calculated_alt_abi;
+               JT.SU.Append (res.calculated_abi, newsuffix (arch));
+               JT.SU.Append (res.calculated_alt_abi, suffix (arch));
+               JT.SU.Append (res.calc_abi_noarch, "*");
+               JT.SU.Append (res.calc_alt_abi_noarch, "*");
+            end;
+         when linux   => null;  --  TBD (check ABI first)
+         when solaris => null;  --  TBD (check ABI first)
+         when unknown => null;
+      end case;
+      return res;
+   end determine_package_architecture;
 
 
    ------------------------
