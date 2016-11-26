@@ -2097,6 +2097,87 @@ package body Replicant is
    end determine_package_architecture;
 
 
+   ---------------------------------
+   --  platform_swapinfo_command  --
+   ---------------------------------
+   function platform_swapinfo_command return String is
+   begin
+      case platform_type is
+         when dragonfly | freebsd =>
+            return "/usr/sbin/swapinfo -k";
+         when netbsd =>
+            return "/sbin/swapctl -lk";
+         when linux =>
+            return "/usr/sbin/swapon --bytes --show=NAME,SIZE,USED,PRIO";
+         when solaris =>
+            return "/usr/sbin/swap -lk";
+         when unknown =>
+            return "";
+      end case;
+   end platform_swapinfo_command;
+
+
+   ------------------------
+   --  get_instant_load  --
+   ------------------------
+   function get_instant_load return Float
+   is
+      ----------------- 123456789-123456789-123456789-
+      --  DFLY/FreeBSD: vm.loadavg: { 0.00 0.00 0.00 }
+      --  NetBSD:       vm.loadavg: 0.00 0.00 0.00
+      --  Linux:        0.00 0.01 0.05 3/382 15409
+      --  Solaris:      [~42 chars]load average: 0.01, 0.01, 0.01
+
+      comres  : JT.Text;
+      bsd  : constant String := "/usr/bin/env LANG=C /sbin/sysctl vm.loadavg";
+      lin  : constant String := "/usr/bin/cat /proc/loadavg";
+      sol  : constant String := "/usr/bin/uptime";
+      zero : constant Float := 0.0;
+      hi   : Integer;
+      lo   : Integer;
+   begin
+      case platform_type is
+         when dragonfly | freebsd =>
+            comres := internal_system_command (bsd);
+            lo := 15;
+            hi := 25;
+         when netbsd =>
+            comres := internal_system_command (bsd);
+            lo := 13;
+            hi := 23;
+         when linux =>
+            comres := internal_system_command (lin);
+            lo := 1;
+            hi := 10;
+         when solaris =>
+            comres := internal_system_command (sol);
+         when unknown =>
+            return zero;
+      end case;
+      case platform_type is
+         when dragonfly | freebsd | netbsd | linux =>
+            declare
+               stripped : constant String := JT.SU.Slice
+                 (Source => comres, Low => lo, High => hi);
+               instant  : constant String := JT.part_1 (stripped, " ");
+            begin
+               return Float'Value (instant);
+            end;
+         when solaris =>
+            declare
+               stripped : constant String := JT.part_2 (JT.USS (comres),
+                                                        "load average: ");
+               instant  : constant String := JT.part_1 (stripped, " ");
+            begin
+               return Float'Value (instant);
+            end;
+         when unknown => return zero;
+      end case;
+   exception
+      when others => return zero;
+   end instant_load;
+
+
    ------------------------
    --  jail_environment  --
    ------------------------

@@ -78,6 +78,12 @@ package Replicant is
    --  Calculate both types of package ABI as a function of platform
    function determine_package_architecture return package_abi;
 
+   --  Return platform-specific command for swapinfo
+   function platform_swapinfo_command return String;
+
+   --  Return 1-minute load average (platform specific)
+   function get_instant_load return Float;
+
 private
 
    type mount_mode is (readonly, readwrite);

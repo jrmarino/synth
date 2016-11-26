@@ -131,7 +131,6 @@ private
    function  rank_arrow (id : port_id) return ranking_crate.Cursor;
    function  package_name (id : port_id) return String;
    function  get_swap_status return Float;
-   function  get_instant_load return Float;
    function  hourly_build_rate return Natural;
    function  impulse_rate return Natural;
    function  assemble_HR (slave : builders; pid : port_id;

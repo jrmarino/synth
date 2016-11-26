@@ -303,7 +303,7 @@ package body PortScan.Ops is
                sumdata.Skipped   := bld_counter (skipped);
                sumdata.elapsed   := CYC.elapsed_now;
                sumdata.swap      := get_swap_status;
-               sumdata.load      := get_instant_load;
+               sumdata.load      := Replicant.get_instant_load;
                sumdata.pkg_hour  := hourly_build_rate;
                sumdata.impulse   := impulse_rate;
                DPY.summarize (sumdata);
@@ -719,7 +719,7 @@ package body PortScan.Ops is
    -----------------------
    function get_swap_status return Float
    is
-      command : String := "/usr/sbin/swapinfo -k";
+      command : String := Replicant.platform_swapinfo_command;
       comres  : JT.Text;
       topline : JT.Text;
       crlen1  : Natural;
@@ -730,6 +730,12 @@ package body PortScan.Ops is
    begin
       comres := CYC.generic_system_command (command);
       --  Throw first line away, e.g "Device 1K-blocks Used  Avail ..."
+      --  Distinguishes platforms though:
+      --     Net/Free/Dragon start with "Device"
+      --     Linux starts with "NAME"
+      --     Solaris starts with "swapfile"
+      --  columns differ by NFD/Linux/Solaris, the parsing of the
+      --  last two not yet supported
       JT.nextline (lineblock => comres, firstline => topline);
       crlen1 := JT.SU.Length (comres);
       loop
@@ -763,30 +769,6 @@ package body PortScan.Ops is
    exception
       when others => return 0.0;
    end get_swap_status;
-
-
-   ------------------------
-   --  get_instant_load  --
-   ------------------------
-   function get_instant_load return Float
-   is
-      command : String := "/usr/bin/env LANG=C /sbin/sysctl vm.loadavg";
-      comres  : JT.Text;
-
-   begin
-      comres := CYC.generic_system_command (command);
-      declare
-         stripped : constant String := JT.SU.Slice
-           (Source => comres, Low => 15, High => 25);
-         instant  : constant String := JT.part_1 (stripped, " ");
-      begin
-         return Float'Value (instant);
-      exception
-         when others => return 0.0;
-      end;
-   exception
-      when others => return 0.0;
-   end get_instant_load;
 
 
    -------------------------
@@ -1122,8 +1104,8 @@ package body PortScan.Ops is
            "  ," & nv ("elapsed",  CYC.elapsed_now)       & ASCII.LF &
            "  ," & nv ("pkghour",  hourly_build_rate)     & ASCII.LF &
            "  ," & nv ("impulse",  impulse_rate)          & ASCII.LF &
-           "  ," & nv ("swapinfo", DPY.fmtpc (get_swap_status, True))    & ASCII.LF &
-           "  ," & nv ("load",     DPY.fmtpc (get_instant_load, False))  & ASCII.LF &
+           "  ," & nv ("swapinfo", DPY.fmtpc (get_swap_status, True)) & ASCII.LF &
+           "  ," & nv ("load",     DPY.fmtpc (Replicant.get_instant_load, False)) & ASCII.LF &
            " }" & ASCII.LF &
            " ," & ASCII.Quotation & "builders" & ASCII.Quotation & ASCII.Colon & "[" & ASCII.LF);
 
