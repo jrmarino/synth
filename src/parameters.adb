@@ -505,7 +505,7 @@ package body Parameters is
       --  devel/gmake exists on both pkgsrc and the ports collection
       --  The actual port is not significant
       command  : constant String := host_make_program & " -C " & portsdir &
-                                    "/devel/gmake -V " & value;
+                 "/devel/gmake .MAKE.EXPAND_VARIABLES=yes -V " & value;
    begin
       return query_generic_core (command);
    end query_generic;
