@@ -85,7 +85,7 @@ package body PortScan.Pilot is
    begin
       case software_framework is
          when ports_collection => return build_pkg8_as_necessary;
-         when pkgsrc           => return False;
+         when pkgsrc           => return build_pkgsrc_prerequisites;
       end case;
    end prerequisites_available;
 
@@ -116,15 +116,11 @@ package body PortScan.Pilot is
          goto clean_exit;
       end if;
 
-      if SIG.graceful_shutdown_requested then
-         goto clean_exit;
-      end if;
-
       PKG.limited_sanity_check
         (repository => JT.USS (PM.configuration.dir_repository),
          dry_run    => False, suppress_remote => True);
 
-      if PKG.queue_is_empty then
+      if SIG.graceful_shutdown_requested or else PKG.queue_is_empty then
          goto clean_exit;
       end if;
 
@@ -146,7 +142,6 @@ package body PortScan.Pilot is
          goto clean_exit;
       end if;
 
-      PortScan.reset_ports_tree;
       TIO.Put_Line ("done!");
 
       <<clean_exit>>
@@ -161,6 +156,135 @@ package body PortScan.Pilot is
       return result;
 
    end build_pkg8_as_necessary;
+
+
+   ----------------------------------
+   --  build_pkgsrc_prerequisites  --
+   ----------------------------------
+   function build_pkgsrc_prerequisites return Boolean
+   is
+      function scan_it (the_catport : String) return Boolean;
+      function build_it (desc : String) return Boolean;
+
+      mk_files : constant String := "pkgtools/bootstrap-mk-files";
+      cp_bmake : constant String := "devel/bmake";
+      result   : Boolean := True;
+
+      function scan_it (the_catport : String) return Boolean
+      is
+         good_scan : Boolean;
+         stop_now  : Boolean;
+      begin
+         good_scan := PortScan.scan_single_port (catport => the_catport,
+                                                 always_build => False,
+                                                 fatal => stop_now);
+         if good_scan then
+            PortScan.set_build_priority;
+         else
+            TIO.Put_Line ("Unexpected " & the_catport & " scan failure!");
+            return False;
+         end if;
+
+         PKG.limited_sanity_check
+           (repository => JT.USS (PM.configuration.dir_repository),
+            dry_run    => False, suppress_remote => True);
+
+         if SIG.graceful_shutdown_requested then
+            return False;
+         end if;
+
+         return True;
+      end scan_it;
+
+      function build_it (desc : String) return Boolean
+      is
+         pkg_good  : Boolean;
+         selection : PortScan.port_id;
+      begin
+         CYC.initialize (test_mode => False, jail_env => REP.jail_environment);
+         selection := OPS.top_buildable_port;
+         if SIG.graceful_shutdown_requested or else selection = port_match_failed
+         then
+            return False;
+         end if;
+         TIO.Put ("Stand by, building " & desc & " package first ... ");
+         pkg_good := CYC.build_package (id => PortScan.scan_slave,
+                                        sequence_id => selection);
+         OPS.run_hook_after_build (pkg_good, selection);
+         if not pkg_good then
+            TIO.Put_Line ("Failed!!" & bailing);
+            return False;
+         end if;
+         TIO.Put_Line ("done!");
+         return True;
+      end build_it;
+   begin
+      OPS.initialize_hooks;
+      REP.initialize (testmode => False, num_cores => PortScan.cores_available);
+      REP.launch_slave (id => PortScan.scan_slave, opts => noprocs);
+      if not REP.host_pkgsrc_mk_install (id => PortScan.scan_slave) or else
+        not REP.host_pkgsrc_bmake_install (id => PortScan.scan_slave) or else
+        not REP.host_pkgsrc_pkg8_install (id => PortScan.scan_slave)
+      then
+         TIO.Put_Line ("Failed to install programs from host system.");
+         result := False;
+         goto clean_exit;
+      end if;
+
+      result := scan_it (mk_files);
+      if not result then
+         goto clean_exit;
+      end if;
+
+      if PKG.queue_is_empty then
+         --  the mk files package exists and is current, continue
+         reset_ports_tree;
+      else
+         --  the mk files package does not exist or requires rebuilding
+         result := build_it ("mk files");
+         if not result then
+            goto clean_exit;
+         end if;
+      end if;
+
+      result := scan_it (cp_bmake);
+      if not result then
+         goto clean_exit;
+      end if;
+
+      if PKG.queue_is_empty then
+         --  the bmake program exists and is current, continue
+         reset_ports_tree;
+      else
+         --  the bmake package does not exist or requires rebuilding
+         result := build_it ("bmake program");
+         if not result then
+            goto clean_exit;
+         end if;
+      end if;
+
+      result := scan_it (pkgng);
+      if not result then
+         goto clean_exit;
+      end if;
+
+      if not PKG.queue_is_empty then
+         --  the pkg(8) package does not exist or requires rebuilding
+         result := build_it ("pkg(8) program");
+      end if;
+
+      <<clean_exit>>
+      if SIG.graceful_shutdown_requested then
+         TIO.Put_Line (shutreq);
+         result := False;
+      end if;
+      REP.destroy_slave (id => PortScan.scan_slave, opts => noprocs);
+      REP.finalize;
+      reset_ports_tree;
+      prescan_ports_tree (JT.USS (PM.configuration.dir_portsdir));
+      return result;
+
+   end build_pkgsrc_prerequisites;
 
 
    ----------------------------------

@@ -214,4 +214,8 @@ private
    --  Returns True unless a failure was encountered.
    function build_pkg8_as_necessary return Boolean;
 
+   --  Prebuilds bootstrap-mk files, bmake, and pkg(8)
+   --  Returns True unless a failure was encountered.
+   function build_pkgsrc_prerequisites return Boolean;
+
 end PortScan.Pilot;
