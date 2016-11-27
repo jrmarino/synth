@@ -10,16 +10,11 @@ package PortScan.Buildcycle is
    cycle_cmd_error : exception;
 
    procedure initialize (test_mode : Boolean; jail_env : JT.Text);
-   function build_package (id          : builders;
-                           sequence_id : port_id;
-                           interactive : Boolean := False;
-                           interphase  : String  := "") return Boolean;
 
    --  Expose for overall build log
    function log_duration (start, stop : CAL.Time) return String;
    function elapsed_now return String;
    function elapsed_build (id : builders) return String;
-   function last_build_phase (id : builders) return String;
 
    --  Was private, but expose so Pilot can use it.
    function generic_system_command (command : String) return JT.Text;
@@ -29,26 +24,10 @@ package PortScan.Buildcycle is
                                    from_when : CAL.Time)
                                    return Natural;
 
-   --  Compile status of builder for the curses display
-   function builder_status (id : builders;
-                            shutdown : Boolean := False;
-                            idle     : Boolean := False)
-                            return Display.builder_rec;
-
    --  records the current length of the build log.
    procedure set_log_lines (id : builders);
 
-   --  Returns "True" when afterphase string matches a legal phase name.
-   --  Allowed phases: extract/patch/configure/build/stage/install/deinstall
-   function valid_test_phase (afterphase : String) return Boolean;
-
 private
-
-   type phases is (check_sanity, pkg_depends, fetch_depends, fetch, checksum,
-                   extract_depends, extract, patch_depends, patch,
-                   build_depends, lib_depends, configure, build, run_depends,
-                   stage, check_plist, pkg_package, install_mtree, install,
-                   deinstall);
 
    type execution_limit is range 1 .. 720;
 
@@ -59,7 +38,6 @@ private
          tail_time  : CAL.Time;
          log_handle : aliased TIO.File_Type;
          dynlink    : string_crate.Vector;
-         phase      : phases;
          loglines   : Natural := 0;
       end record;
 
@@ -80,11 +58,6 @@ private
    function  initialize_log (id : builders) return Boolean;
    procedure finalize_log   (id : builders);
 
-   function  exec_phase_generic (id : builders; phase : phases) return Boolean;
-   function  exec_phase_depends (id : builders; phase : phases) return Boolean;
-   function  exec_phase_deinstall (id : builders) return Boolean;
-   function  exec_phase_build (id : builders) return Boolean;
-
    function  get_environment (id : builders) return String;
    function  get_root (id : builders) return String;
    function  get_options_configuration (id : builders) return String;
@@ -101,13 +74,6 @@ private
    function  generic_execute (id : builders; command : String;
                               dogbite : out Boolean;
                               time_limit : execution_limit) return Boolean;
-   function  exec_phase (id : builders; phase : phases;
-                         time_limit    : execution_limit;
-                         phaseenv      : String := "";
-                         depends_phase : Boolean := False;
-                         skip_header   : Boolean := False;
-                         skip_footer   : Boolean := False)
-                         return Boolean;
    procedure stack_linked_libraries (id : builders; base, filename : String);
    procedure log_linked_libraries (id : builders);
    procedure mark_file_system (id : builders; action : String);
@@ -116,9 +82,7 @@ private
    function  dynamically_linked (base, filename : String) return Boolean;
    function  elapsed_HH_MM_SS (start, stop : CAL.Time) return String;
    function  environment_override (enable_tty : Boolean := False) return String;
-   function  phase2str (phase : phases) return String;
    function  format_loglines (numlines : Natural) return String;
-   function  max_time_without_output (phase : phases) return execution_limit;
    function  timeout_multiplier_x10 return Positive;
    function  detect_leftovers_and_MIA (id : builders; action : String;
                                        description : String) return Boolean;
@@ -128,11 +92,5 @@ private
    --  /usr/local inside a slave as read-only
    procedure set_localbase_protection (id : builders; lock : Boolean);
 
-   --  If the afterphase string matches a legal phase name then that phase
-   --  is returned, otherwise the value of check-sanity is returned.  Allowed
-   --  phases are: extract/patch/configure/build/stage/install/deinstall.
-   --  check-sanity is considered a negative response
-   --  stage includes check-plist
-   function valid_test_phase (afterphase : String) return phases;
 
 end PortScan.Buildcycle;

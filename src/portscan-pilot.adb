@@ -6,7 +6,8 @@ with Ada.Strings.Fixed;
 with Ada.Exceptions;
 with PortScan.Ops;
 with PortScan.Packages;
-with PortScan.Buildcycle;
+with PortScan.Buildcycle.Ports;
+with PortScan.Buildcycle.Pkgsrc;
 with Signals;
 with Unix;
 
@@ -18,6 +19,8 @@ package body PortScan.Pilot is
    package OPS renames PortScan.Ops;
    package PKG renames PortScan.Packages;
    package CYC renames PortScan.Buildcycle;
+   package FPC renames PortScan.Buildcycle.Ports;
+   package NPS renames PortScan.Buildcycle.Pkgsrc;
    package SIG renames Signals;
 
    ---------------------
@@ -132,7 +135,7 @@ package body PortScan.Pilot is
       end if;
       TIO.Put ("Stand by, building pkg(8) first ... ");
 
-      pkg_good := CYC.build_package (id => PortScan.scan_slave,
+      pkg_good := FPC.build_package (id => PortScan.scan_slave,
                                      sequence_id => selection);
       OPS.run_hook_after_build (pkg_good, selection);
 
@@ -208,7 +211,7 @@ package body PortScan.Pilot is
             return False;
          end if;
          TIO.Put ("Stand by, building " & desc & " package first ... ");
-         pkg_good := CYC.build_package (id => PortScan.scan_slave,
+         pkg_good := NPS.build_package (id => PortScan.scan_slave,
                                         sequence_id => selection);
          OPS.run_hook_after_build (pkg_good, selection);
          if not pkg_good then
@@ -1429,7 +1432,12 @@ package body PortScan.Pilot is
       if not EA_defined then
          return False;
       end if;
-      return CYC.valid_test_phase (Unix.env_variable_value (brkname));
+      case software_framework is
+         when ports_collection =>
+            return FPC.valid_test_phase (Unix.env_variable_value (brkname));
+         when pkgsrc =>
+            return NPS.valid_test_phase (Unix.env_variable_value (brkname));
+      end case;
    end interact_with_single_builder;
 
 
@@ -1469,10 +1477,18 @@ package body PortScan.Pilot is
       REP.launch_slave (id => PortScan.scan_slave, opts => noprocs);
 
       Unix.cone_of_silence (deploy => False);
-      buildres := CYC.build_package (id          => PortScan.scan_slave,
-                                     sequence_id => ptid,
-                                     interactive => True,
-                                     interphase  => brkphase);
+      case software_framework is
+         when ports_collection =>
+            buildres := FPC.build_package (id          => PortScan.scan_slave,
+                                           sequence_id => ptid,
+                                           interactive => True,
+                                           interphase  => brkphase);
+         when pkgsrc =>
+            buildres := NPS.build_package (id          => PortScan.scan_slave,
+                                           sequence_id => ptid,
+                                           interactive => True,
+                                           interphase  => brkphase);
+      end case;
 
       REP.destroy_slave (id => PortScan.scan_slave, opts => noprocs);
       REP.finalize;

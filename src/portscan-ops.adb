@@ -4,7 +4,8 @@
 with Ada.Exceptions;
 with Ada.Numerics.Discrete_Random;
 with GNAT.String_Split;
-with PortScan.Buildcycle;
+with PortScan.Buildcycle.Pkgsrc;
+with PortScan.Buildcycle.Ports;
 with Replicant.Platform;
 with Signals;
 with Unix;
@@ -14,6 +15,8 @@ package body PortScan.Ops is
    package EX  renames Ada.Exceptions;
    package GSS renames GNAT.String_Split;
    package CYC renames PortScan.Buildcycle;
+   package FPC renames PortScan.Buildcycle.Ports;
+   package NPS renames PortScan.Buildcycle.Pkgsrc;
    package REP renames Replicant;
    package SIG renames Signals;
 
@@ -76,8 +79,14 @@ package body PortScan.Ops is
                     all_ports (instructions (builder)).use_linprocfs;
 
                   REP.launch_slave (id => builder, opts => opts);
-                  build_result := CYC.build_package
-                    (id => builder, sequence_id => instructions (builder));
+                  case software_framework is
+                     when ports_collection =>
+                        build_result :=
+                          FPC.build_package (builder, instructions (builder));
+                     when pkgsrc =>
+                        build_result :=
+                          NPS.build_package (builder, instructions (builder));
+                  end case;
                   REP.destroy_slave (id => builder, opts => opts);
                   if build_result then
                      builder_states (builder) := done_success;
@@ -259,12 +268,24 @@ package body PortScan.Ops is
                                         " Failure " &
                                         port_name (instructions (slave)));
                      end if;
-                     record_history_failed (elapsed   => CYC.elapsed_now,
-                                            slave_id  => slave,
-                                            origin    => port_name (instructions (slave)),
-                                            duration  => CYC.elapsed_build (slave),
-                                            die_phase => CYC.last_build_phase (slave),
-                                            skips     => cntskip);
+                     case software_framework is
+                        when ports_collection =>
+                           record_history_failed
+                             (elapsed   => CYC.elapsed_now,
+                              slave_id  => slave,
+                              origin    => port_name (instructions (slave)),
+                              duration  => CYC.elapsed_build (slave),
+                              die_phase => FPC.last_build_phase (slave),
+                              skips     => cntskip);
+                        when pkgsrc =>
+                           record_history_failed
+                             (elapsed   => CYC.elapsed_now,
+                              slave_id  => slave,
+                              origin    => port_name (instructions (slave)),
+                              duration  => CYC.elapsed_build (slave),
+                              die_phase => NPS.last_build_phase (slave),
+                              skips     => cntskip);
+                     end case;
                      run_package_hook (pkg_failure, instructions (slave));
                   end if;
                   instructions (slave) := port_match_failed;
@@ -309,14 +330,26 @@ package body PortScan.Ops is
                DPY.summarize (sumdata);
 
                for b in builders'First .. num_builders loop
-                  if builder_states (b) = shutdown then
-                     DPY.update_builder (CYC.builder_status (b, True, False));
-                  elsif builder_states (b) = idle then
-                     DPY.update_builder (CYC.builder_status (b, False, True));
-                  else
-                     CYC.set_log_lines (b);
-                     DPY.update_builder (CYC.builder_status (b));
-                  end if;
+                  case software_framework is
+                  when ports_collection =>
+                     if builder_states (b) = shutdown then
+                        DPY.update_builder (FPC.builder_status (b, True, False));
+                     elsif builder_states (b) = idle then
+                        DPY.update_builder (FPC.builder_status (b, False, True));
+                     else
+                        CYC.set_log_lines (b);
+                        DPY.update_builder (FPC.builder_status (b));
+                     end if;
+                  when pkgsrc =>
+                     if builder_states (b) = shutdown then
+                        DPY.update_builder (NPS.builder_status (b, True, False));
+                     elsif builder_states (b) = idle then
+                        DPY.update_builder (NPS.builder_status (b, False, True));
+                     else
+                        CYC.set_log_lines (b);
+                        DPY.update_builder (NPS.builder_status (b));
+                     end if;
+                  end case;
                end loop;
                DPY.refresh_builder_window;
                DPY.refresh_history_window;
@@ -1080,13 +1113,24 @@ package body PortScan.Ops is
            " ," & ASCII.Quotation & "builders" & ASCII.Quotation & ASCII.Colon & "[" & ASCII.LF);
 
       for b in builders'First .. num_builders loop
-         if states (b) = shutdown then
-            slave := CYC.builder_status (b, True, False);
-         elsif states (b) = idle then
-            slave := CYC.builder_status (b, False, True);
-         else
-            slave := CYC.builder_status (b);
-         end if;
+         case software_framework is
+            when ports_collection =>
+               if states (b) = shutdown then
+                  slave := FPC.builder_status (b, True, False);
+               elsif states (b) = idle then
+                  slave := FPC.builder_status (b, False, True);
+               else
+                  slave := FPC.builder_status (b);
+               end if;
+            when pkgsrc =>
+               if states (b) = shutdown then
+                  slave := NPS.builder_status (b, True, False);
+               elsif states (b) = idle then
+                  slave := NPS.builder_status (b, False, True);
+               else
+                  slave := NPS.builder_status (b);
+               end if;
+         end case;
          if b = builders'First then
             TIO.Put (jsonfile, "  {" & ASCII.LF);
          else
