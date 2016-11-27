@@ -84,6 +84,9 @@ package Replicant is
    --  Return 1-minute load average (platform specific)
    function get_instant_load return Float;
 
+   --  Return true if file is executable (platform-specific)
+   function file_is_executable (filename : String) return Boolean;
+
 private
 
    type mount_mode is (readonly, readwrite);

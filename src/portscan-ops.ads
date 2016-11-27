@@ -136,7 +136,6 @@ private
    function  assemble_HR (slave : builders; pid : port_id;
                           action : DPY.history_action)
                           return DPY.history_rec;
-   function  file_is_executable (filename : String) return Boolean;
    function  nv (name, value : String) return String;
    function  nv (name : String; value : Integer) return String;
 

@@ -1863,6 +1863,28 @@ package body Replicant is
    end file_type_command;
 
 
+   --------------------------
+   --  file_is_executable  --
+   --------------------------
+   function file_is_executable (filename : String) return Boolean
+   is
+      command : constant String := "/usr/bin/file -b -L " &
+        "-e ascii -e encoding -e tar -e compress " & filename;
+      sol_cmd : constant String := "/usr/bin/file " & filename;
+      comres  : JT.Text;
+   begin
+      case platform_type is
+         when dragonfly | freebsd | netbsd | linux =>
+            comres := internal_system_command (command);
+         when solaris =>
+            comres := internal_system_command (sol_cmd);
+         when unknown =>
+            return False;
+      end case;
+      return JT.contains (comres, "executable");
+   end file_is_executable;
+
+
    -----------------------------------
    --  isolate_arch_from_file_type  --
    -----------------------------------
@@ -2175,7 +2197,7 @@ package body Replicant is
       end case;
    exception
       when others => return zero;
-   end instant_load;
+   end get_instant_load;
 
 
    ------------------------
