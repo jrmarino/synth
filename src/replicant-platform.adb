@@ -246,10 +246,11 @@ package body Replicant.Platform is
       case platform_type is
          when dragonfly =>
             declare
-               dfly     : constant String := "dragonfly:";
+               dfly    : constant String := "dragonfly:";
+               release : constant String := even (JT.USS (UN));
             begin
                res.calculated_abi := JT.SUS (dfly);
-               JT.SU.Append (res.calculated_abi, even (arch) & ":");
+               JT.SU.Append (res.calculated_abi, release & ":");
                res.calc_abi_noarch := res.calculated_abi;
                JT.SU.Append (res.calculated_abi, suffix (arch));
                JT.SU.Append (res.calc_abi_noarch, "*");
@@ -258,10 +259,10 @@ package body Replicant.Platform is
             end;
          when freebsd =>
             declare
-               fbsd1    : constant String := "FreeBSD:";
-               fbsd2    : constant String := "freebsd:";
-               release  : constant String := get_major (JT.USS (UN),
-                                                        "FreeBSD ");
+               fbsd1   : constant String := "FreeBSD:";
+               fbsd2   : constant String := "freebsd:";
+               release : constant String := get_major (JT.USS (UN),
+                                                       "FreeBSD ");
             begin
                res.calculated_abi     := JT.SUS (fbsd1);
                res.calculated_alt_abi := JT.SUS (fbsd2);
