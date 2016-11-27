@@ -9,7 +9,7 @@ package PortScan.Buildcycle.Ports is
                            interphase  : String  := "") return Boolean;
 
    --  Compile status of builder for the curses display
-   function builder_status (id : builders;
+   function builder_status (id       : builders;
                             shutdown : Boolean := False;
                             idle     : Boolean := False)
                             return Display.builder_rec;

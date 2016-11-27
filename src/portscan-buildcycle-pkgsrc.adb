@@ -11,9 +11,196 @@ package body PortScan.Buildcycle.Pkgsrc is
                            interactive : Boolean := False;
                            interphase  : String  := "") return Boolean
    is
+      R : Boolean;
+      break_phase : constant phases := valid_test_phase (interphase);
    begin
-      return False;
+      trackers (id).seq_id := sequence_id;
+      trackers (id).loglines := 0;
+      if uselog then
+         if not initialize_log (id) then
+            finalize_log (id);
+            return False;
+         end if;
+      end if;
+      for phase in phases'Range loop
+         phase_trackers (id) := phase;
+
+         case phase is
+            when fetch | checksum | tools | extract | patch | wrapper |
+                 create_package =>
+               R := exec_phase_generic (id, phase);
+
+            when bootstrap_depends | depends =>
+               R := exec_phase_generic (id, phase);
+
+            when configure =>
+               if testing then
+                  if lock_localbase then
+                     set_localbase_protection (id, True);
+                  end if;
+                  mark_file_system (id, "preconfig");
+               end if;
+               R := exec_phase_generic (id, phase);
+
+            when build =>
+               R := exec_phase_build (id);
+
+            when stage_install =>
+               if testing then
+                  mark_file_system (id, "prestage");
+               end if;
+               R := exec_phase_generic (id, phase);
+
+            when test | package_install =>
+               if testing then
+                  R := exec_phase_generic (id, phase);
+               end if;
+
+            when deinstall =>
+               if testing then
+                  R := exec_phase_deinstall (id);
+               end if;
+         end case;
+         exit when R = False;
+         exit when interactive and then phase = break_phase;
+      end loop;
+      if uselog then
+         finalize_log (id);
+      end if;
+      if interactive then
+         interact_with_builder (id);
+      end if;
+      return R;
    end build_package;
+
+
+   ------------------
+   --  exec_phase  --
+   ------------------
+   function exec_phase (id : builders; phase : phases;
+                        time_limit    : execution_limit;
+                        phaseenv      : String := "";
+                        skip_header   : Boolean := False;
+                        skip_footer   : Boolean := False)
+                        return Boolean
+   is
+      root       : constant String := get_root (id);
+      pid        : port_id := trackers (id).seq_id;
+      catport    : constant String := get_catport (all_ports (pid));
+      result     : Boolean;
+      timed_out  : Boolean;
+   begin
+      --  Nasty, we have to switch open and close the log file for each
+      --  phase because we have to switch between File_Type and File
+      --  Descriptors.  I can't find a safe way to get the File Descriptor
+      --  out of the File type.
+
+      if uselog then
+         if not skip_header then
+            log_phase_begin (phase2str (phase), id);
+         end if;
+         TIO.Close (trackers (id).log_handle);
+      end if;
+
+      declare
+         command : constant String := chroot & root & environment_override &
+           phaseenv & chroot_make_program & " -C /xports/" &
+           catport & " " & phase2str (phase);
+      begin
+         result := generic_execute (id, command, timed_out, time_limit);
+      end;
+
+      --  Reopen the log.  I guess we can leave off the exception check
+      --  since it's been passing before
+
+      if uselog then
+         TIO.Open (File => trackers (id).log_handle,
+                   Mode => TIO.Append_File,
+                   Name => log_name (trackers (id).seq_id));
+         if timed_out then
+            TIO.Put_Line (trackers (id).log_handle,
+                          "###  Watchdog killed runaway process!  (no activity for" &
+                            time_limit'Img & " minutes)  ###");
+         end if;
+         if not skip_footer then
+            log_phase_end (id);
+         end if;
+      end if;
+
+      return result;
+   end exec_phase;
+
+
+   --------------------------
+   --  exec_phase_generic  --
+   --------------------------
+   function exec_phase_generic (id : builders; phase : phases) return Boolean
+   is
+      time_limit : execution_limit := max_time_without_output (phase);
+   begin
+      return exec_phase (id => id, phase => phase, time_limit => time_limit);
+   end exec_phase_generic;
+
+
+   ------------------------
+   --  exec_phase_build  --
+   ------------------------
+   function exec_phase_build (id : builders) return Boolean
+   is
+      time_limit : execution_limit := max_time_without_output (build);
+      passed : Boolean;
+   begin
+      passed := exec_phase (id          => id,
+                            phase       => build,
+                            time_limit  => time_limit,
+                            skip_header => False,
+                            skip_footer => True);
+      if testing and then passed then
+         if lock_localbase then
+            set_localbase_protection (id, False);
+         end if;
+         passed := detect_leftovers_and_MIA
+           (id, "preconfig", "between port configure and build");
+      end if;
+      if uselog then
+         log_phase_end (id);
+      end if;
+      return passed;
+   end exec_phase_build;
+
+
+
+   ----------------------------
+   --  exec_phase_deinstall  --
+   ----------------------------
+   function exec_phase_deinstall (id : builders) return Boolean
+   is
+      time_limit : execution_limit := max_time_without_output (deinstall);
+      result     : Boolean;
+   begin
+      --  This is only run during "testing" so assume that.
+      if uselog then
+         log_phase_begin (phase2str (deinstall), id);
+         log_linked_libraries (id);
+      end if;
+      result := exec_phase (id          => id,
+                            phase       => deinstall,
+                            time_limit  => time_limit,
+                            skip_header => True,
+                            skip_footer => True);
+      if not result then
+         if uselog then
+            log_phase_end (id);
+         end if;
+         return False;
+      end if;
+      if uselog then
+         result := detect_leftovers_and_MIA
+           (id, "prestage", "between staging and package deinstallation");
+         log_phase_end (id);
+      end if;
+      return result;
+   end exec_phase_deinstall;
 
 
    ----------------------
@@ -24,52 +211,12 @@ package body PortScan.Buildcycle.Pkgsrc is
                             idle     : Boolean := False)
                             return Display.builder_rec
    is
-      result   : Display.builder_rec;
+      phasestr : constant String := phase2str (phase_trackers (id));
    begin
-      --  123456789 123456789 123456789 123456789 1234
-      --   SL  elapsed   phase              lines  origin
-      --   01  00:00:00  extract-depends  9999999  www/joe
-
-      result.id       := id;
-      result.slavid   := JT.zeropad (Natural (id), 2);
-      result.LLines   := (others => ' ');
-      result.phase    := (others => ' ');
-      result.origin   := (others => ' ');
-      result.shutdown := False;
-      result.idle     := False;
-
-      if shutdown then
-         --  Overrides "idle" if both Shutdown and Idle are True
-         result.Elapsed  := "Shutdown";
-         result.shutdown := True;
-         return result;
-      end if;
-      if idle then
-         result.Elapsed := "Idle    ";
-         result.idle    := True;
-         return result;
-      end if;
-
-      declare
-         phasestr : constant String := phase2str (phase_trackers (id));
-         catport  : constant String :=
-           get_catport (all_ports (trackers (id).seq_id));
-         numlines : constant String := format_loglines (trackers (id).loglines);
-         linehead : constant Natural := 8 - numlines'Length;
-      begin
-         result.Elapsed := elapsed_HH_MM_SS (start => trackers (id).head_time,
-                                             stop  => CAL.Clock);
-         result.LLines (linehead .. 7) := numlines;
-         result.phase  (1 .. phasestr'Length) := phasestr;
-
-         if catport'Length > 37 then
-            result.origin (1 .. 36) := catport (1 .. 36);
-            result.origin (37) := LAT.Asterisk;
-         else
-            result.origin (1 .. catport'Length) := catport;
-         end if;
-      end;
-      return result;
+      return builder_status_core (id       => id,
+                                  shutdown => shutdown,
+                                  idle     => idle,
+                                  phasestr => phasestr);
    end builder_status;
 
 

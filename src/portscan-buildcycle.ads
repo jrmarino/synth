@@ -95,5 +95,11 @@ private
    --  /usr/local inside a slave as read-only
    procedure set_localbase_protection (id : builders; lock : Boolean);
 
+   --  Compile status of builder for the curses display (guts)
+   function builder_status_core (id : builders;
+                                 shutdown : Boolean := False;
+                                 idle     : Boolean := False;
+                                 phasestr : String)
+                                 return Display.builder_rec;
 
 end PortScan.Buildcycle;

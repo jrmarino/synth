@@ -28,7 +28,18 @@ private
 
    phase_trackers : dim_phase_trackers;
 
+   function exec_phase (id : builders; phase : phases;
+                        time_limit    : execution_limit;
+                        phaseenv      : String := "";
+                        skip_header   : Boolean := False;
+                        skip_footer   : Boolean := False)
+                        return Boolean;
+
+   function exec_phase_generic (id : builders; phase : phases) return Boolean;
+   function exec_phase_deinstall (id : builders) return Boolean;
+   function exec_phase_build (id : builders) return Boolean;
    function phase2str (phase : phases) return String;
    function valid_test_phase (afterphase : String) return phases;
+   function max_time_without_output (phase : phases) return execution_limit;
 
 end PortScan.Buildcycle.Pkgsrc;
