@@ -615,10 +615,6 @@ package body Replicant.Platform is
       end case;
       TIO.Close (vconf);
 
-      JT.SU.Append (builder_env, " UNAME_p=" & ARCH);
-      JT.SU.Append (builder_env, " UNAME_m=" & ARCH);
-      JT.SU.Append (builder_env, " UNAME_r=" & release & " ");
-
       case platform_type is
          when freebsd =>
             JT.SU.Append (builder_env, "UNAME_s=FreeBSD " &
@@ -637,6 +633,12 @@ package body Replicant.Platform is
                             "UNAME_v=SunOS\ " & release);
          when unknown => null;
       end case;
+
+      --  The last entry of builder_env must be a blank space
+      JT.SU.Append (builder_env, " UNAME_p=" & ARCH);
+      JT.SU.Append (builder_env, " UNAME_m=" & ARCH);
+      JT.SU.Append (builder_env, " UNAME_r=" & release & " ");
+
    end cache_port_variables;
 
 
