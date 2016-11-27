@@ -351,10 +351,10 @@ package body Replicant.Platform is
    end swapinfo_command;
 
 
-   ------------------------
-   --  get_instant_load  --
-   ------------------------
-   function get_instant_load return Float
+   -----------------
+   --  load_core  --
+   -----------------
+   function load_core (instant_load : Boolean) return Float
    is
       ----------------- 123456789-123456789-123456789-
       --  DFLY/FreeBSD: vm.loadavg: { 0.00 0.00 0.00 }
@@ -393,23 +393,65 @@ package body Replicant.Platform is
             declare
                stripped : constant String := JT.SU.Slice
                  (Source => comres, Low => lo, High => hi);
-               instant  : constant String := JT.part_1 (stripped, " ");
             begin
-               return Float'Value (instant);
+               if instant_load then
+                  declare
+                     instant : String := JT.part_1 (stripped, " ");
+                  begin
+                     return Float'Value (instant);
+                  end;
+               else
+                  declare
+                     min5 : String :=
+                       JT.part_1 (JT.part_2 (stripped, " "), " ");
+                  begin
+                      return Float'Value (min5);
+                  end;
+               end if;
             end;
          when solaris =>
             declare
                stripped : constant String := JT.part_2 (JT.USS (comres),
                                                         "load average: ");
-               instant  : constant String := JT.part_1 (stripped, " ");
             begin
-               return Float'Value (instant);
+               if instant_load then
+                  declare
+                     instant  : constant String := JT.part_1 (stripped, ", ");
+                  begin
+                     return Float'Value (instant);
+                  end;
+               else
+                  declare
+                     min5 : String :=
+                       JT.part_1 (JT.part_2 (stripped, ", "), ", ");
+                  begin
+                      return Float'Value (min5);
+                  end;
+               end if;
             end;
          when unknown => return zero;
       end case;
    exception
       when others => return zero;
+   end load_core;
+
+
+   ------------------------
+   --  get_instant_load  --
+   ------------------------
+   function get_instant_load return Float is
+   begin
+      return load_core (instant_load => True);
    end get_instant_load;
+
+
+   -------------------------
+   --  get_5_minute_load  --
+   -------------------------
+   function get_5_minute_load return Float is
+   begin
+      return load_core (instant_load => False);
+   end get_5_minute_load;
 
 
    -------------------------------

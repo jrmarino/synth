@@ -1202,26 +1202,14 @@ package body PortScan.Buildcycle is
    ------------------------------
    function timeout_multiplier_x10 return Positive
    is
-      command : String := "/usr/bin/env LANG=C /sbin/sysctl vm.loadavg";
-      comres  : JT.Text;
+      average5 : constant Float := REP.Platform.get_5_minute_load;
+      avefloat : constant Float := average5 / Float (number_cores);
    begin
-      comres := generic_system_command (command);
-      declare
-         highend  : constant Natural := JT.SU.Length (comres) - 1;
-         stripped : constant String := JT.SU.Slice (Source => comres, Low => 15, High => highend);
-         section2 : constant String := JT.part_2 (stripped, " ");
-         average5 : constant String := JT.part_1 (section2, " ");
-         avefloat : Float;
-      begin
-         avefloat := Float'Value (average5) / Float (number_cores);
-         if avefloat <= 1.0 then
-            return 10;
-         else
-            return Integer (avefloat * 10.0);
-         end if;
-      exception
-         when others => return 10;
-      end;
+      if avefloat <= 1.0 then
+         return 10;
+      else
+         return Integer (avefloat * 10.0);
+      end if;
    exception
       when others => return 10;
    end timeout_multiplier_x10;

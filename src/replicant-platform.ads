@@ -15,8 +15,9 @@ package Replicant.Platform is
    --  Return platform-specific command for swapinfo
    function swapinfo_command return String;
 
-   --  Return 1-minute load average (platform specific)
+   --  Return load averages (platform specific)
    function get_instant_load return Float;
+   function get_5_minute_load return Float;
 
    --  Return true if file is executable (platform-specific)
    function file_is_executable (filename : String) return Boolean;
@@ -44,7 +45,10 @@ private
    --  Derived from /usr/bin/file -b <slave>/bin/sh
    function get_arch_from_bourne_shell return String;
 
-      --  Get OSVERSION from <sys/param.h>
+   --  Get OSVERSION from <sys/param.h>
    function get_osversion_from_param_header return String;
+
+   --  common logic for instant and 5-minute load average
+   function load_core (instant_load : Boolean) return Float;
 
 end Replicant.Platform;
