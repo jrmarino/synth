@@ -67,7 +67,7 @@ private
    procedure dump_port_variables (id : builders; content : JT.Text);
    function  log_name (sid : port_id) return String;
    function  dump_file (filename : String) return String;
-   function  dump_make_conf (id : builders) return String;
+   function  dump_make_conf (id : builders; conf_file : String) return String;
    function  log_section (title : String; header : Boolean) return String;
    procedure log_phase_end (id : builders);
    procedure log_phase_begin (phase : String; id : builders);

@@ -245,9 +245,9 @@ package body PortScan.Buildcycle.Ports is
       end if;
 
       declare
-           command : constant String := chroot & root & environment_override &
-           phaseenv & port_flags &
-           "/usr/bin/make -C /xports/" & catport & " " & phase2str (phase);
+         command : constant String := chroot & root & environment_override &
+           phaseenv & port_flags & chroot_make_program & " -C /xports/" &
+           catport & " " & phase2str (phase);
       begin
          result := generic_execute (id, command, timed_out, time_limit);
       end;

@@ -13,6 +13,9 @@ package Definitions is
    host_pkg8           : constant String := host_localbase & "/sbin/pkg";
    host_bmake          : constant String := host_localbase & "/bin/bmake";
    host_make_program   : constant String := host_make;
+   chroot_make         : constant String := "/usr/bin/make";
+   chroot_bmake        : constant String := "/usr/pkg/bin/bmake";
+   chroot_make_program : constant String := chroot_make;
    jobs_per_cpu        : constant := 2;
 
    type cpu_range is range 1 .. 32;
@@ -26,6 +29,7 @@ package Definitions is
    --  1. Modify host_localbase to value of LOCALBASE
    --  2. Change software_framework to "pkgsrc" for pkgsrc version
    --  3. Change host_make_program to "host_bmake" for Non-NetBSD pkgsrc platforms
-   --  4. On replicant.ads, change "/usr/local" to "/usr/pkg" on pkgsrc
+   --  4. Change chroot_make_program to "chroot_bmake" for pkgsrc version
+   --  5. On replicant.ads, change "/usr/local" to "/usr/pkg" on pkgsrc
 
 end Definitions;

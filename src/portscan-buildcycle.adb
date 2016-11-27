@@ -20,11 +20,11 @@ package body PortScan.Buildcycle is
       FA    : access TIO.File_Type;
       H_ENV : constant String := "Environment";
       H_OPT : constant String := "Options";
-      H_CFG : constant String := "/etc/make.conf";
+      CFG1  : constant String := "/etc/make.conf";
+      CFG2  : constant String := "/etc/mk.conf";
       UNAME : constant String := JT.USS (uname_mrv);
       BENV  : constant String := get_environment (id);
       COPTS : constant String := get_options_configuration (id);
-      MCONF : constant String := dump_make_conf (id);
       PTVAR : JT.Text         := get_port_variables (id);
    begin
       trackers (id).dynlink.Clear;
@@ -63,9 +63,16 @@ package body PortScan.Buildcycle is
 
       dump_port_variables (id => id, content => PTVAR);
 
-      TIO.Put_Line (FA.all, log_section (H_CFG, True));
-      TIO.Put      (FA.all, MCONF);
-      TIO.Put_Line (FA.all, log_section (H_CFG, False) & LAT.LF);
+      case software_framework is
+         when ports_collection =>
+            TIO.Put_Line (FA.all, log_section (CFG1, True));
+            TIO.Put      (FA.all, dump_make_conf (id, CFG1));
+            TIO.Put_Line (FA.all, log_section (CFG1, False) & LAT.LF);
+         when pkgsrc =>
+            TIO.Put_Line (FA.all, log_section (CFG2, True));
+            TIO.Put      (FA.all, dump_make_conf (id, CFG2));
+            TIO.Put_Line (FA.all, log_section (CFG2, False) & LAT.LF);
+      end case;
       return True;
 
    end initialize_log;
@@ -266,11 +273,15 @@ package body PortScan.Buildcycle is
    is
       root    : constant String := get_root (id);
       command : constant String := chroot & root & environment_override &
-        "/usr/bin/make -C /xports/" &
-        get_catport (all_ports (trackers (id).seq_id)) &
-        " showconfig";
+        chroot_make_program & " -C /xports/" &
+        get_catport (all_ports (trackers (id).seq_id));
    begin
-      return JT.USS (generic_system_command (command));
+      case software_framework is
+         when ports_collection =>
+            return JT.USS (generic_system_command (command & " showconfig"));
+         when pkgsrc =>
+            return JT.USS (generic_system_command (command & " show-options"));
+      end case;
    exception
       when others =>
          return discerr;
@@ -334,12 +345,22 @@ package body PortScan.Buildcycle is
    is
       root    : constant String := get_root (id);
       command : constant String := chroot & root & environment_override &
-        "/usr/bin/make -C /xports/" &
-        get_catport (all_ports (trackers (id).seq_id)) &
+        chroot_make_program & " -C /xports/" &
+        get_catport (all_ports (trackers (id).seq_id));
+      cmd_fpc : constant String := command &
         " -VCONFIGURE_ENV -VCONFIGURE_ARGS -VMAKE_ENV -VMAKE_ARGS" &
         " -VPLIST_SUB -VSUB_LIST";
+      cmd_nps : constant String := command &
+        " .MAKE.EXPAND_VARIABLES=yes -VCONFIGURE_ENV -VCONFIGURE_ARGS" &
+        " -VMAKE_ENV -VMAKE_FLAGS -VBUILD_MAKE_FLAGS -VPLIST_SUBST" &
+        " -VFILES_SUBST";
    begin
-      return generic_system_command (command);
+      case software_framework is
+         when ports_collection =>
+            return generic_system_command (cmd_fpc);
+         when pkgsrc =>
+            return generic_system_command (cmd_nps);
+      end case;
    exception
       when others =>
          return JT.SUS (discerr);
@@ -354,25 +375,49 @@ package body PortScan.Buildcycle is
       LA      : access TIO.File_Type := trackers (id).log_handle'Access;
       topline : JT.Text;
       concopy : JT.Text := content;
-      type result_range is range 1 .. 6;
+      type result_range_fpc is range 1 .. 6;
+      type result_range_nps is range 1 .. 7;
    begin
-      for k in result_range loop
-         JT.nextline (lineblock => concopy, firstline => topline);
-         case k is
-            when 1 => TIO.Put_Line
-                 (LA.all, split_collection (topline, "CONFIGURE_ENV"));
-            when 2 => TIO.Put_Line
-                 (LA.all, split_collection (topline, "CONFIGURE_ARGS"));
-            when 3 => TIO.Put_Line
-                 (LA.all, split_collection (topline, "MAKE_ENV"));
-            when 4 => TIO.Put_Line
-                 (LA.all, split_collection (topline, "MAKE_ARGS"));
-            when 5 => TIO.Put_Line
-                 (LA.all, split_collection (topline, "PLIST_SUB"));
-            when 6 => TIO.Put_Line
-                 (LA.all, split_collection (topline, "SUB_LIST"));
-         end case;
-      end loop;
+      case software_framework is
+         when ports_collection =>
+            for k in result_range_fpc loop
+               JT.nextline (lineblock => concopy, firstline => topline);
+               case k is
+               when 1 => TIO.Put_Line
+                    (LA.all, split_collection (topline, "CONFIGURE_ENV"));
+               when 2 => TIO.Put_Line
+                    (LA.all, split_collection (topline, "CONFIGURE_ARGS"));
+               when 3 => TIO.Put_Line
+                    (LA.all, split_collection (topline, "MAKE_ENV"));
+               when 4 => TIO.Put_Line
+                    (LA.all, split_collection (topline, "MAKE_ARGS"));
+               when 5 => TIO.Put_Line
+                    (LA.all, split_collection (topline, "PLIST_SUB"));
+               when 6 => TIO.Put_Line
+                    (LA.all, split_collection (topline, "SUB_LIST"));
+               end case;
+            end loop;
+         when pkgsrc =>
+            for k in result_range_nps loop
+               JT.nextline (lineblock => concopy, firstline => topline);
+               case k is
+               when 1 => TIO.Put_Line
+                    (LA.all, split_collection (topline, "CONFIGURE_ENV"));
+               when 2 => TIO.Put_Line
+                    (LA.all, split_collection (topline, "CONFIGURE_ARGS"));
+               when 3 => TIO.Put_Line
+                    (LA.all, split_collection (topline, "MAKE_ENV"));
+               when 4 => TIO.Put_Line
+                    (LA.all, split_collection (topline, "MAKE_FLAGS"));
+               when 5 => TIO.Put_Line
+                    (LA.all, split_collection (topline, "BUILD_MAKE_FLAGS"));
+               when 6 => TIO.Put_Line
+                    (LA.all, split_collection (topline, "PLIST_SUBST"));
+               when 7 => TIO.Put_Line
+                    (LA.all, split_collection (topline, "FILES_SUBST"));
+               end case;
+            end loop;
+      end case;
    end dump_port_variables;
 
 
@@ -412,10 +457,10 @@ package body PortScan.Buildcycle is
    ----------------------
    --  dump_make_conf  --
    ----------------------
-   function dump_make_conf (id : builders) return String
+   function dump_make_conf (id : builders; conf_file : String) return String
    is
       root     : constant String := get_root (id);
-      filename : constant String := root & "/etc/make.conf";
+      filename : constant String := root & conf_file;
    begin
       return dump_file (filename);
    end dump_make_conf;
