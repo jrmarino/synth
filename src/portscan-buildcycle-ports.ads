@@ -14,10 +14,6 @@ package PortScan.Buildcycle.Ports is
                             idle     : Boolean := False)
                             return Display.builder_rec;
 
-   --  Returns "True" when afterphase string matches a legal phase name.
-   --  Allowed phases: extract/patch/configure/build/stage/install/deinstall
-   function valid_test_phase (afterphase : String) return Boolean;
-
    --  Expose for build log
    function last_build_phase (id : builders) return String;
 

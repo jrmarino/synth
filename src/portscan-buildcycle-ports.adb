@@ -98,26 +98,6 @@ package body PortScan.Buildcycle.Ports is
    end valid_test_phase;
 
 
-   ---------------------------
-   --  valid_test_phase #2  --
-   ---------------------------
-   function valid_test_phase (afterphase : String) return Boolean is
-   begin
-      if afterphase = "extract" or else
-        afterphase = "patch" or else
-        afterphase = "configure" or else
-        afterphase = "build" or else
-        afterphase = "stage" or else
-        afterphase = "install" or else
-        afterphase = "deinstall"
-      then
-         return True;
-      else
-         return False;
-      end if;
-   end valid_test_phase;
-
-
    -----------------
    --  phase2str  --
    -----------------

@@ -21,6 +21,9 @@ package Replicant.Platform is
    --  Return true if file is executable (platform-specific)
    function file_is_executable (filename : String) return Boolean;
 
+   --  Return true if file is dynamically linked (platform-specific)
+   function dynamically_linked (base, filename : String) return Boolean;
+
    --  In order to do scanning in a clean environment prior to the true build
    --  Returns True on success
    function standalone_pkg8_install (id : builders) return Boolean;

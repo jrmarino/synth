@@ -1432,12 +1432,7 @@ package body PortScan.Pilot is
       if not EA_defined then
          return False;
       end if;
-      case software_framework is
-         when ports_collection =>
-            return FPC.valid_test_phase (Unix.env_variable_value (brkname));
-         when pkgsrc =>
-            return NPS.valid_test_phase (Unix.env_variable_value (brkname));
-      end case;
+      return CYC.valid_test_phase (Unix.env_variable_value (brkname));
    end interact_with_single_builder;
 
 

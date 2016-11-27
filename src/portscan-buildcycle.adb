@@ -4,12 +4,14 @@
 with Ada.Calendar.Arithmetic;
 with Ada.Calendar.Formatting;
 with Ada.Direct_IO;
+with Replicant.Platform;
 with Unix;
 
 package body PortScan.Buildcycle is
 
    package ACA renames Ada.Calendar.Arithmetic;
    package ACF renames Ada.Calendar.Formatting;
+   package REP renames Replicant;
 
 
    ----------------------
@@ -225,6 +227,7 @@ package body PortScan.Buildcycle is
    ---------------------
    procedure set_uname_mrv
    is
+      --  valid for all platforms
       command : constant String := "/usr/bin/uname -mrv";
    begin
       uname_mrv := generic_system_command (command);
@@ -596,24 +599,6 @@ package body PortScan.Buildcycle is
    end generic_execute;
 
 
-   --------------------------
-   --  dynamically_linked  --
-   --------------------------
-   function dynamically_linked (base, filename : String) return Boolean
-   is
-      command : String := chroot & base & " /usr/bin/file -b " &
-        "-e ascii -e encoding -e tar -e compress " &
-        LAT.Quotation & filename & LAT.Quotation;
-      comres  : JT.Text;
-   begin
-      comres := generic_system_command (command);
-      return JT.contains (comres, "dynamically linked");
-   exception
-      when others =>
-         return False;
-   end dynamically_linked;
-
-
    ----------------------------
    --  log_linked_libraries  --
    ----------------------------
@@ -681,7 +666,7 @@ package body PortScan.Buildcycle is
          crlen2 := JT.SU.Length (comres);
          exit when crlen1 = crlen2;
          crlen1 := crlen2;
-         if dynamically_linked (root, JT.USS (topline)) then
+         if REP.Platform.dynamically_linked (root, JT.USS (topline)) then
             stack_linked_libraries (id, root, JT.USS (topline));
          end if;
       end loop;
@@ -1240,5 +1225,25 @@ package body PortScan.Buildcycle is
    exception
       when others => return 10;
    end timeout_multiplier_x10;
+
+
+   ---------------------------
+   --  valid_test_phase #2  --
+   ---------------------------
+   function valid_test_phase (afterphase : String) return Boolean is
+   begin
+      if afterphase = "extract" or else
+        afterphase = "patch" or else
+        afterphase = "configure" or else
+        afterphase = "build" or else
+        afterphase = "stage" or else
+        afterphase = "install" or else
+        afterphase = "deinstall"
+      then
+         return True;
+      else
+         return False;
+      end if;
+   end valid_test_phase;
 
 end PortScan.Buildcycle;

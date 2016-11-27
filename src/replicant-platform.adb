@@ -50,8 +50,10 @@ package body Replicant.Platform is
    function file_is_executable (filename : String) return Boolean
    is
       command : constant String := "/usr/bin/file -b -L " &
-        "-e ascii -e encoding -e tar -e compress " & filename;
-      sol_cmd : constant String := "/usr/bin/file " & filename;
+        "-e ascii -e encoding -e tar -e compress " &
+        LAT.Quotation & filename & LAT.Quotation;
+      sol_cmd : constant String := "/usr/bin/file " &
+        LAT.Quotation & filename & LAT.Quotation;
       comres  : JT.Text;
    begin
       case platform_type is
@@ -63,7 +65,35 @@ package body Replicant.Platform is
             return False;
       end case;
       return JT.contains (comres, "executable");
+   exception
+      when others => return False;
    end file_is_executable;
+
+
+   --------------------------
+   --  dynamically_linked  --
+   --------------------------
+   function dynamically_linked (base, filename : String) return Boolean
+   is
+      command : String := chroot & base & " /usr/bin/file -b -L " &
+        "-e ascii -e encoding -e tar -e compress " &
+        LAT.Quotation & filename & LAT.Quotation;
+      sol_cmd : constant String := "/usr/bin/file " &
+        LAT.Quotation & filename & LAT.Quotation;
+      comres  : JT.Text;
+   begin
+      case platform_type is
+         when dragonfly | freebsd | netbsd | linux =>
+            comres := internal_system_command (command);
+         when solaris =>
+            comres := internal_system_command (sol_cmd);
+         when unknown =>
+            return False;
+      end case;
+      return JT.contains (comres, "dynamically linked");
+   exception
+      when others => return False;
+   end dynamically_linked;
 
 
    -----------------------------------

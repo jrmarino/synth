@@ -27,6 +27,10 @@ package PortScan.Buildcycle is
    --  records the current length of the build log.
    procedure set_log_lines (id : builders);
 
+   --  Returns "True" when afterphase string matches a legal phase name.
+   --  Allowed phases: extract/patch/configure/build/stage/install/deinstall
+   function valid_test_phase (afterphase : String) return Boolean;
+
 private
 
    type execution_limit is range 1 .. 720;
@@ -79,7 +83,6 @@ private
    procedure mark_file_system (id : builders; action : String);
    procedure interact_with_builder (id : builders);
    procedure obtain_custom_environment;
-   function  dynamically_linked (base, filename : String) return Boolean;
    function  elapsed_HH_MM_SS (start, stop : CAL.Time) return String;
    function  environment_override (enable_tty : Boolean := False) return String;
    function  format_loglines (numlines : Natural) return String;
