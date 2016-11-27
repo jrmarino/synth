@@ -720,7 +720,7 @@ package body PortScan.Packages is
    --------------------------------------
    procedure establish_package_architecture is
    begin
-      abi_formats := Replicant.determine_package_architecture;
+      abi_formats := Replicant.Platform.determine_package_architecture;
    end establish_package_architecture;
 
 

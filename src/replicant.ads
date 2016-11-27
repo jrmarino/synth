@@ -5,6 +5,11 @@ with Ada.Text_IO;
 with JohnnyText;
 with Definitions;   use Definitions;
 
+private with Ada.Characters.Latin_1;
+private with Ada.Directories;
+private with Parameters;
+private with Unix;
+
 package Replicant is
 
    package JT  renames JohnnyText;
@@ -53,16 +58,6 @@ package Replicant is
    --  Returns True if the attempt to remove the disk work areas is successful
    function clear_existing_workareas return Boolean;
 
-   --  In order to do scanning in a clean environment prior to the true build
-   --  Returns True on success
-   function standalone_pkg8_install (id : builders) return Boolean;
-
-   --  Required for building first pkg(8) and bmake(8) for pkgsrc
-   --  They are just copies of hosts versions
-   function host_pkgsrc_mk_install (id : builders) return Boolean;
-   function host_pkgsrc_bmake_install (id : builders) return Boolean;
-   function host_pkgsrc_pkg8_install (id : builders) return Boolean;
-
    --  The actual command to build a local repository (Returns True on success)
    function build_repository (id : builders; sign_command : String := "")
                               return Boolean;
@@ -75,19 +70,11 @@ package Replicant is
    --  This is a pre-run validity check
    function boot_modules_directory_missing return Boolean;
 
-   --  Calculate both types of package ABI as a function of platform
-   function determine_package_architecture return package_abi;
-
-   --  Return platform-specific command for swapinfo
-   function platform_swapinfo_command return String;
-
-   --  Return 1-minute load average (platform specific)
-   function get_instant_load return Float;
-
-   --  Return true if file is executable (platform-specific)
-   function file_is_executable (filename : String) return Boolean;
-
 private
+
+   package PM  renames Parameters;
+   package AD  renames Ada.Directories;
+   package LAT renames Ada.Characters.Latin_1;
 
    type mount_mode is (readonly, readwrite);
    type flavors is (unknown, freebsd, dragonfly, netbsd, linux, solaris);
@@ -241,20 +228,11 @@ private
    procedure mount_procfs (path_to_proc : String);
    procedure unmount_procfs (path_to_proc : String);
 
-   --  Cache variables that spawn to get populated to extended make.conf
-   procedure cache_port_variables (path_to_mm : String);
-
    --  Used to generic mtree exclusion files
    procedure write_common_mtree_exclude_base (mtreefile : TIO.File_Type);
    procedure write_preinstall_section (mtreefile : TIO.File_Type);
    procedure create_mtree_exc_preconfig (path_to_mm : String);
    procedure create_mtree_exc_preinst (path_to_mm : String);
-
-   --  Get OSVERSION from <sys/param.h>
-   function get_osversion_from_param_header return String;
-
-   --  Derived from /usr/bin/file -b <slave>/bin/sh
-   function get_arch_from_bourne_shell return String;
 
    --  capture unexpected output while setting up builders (e.g. mount)
    procedure start_abnormal_logging;
@@ -264,12 +242,5 @@ private
    function copy_directory_contents (src_directory : String;
                                      tgt_directory : String;
                                      pattern       : String) return Boolean;
-
-   --  returns platform-specific df command
-   function df_command return String;
-
-   --  platform-specific version of file command
-   function file_type_command return String;
-   function isolate_arch_from_file_type (fileinfo : String) return filearch;
 
 end Replicant;

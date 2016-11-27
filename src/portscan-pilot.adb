@@ -222,9 +222,9 @@ package body PortScan.Pilot is
       OPS.initialize_hooks;
       REP.initialize (testmode => False, num_cores => PortScan.cores_available);
       REP.launch_slave (id => PortScan.scan_slave, opts => noprocs);
-      if not REP.host_pkgsrc_mk_install (id => PortScan.scan_slave) or else
-        not REP.host_pkgsrc_bmake_install (id => PortScan.scan_slave) or else
-        not REP.host_pkgsrc_pkg8_install (id => PortScan.scan_slave)
+      if not PLAT.host_pkgsrc_mk_install (id => PortScan.scan_slave) or else
+        not PLAT.host_pkgsrc_bmake_install (id => PortScan.scan_slave) or else
+        not PLAT.host_pkgsrc_pkg8_install (id => PortScan.scan_slave)
       then
          TIO.Put_Line ("Failed to install programs from host system.");
          result := False;
@@ -333,7 +333,7 @@ package body PortScan.Pilot is
       if SIG.graceful_shutdown_requested then
          goto clean_exit;
       end if;
-      if not REP.standalone_pkg8_install (PortScan.scan_slave) then
+      if not PLAT.standalone_pkg8_install (PortScan.scan_slave) then
          TIO.Put_Line ("Failed to install pkg(8) scanner" & bailing);
          successful := False;
          goto clean_exit;

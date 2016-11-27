@@ -5,7 +5,7 @@ with Ada.Exceptions;
 with Ada.Numerics.Discrete_Random;
 with GNAT.String_Split;
 with PortScan.Buildcycle;
-with Replicant;
+with Replicant.Platform;
 with Signals;
 with Unix;
 
@@ -303,7 +303,7 @@ package body PortScan.Ops is
                sumdata.Skipped   := bld_counter (skipped);
                sumdata.elapsed   := CYC.elapsed_now;
                sumdata.swap      := get_swap_status;
-               sumdata.load      := Replicant.get_instant_load;
+               sumdata.load      := REP.Platform.get_instant_load;
                sumdata.pkg_hour  := hourly_build_rate;
                sumdata.impulse   := impulse_rate;
                DPY.summarize (sumdata);
@@ -719,7 +719,7 @@ package body PortScan.Ops is
    -----------------------
    function get_swap_status return Float
    is
-      command : String := Replicant.platform_swapinfo_command;
+      command : String := REP.Platform.swapinfo_command;
       comres  : JT.Text;
       topline : JT.Text;
       crlen1  : Natural;
@@ -867,7 +867,7 @@ package body PortScan.Ops is
             script : constant String := JT.USS (hook_location (hook));
          begin
             active_hook (hook) := AD.Exists (script) and then
-              Replicant.file_is_executable (script);
+              REP.Platform.file_is_executable (script);
          end;
       end loop;
    end initialize_hooks;
@@ -902,6 +902,7 @@ package body PortScan.Ops is
         nvpair ("DIR_DISTFILES", PM.configuration.dir_distfiles) &
         nvpair ("DIR_LOGS", PM.configuration.dir_logs) &
         nvpair ("DIR_BUILDBASE", PM.configuration.dir_buildbase);
+      --  The follow command works on every platform
       command : constant String := "/usr/bin/env -i " & common_env &
         envvar_list & " " & JT.USS (hook_location (hook));
    begin
@@ -1074,7 +1075,7 @@ package body PortScan.Ops is
            "  ," & nv ("pkghour",  hourly_build_rate)     & ASCII.LF &
            "  ," & nv ("impulse",  impulse_rate)          & ASCII.LF &
            "  ," & nv ("swapinfo", DPY.fmtpc (get_swap_status, True)) & ASCII.LF &
-           "  ," & nv ("load",     DPY.fmtpc (Replicant.get_instant_load, False)) & ASCII.LF &
+           "  ," & nv ("load",     DPY.fmtpc (REP.Platform.get_instant_load, False)) & ASCII.LF &
            " }" & ASCII.LF &
            " ," & ASCII.Quotation & "builders" & ASCII.Quotation & ASCII.Colon & "[" & ASCII.LF);
 
