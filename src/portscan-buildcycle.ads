@@ -9,17 +9,11 @@ package PortScan.Buildcycle is
    cycle_log_error : exception;
    cycle_cmd_error : exception;
 
-   type phases is (check_sanity, pkg_depends, fetch_depends, fetch, checksum,
-                   extract_depends, extract, patch_depends, patch,
-                   build_depends, lib_depends, configure, build, run_depends,
-                   stage, check_plist, pkg_package, install_mtree, install,
-                   deinstall);
-
    procedure initialize (test_mode : Boolean; jail_env : JT.Text);
    function build_package (id          : builders;
                            sequence_id : port_id;
                            interactive : Boolean := False;
-                           interphase  : phases  := fetch) return Boolean;
+                           interphase  : String  := "") return Boolean;
 
    --  Expose for overall build log
    function log_duration (start, stop : CAL.Time) return String;
@@ -44,14 +38,17 @@ package PortScan.Buildcycle is
    --  records the current length of the build log.
    procedure set_log_lines (id : builders);
 
-   --  If the afterphase string matches a legal phase name then that phase
-   --  is returned, otherwise the value of check-sanity is returned.  Allowed
-   --  phases are: extract/patch/configure/build/stage/install/deinstall.
-   --  check-sanity is considered a negative response
-   --  stage includes check-plist
-   function valid_test_phase (afterphase : String) return phases;
+   --  Returns "True" when afterphase string matches a legal phase name.
+   --  Allowed phases: extract/patch/configure/build/stage/install/deinstall
+   function valid_test_phase (afterphase : String) return Boolean;
 
 private
+
+   type phases is (check_sanity, pkg_depends, fetch_depends, fetch, checksum,
+                   extract_depends, extract, patch_depends, patch,
+                   build_depends, lib_depends, configure, build, run_depends,
+                   stage, check_plist, pkg_package, install_mtree, install,
+                   deinstall);
 
    type execution_limit is range 1 .. 720;
 
@@ -130,5 +127,12 @@ private
    --  with lock=False.  It's a diagnostic mechanism and effectively sets
    --  /usr/local inside a slave as read-only
    procedure set_localbase_protection (id : builders; lock : Boolean);
+
+   --  If the afterphase string matches a legal phase name then that phase
+   --  is returned, otherwise the value of check-sanity is returned.  Allowed
+   --  phases are: extract/patch/configure/build/stage/install/deinstall.
+   --  check-sanity is considered a negative response
+   --  stage includes check-plist
+   function valid_test_phase (afterphase : String) return phases;
 
 end PortScan.Buildcycle;

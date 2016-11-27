@@ -1421,7 +1421,6 @@ package body PortScan.Pilot is
    ------------------------------------
    function interact_with_single_builder return Boolean
    is
-      use type CYC.phases;
       EA_defined : constant Boolean := Unix.env_variable_defined (brkname);
    begin
       if Natural (portlist.Length) /= 1 then
@@ -1430,8 +1429,7 @@ package body PortScan.Pilot is
       if not EA_defined then
          return False;
       end if;
-      return CYC.valid_test_phase (Unix.env_variable_value (brkname)) /=
-        CYC.check_sanity;
+      return CYC.valid_test_phase (Unix.env_variable_value (brkname));
    end interact_with_single_builder;
 
 
@@ -1441,8 +1439,7 @@ package body PortScan.Pilot is
    procedure bulk_run_then_interact_with_final_port
    is
       uscatport : JT.Text := portkey_crate.Key (Position => portlist.First);
-      brkphase : constant CYC.phases := CYC.valid_test_phase
-                                        (Unix.env_variable_value (brkname));
+      brkphase : constant String := Unix.env_variable_value (brkname);
       buildres : Boolean;
       ptid     : port_id;
    begin

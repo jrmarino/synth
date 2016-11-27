@@ -18,9 +18,10 @@ package body PortScan.Buildcycle is
    function build_package (id          : builders;
                            sequence_id : port_id;
                            interactive : Boolean := False;
-                           interphase  : phases  := fetch) return Boolean
+                           interphase  : String  := "") return Boolean
    is
       R : Boolean;
+      break_phase : constant phases := valid_test_phase (interphase);
    begin
       trackers (id).seq_id := sequence_id;
       trackers (id).loglines := 0;
@@ -70,7 +71,7 @@ package body PortScan.Buildcycle is
                end if;
          end case;
          exit when R = False;
-         exit when interactive and then interphase = phase;
+         exit when interactive and then phase = break_phase;
       end loop;
       if uselog then
          finalize_log (id);
@@ -1415,9 +1416,9 @@ package body PortScan.Buildcycle is
    end interact_with_builder;
 
 
-   ------------------------
-   --  valid_test_phase  --
-   ------------------------
+   ---------------------------
+   --  valid_test_phase #1  --
+   ---------------------------
    function valid_test_phase (afterphase : String) return phases is
    begin
       if afterphase = "extract" then
@@ -1436,6 +1437,26 @@ package body PortScan.Buildcycle is
          return deinstall;
       else
          return check_sanity;
+      end if;
+   end valid_test_phase;
+
+
+   ---------------------------
+   --  valid_test_phase #2  --
+   ---------------------------
+   function valid_test_phase (afterphase : String) return Boolean is
+   begin
+      if afterphase = "extract" or else
+        afterphase = "patch" or else
+        afterphase = "configure" or else
+        afterphase = "build" or else
+        afterphase = "stage" or else
+        afterphase = "install" or else
+        afterphase = "deinstall"
+      then
+         return True;
+      else
+         return False;
       end if;
    end valid_test_phase;
 
