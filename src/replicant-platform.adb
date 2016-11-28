@@ -535,6 +535,20 @@ package body Replicant.Platform is
    end get_number_cpus;
 
 
+   ------------------------------
+   --  set_file_as_executable  --
+   ------------------------------
+   procedure set_file_as_executable (fullpath : String)
+   is
+      --  supported by all platforms
+      command : constant String := "/bin/chmod 755 " & fullpath;
+   begin
+      silent_exec (command);
+   exception
+      when others => null;
+   end set_file_as_executable;
+
+
    -------------------------------
    --  standalone_pkg8_install  --
    -------------------------------
@@ -581,6 +595,7 @@ package body Replicant.Platform is
       AD.Create_Path (slave_path);
       AD.Copy_File (Source_Name => host_bmake,
                     Target_Name => slave_bmake);
+      set_file_as_executable (slave_bmake);
       return True;
    exception
       when others => return False;
@@ -607,6 +622,8 @@ package body Replicant.Platform is
                     Target_Name => slave_pkg);
       AD.Copy_File (Source_Name => host_admin,
                     Target_Name => slave_admin);
+      set_file_as_executable (slave_pkg);
+      set_file_as_executable (slave_admin);
       return True;
    exception
       when others => return False;

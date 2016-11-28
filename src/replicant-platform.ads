@@ -54,4 +54,7 @@ private
    --  common logic for instant and 5-minute load average
    function load_core (instant_load : Boolean) return Float;
 
+   --  equivalent to chmod 755 <fullpath>
+   procedure set_file_as_executable (fullpath : String);
+
 end Replicant.Platform;
