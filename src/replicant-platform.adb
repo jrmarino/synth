@@ -781,7 +781,7 @@ package body Replicant.Platform is
               (vconf,
                  "MAKEFLAGS+= OS_VERSION=" & release & LAT.LF &
                  "MAKEFLAGS+= HOST_MACHINE_ARCH=" & ARCH & LAT.LF &
-                 "MAKEFLAGS+=  _PKGSRCDIR=/xports");
+                 "MAKEFLAGS+= _PKGSRCDIR=/xports");
       end case;
       TIO.Close (vconf);
 

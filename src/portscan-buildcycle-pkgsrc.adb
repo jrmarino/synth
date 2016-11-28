@@ -238,7 +238,7 @@ package body PortScan.Buildcycle.Pkgsrc is
          when build             => return "build";
          when test              => return "test";
          when stage_install     => return "stage-install";
-         when create_package    => return "create-package";
+         when create_package    => return "package";
          when package_install   => return "package-install";
          when deinstall         => return "deinstall";
       end case;

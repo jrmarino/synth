@@ -513,12 +513,18 @@ package body PortScan is
                  with dtype'Img & ": " & JT.USS (trimline) &
                  " (" & catport & ")";
             end if;
-            if fulldep'Length > colon1 + dirlen + 5 and then
-              fulldep (colon1 .. colon1 + dirlen) = dir_ports & "/"
-            then
+            if fulldep'Length < colon1 + dirlen + 6 then
+               raise make_garbage
+                 with "Specification is too short: " & fulldep;
+            end if;
+            if fulldep (colon1 .. colon1 + dirlen) = dir_ports & "/" then
                deprec := ports_keys.Find
                  (Key => scrub_phase
                     (fulldep (colon + dirlen + 2 .. fulldep'Last)));
+            elsif fulldep (colon1 .. colon1 + 5) = "../../" then
+               deprec := ports_keys.Find
+                 (Key => scrub_phase
+                    (fulldep (colon1 + 6 .. fulldep'Last)));
             else
                deprec := ports_keys.Find
                  (Key => scrub_phase
@@ -527,7 +533,7 @@ package body PortScan is
 
             if deprec = portkey_crate.No_Element then
                raise nonexistent_port
-                 with fulldep (colon1 + 8 .. fulldep'Last) &
+                 with fulldep &
                  " (required dependency of " & catport & ") does not exist.";
             end if;
                declare
