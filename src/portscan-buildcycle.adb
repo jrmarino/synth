@@ -276,7 +276,7 @@ package body PortScan.Buildcycle is
    is
       root    : constant String := get_root (id);
       command : constant String := chroot & root & environment_override &
-        chroot_make_program & " -C /xports/" &
+        chroot_make_program & " -C " & dir_ports & "/" &
         get_catport (all_ports (trackers (id).seq_id));
    begin
       case software_framework is
@@ -348,7 +348,7 @@ package body PortScan.Buildcycle is
    is
       root    : constant String := get_root (id);
       command : constant String := chroot & root & environment_override &
-        chroot_make_program & " -C /xports/" &
+        chroot_make_program & " -C " & dir_ports & "/" &
         get_catport (all_ports (trackers (id).seq_id));
       cmd_fpc : constant String := command &
         " -VCONFIGURE_ENV -VCONFIGURE_ARGS -VMAKE_ENV -VMAKE_ARGS" &

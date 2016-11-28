@@ -191,7 +191,9 @@ private
    procedure populate_set_options (target  : port_index;
                                    line    : JT.Text;
                                    on      : Boolean);
-   procedure populate_port_data (target : port_index);
+   procedure populate_port_data   (target : port_index);
+   procedure populate_port_data_fpc (target : port_index);
+   procedure populate_port_data_nps (target : port_index);
    procedure drill_down (next_target     : port_index;
                          original_target : port_index);
 

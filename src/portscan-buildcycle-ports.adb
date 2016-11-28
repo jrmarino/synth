@@ -226,8 +226,8 @@ package body PortScan.Buildcycle.Ports is
 
       declare
          command : constant String := chroot & root & environment_override &
-           phaseenv & port_flags & chroot_make_program & " -C /xports/" &
-           catport & " " & phase2str (phase);
+           phaseenv & port_flags & chroot_make_program & " -C " & dir_ports &
+           "/" & catport & " " & phase2str (phase);
       begin
          result := generic_execute (id, command, timed_out, time_limit);
       end;

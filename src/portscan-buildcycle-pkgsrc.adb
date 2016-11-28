@@ -104,7 +104,7 @@ package body PortScan.Buildcycle.Pkgsrc is
 
       declare
          command : constant String := chroot & root & environment_override &
-           phaseenv & chroot_make_program & " -C /xports/" &
+           phaseenv & chroot_make_program & " -C " & dir_ports & "/" &
            catport & " " & phase2str (phase);
       begin
          result := generic_execute (id, command, timed_out, time_limit);

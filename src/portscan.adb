@@ -591,13 +591,28 @@ package body PortScan is
    --------------------------
    --  populate_port_data  --
    --------------------------
-   procedure populate_port_data (target : port_index)
+   procedure populate_port_data (target : port_index) is
+   begin
+      case software_framework is
+         when ports_collection =>
+            populate_port_data_fpc (target);
+         when pkgsrc =>
+            populate_port_data_nps (target);
+      end case;
+   end populate_port_data;
+
+
+   ------------------------------
+   --  populate_port_data_fpc  --
+   ------------------------------
+   procedure populate_port_data_fpc (target : port_index)
    is
       catport  : String := get_catport (all_ports (target));
       fullport : constant String := dir_ports & "/" & catport;
       ssroot   : constant String := chroot &
                  JT.USS (PM.configuration.dir_buildbase) & ss_base;
-      command  : constant String := ssroot & " /usr/bin/make -C " & fullport &
+      command  : constant String :=
+                 ssroot & chroot_make_program & " -C " & fullport &
                  " -VPKGVERSION -VPKGFILE:T -VMAKE_JOBS_NUMBER -VIGNORE" &
                  " -VFETCH_DEPENDS -VEXTRACT_DEPENDS -VPATCH_DEPENDS" &
                  " -VBUILD_DEPENDS -VLIB_DEPENDS -VRUN_DEPENDS" &
@@ -658,7 +673,77 @@ package body PortScan is
       when issue : others =>
          EX.Reraise_Occurrence (issue);
 
-   end populate_port_data;
+   end populate_port_data_fpc;
+
+
+   ------------------------------
+   --  populate_port_data_nps  --
+   ------------------------------
+   procedure populate_port_data_nps (target : port_index)
+   is
+      catport  : String := get_catport (all_ports (target));
+      fullport : constant String := dir_ports & "/" & catport;
+      ssroot   : constant String := chroot &
+                 JT.USS (PM.configuration.dir_buildbase) & ss_base;
+      command  : constant String :=
+                 ssroot & chroot_make_program & " -C " & fullport &
+                 " .MAKE.EXPAND_VARIABLES=yes " &
+                 " -VPKGVERSION -VPKGFILE:T -V_MAKE_JOBS:C/^-j//" &
+                 " -V_CBBH_MSGS -VBUILD_DEPENDS -VDEPENDS" &
+                 " -VPKG_SUPPORTED_OPTIONS -VPKG_DESELECTED_OPTIONS" &
+                 " -VEMUL_PLATFORMS";
+      content  : JT.Text;
+      topline  : JT.Text;
+      status   : Integer;
+
+      type result_range is range 1 .. 9;
+   begin
+      content := Unix.piped_command (command, status);
+      if status /= 0 then
+         raise bmake_execution with catport &
+           " (return code =" & status'Img & ")";
+      end if;
+      for k in result_range loop
+         JT.nextline (lineblock => content, firstline => topline);
+         case k is
+            when 1 => all_ports (target).port_version := topline;
+            when 2 => all_ports (target).package_name := topline;
+            when 3 =>
+               if JT.IsBlank (topline) then
+                  all_ports (target).jobs := PM.configuration.num_builders;
+               else
+                  begin
+                     all_ports (target).jobs :=
+                       builders (Integer'Value (JT.USS (topline)));
+                  exception
+                     when others =>
+                        all_ports (target).jobs :=
+                          PM.configuration.num_builders;
+                  end;
+               end if;
+            when 4 => all_ports (target).ignore_reason := topline;
+                      all_ports (target).ignored := not JT.IsBlank (topline);
+            when 5 => populate_set_depends (target, catport, topline, build);
+            when 6 => populate_set_depends (target, catport, topline, runtime);
+            when 7 => populate_set_options (target, topline, True);
+            when 8 => populate_set_options (target, topline, False);
+            when 9 =>
+               if JT.contains (topline, "linux") then
+                  all_ports (target).use_linprocfs := True;
+               end if;
+         end case;
+      end loop;
+      all_ports (target).scanned := True;
+      if catport = "x11/gnustep-gui" then
+         all_ports (target).use_procfs := True;
+      end if;
+      if catport = "sysutils/htop" then
+         all_ports (target).use_linprocfs := True;
+      end if;
+   exception
+      when issue : others =>
+         EX.Reraise_Occurrence (issue);
+   end populate_port_data_nps;
 
 
    -----------------
