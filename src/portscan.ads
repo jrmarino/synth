@@ -69,6 +69,7 @@ private
    max_ports  : constant := 28000;
    scan_slave : constant builders := 9;
    ss_base    : constant String := "/SL09";
+   dir_ports  : constant String := "/xports";
 
    type port_id   is range -1 .. max_ports - 1;
    subtype port_index is port_id range 0 .. port_id'Last;
@@ -182,6 +183,13 @@ private
 
    procedure iterate_reverse_deps;
    procedure iterate_drill_down;
+   procedure populate_set_depends (target  : port_index;
+                                   catport : String;
+                                   line    : JT.Text;
+                                   dtype   : dependency_type);
+   procedure populate_set_options (target  : port_index;
+                                   line    : JT.Text;
+                                   on      : Boolean);
    procedure populate_port_data (target : port_index);
    procedure drill_down (next_target     : port_index;
                          original_target : port_index);

@@ -45,7 +45,7 @@ package body PortScan is
                               return Boolean
    is
       xports : constant String := JT.USS (PM.configuration.dir_buildbase) &
-                                  ss_base & "/xports";
+                                  ss_base & dir_ports;
 
       procedure dig (cursor : block_crate.Cursor);
       target    : port_index;
@@ -450,12 +450,11 @@ package body PortScan is
    --------------------
    function get_pkg_name (origin : String) return String
    is
-      xports   : constant String := "/xports";
-      fullport : constant String := xports & "/" & origin;
+      fullport : constant String := dir_ports & "/" & origin;
       chroot   : constant String := "/usr/sbin/chroot " &
                  JT.USS (PM.configuration.dir_buildbase) & ss_base;
-      command  : constant String := chroot & " /usr/bin/make -C " & fullport &
-                 " -VPKGFILE:T";
+      command  : constant String := chroot & chroot_make_program &
+                 " .MAKE.EXPAND_VARIABLES=yes -C " & fullport & " -VPKGFILE:T";
       content  : JT.Text;
       topline  : JT.Text;
       status   : Integer;
@@ -470,83 +469,66 @@ package body PortScan is
    end get_pkg_name;
 
 
-   --------------------------
-   --  populate_port_data  --
-   --------------------------
-   procedure populate_port_data (target : port_index)
+   ----------------------------
+   --  populate_set_depends  --
+   ----------------------------
+   procedure populate_set_depends (target  : port_index;
+                                   catport : String;
+                                   line    : JT.Text;
+                                   dtype   : dependency_type)
    is
-      xports   : constant String := "/xports";
-      catport  : String := get_catport (all_ports (target));
-      fullport : constant String := xports & "/" & catport;
-      chroot   : constant String := "/usr/sbin/chroot " &
-                 JT.USS (PM.configuration.dir_buildbase) & ss_base;
-      command  : constant String := chroot & " /usr/bin/make -C " & fullport &
-                 " -VPKGVERSION -VPKGFILE:T -VMAKE_JOBS_NUMBER -VIGNORE" &
-                 " -VFETCH_DEPENDS -VEXTRACT_DEPENDS -VPATCH_DEPENDS" &
-                 " -VBUILD_DEPENDS -VLIB_DEPENDS -VRUN_DEPENDS" &
-                 " -VSELECTED_OPTIONS -VDESELECTED_OPTIONS -VUSE_LINUX";
-      content  : JT.Text;
-      topline  : JT.Text;
-      status   : Integer;
+      subs       : GSS.Slice_Set;
+      deps_found : GSS.Slice_Number;
+      trimline   : constant JT.Text := JT.trim (line);
+      zero_deps  : constant GSS.Slice_Number := GSS.Slice_Number (0);
+      dirlen     : constant Natural := dir_ports'Length;
 
-      type result_range is range 1 .. 13;
+      use type GSS.Slice_Number;
+   begin
+      if JT.IsBlank (trimline) then
+         return;
+      end if;
 
-      --  prototypes
-      procedure set_depends (line  : JT.Text; dtype : dependency_type);
-      procedure set_options (line  : JT.Text; on : Boolean);
+      GSS.Create (S          => subs,
+                  From       => JT.USS (trimline),
+                  Separators => " " & LAT.HT,
+                  Mode       => GSS.Multiple);
+      deps_found :=  GSS.Slice_Count (S => subs);
+      if deps_found = zero_deps then
+         return;
+      end if;
+      for j in 1 .. deps_found loop
+         declare
+            workdep : constant String  := GSS.Slice (subs, j);
+            fulldep : constant String (1 .. workdep'Length) := workdep;
+            colon   : constant Natural := find_colon (fulldep);
+            colon1  : constant Natural := colon + 1;
+            deprec  : portkey_crate.Cursor;
 
-      procedure set_depends (line  : JT.Text; dtype : dependency_type)
-      is
-         subs       : GSS.Slice_Set;
-         deps_found : GSS.Slice_Number;
-         trimline   : constant JT.Text := JT.trim (line);
-         zero_deps  : constant GSS.Slice_Number := GSS.Slice_Number (0);
-         dirlen     : constant Natural := xports'Length;
+            use type portkey_crate.Cursor;
+         begin
+            if colon < 2 then
+               raise make_garbage
+                 with dtype'Img & ": " & JT.USS (trimline) &
+                 " (" & catport & ")";
+            end if;
+            if fulldep'Length > colon1 + dirlen + 5 and then
+              fulldep (colon1 .. colon1 + dirlen) = dir_ports & "/"
+            then
+               deprec := ports_keys.Find
+                 (Key => scrub_phase
+                    (fulldep (colon + dirlen + 2 .. fulldep'Last)));
+            else
+               deprec := ports_keys.Find
+                 (Key => scrub_phase
+                    (fulldep (colon1 .. fulldep'Last)));
+            end if;
 
-         use type GSS.Slice_Number;
-      begin
-         if JT.IsBlank (trimline) then
-            return;
-         end if;
-
-         GSS.Create (S          => subs,
-                     From       => JT.USS (trimline),
-                     Separators => " " & LAT.HT,
-                     Mode       => GSS.Multiple);
-         deps_found :=  GSS.Slice_Count (S => subs);
-         if deps_found = zero_deps then
-            return;
-         end if;
-         for j in 1 .. deps_found loop
-            declare
-               workdep : constant String  := GSS.Slice (subs, j);
-               fulldep : constant String (1 .. workdep'Length) := workdep;
-               colon   : constant Natural := find_colon (fulldep);
-               colon1  : constant Natural := colon + 1;
-               deprec  : portkey_crate.Cursor;
-
-               use type portkey_crate.Cursor;
-            begin
-               if colon < 2 then
-                  raise make_garbage
-                    with dtype'Img & ": " & JT.USS (trimline) &
-                    " (" & catport & ")";
-               end if;
-               if fulldep'Length > colon1 + dirlen + 5 and then
-                 fulldep (colon1 .. colon1 + dirlen) = xports & "/"
-               then
-                  deprec := ports_keys.Find (Key => scrub_phase
-                       (fulldep (colon + dirlen + 2 .. fulldep'Last)));
-               else
-                  deprec := ports_keys.Find (Key => scrub_phase
-                       (fulldep (colon1 .. fulldep'Last)));
-               end if;
-
-               if deprec = portkey_crate.No_Element then
-                  raise nonexistent_port
-                    with fulldep (colon1 + 8 .. fulldep'Last) &
-                    " (required dependency of " & catport & ") does not exist.";
-               end if;
+            if deprec = portkey_crate.No_Element then
+               raise nonexistent_port
+                 with fulldep (colon1 + 8 .. fulldep'Last) &
+                 " (required dependency of " & catport & ") does not exist.";
+            end if;
                declare
                   depindex : port_index := portkey_crate.Element (deprec);
                begin
@@ -563,41 +545,68 @@ package body PortScan is
                      end if;
                   end if;
                end;
-            end;
-         end loop;
-      end set_depends;
+         end;
+      end loop;
+   end populate_set_depends;
 
-      procedure set_options (line  : JT.Text; on : Boolean)
-      is
-         subs       : GSS.Slice_Set;
-         opts_found : GSS.Slice_Number;
-         trimline   : constant JT.Text := JT.trim (line);
-         zero_opts  : constant GSS.Slice_Number := GSS.Slice_Number (0);
 
-         use type GSS.Slice_Number;
-      begin
-         if JT.IsBlank (trimline) then
-            return;
-         end if;
-         GSS.Create (S          => subs,
-                     From       => JT.USS (trimline),
-                     Separators => " ",
-                     Mode       => GSS.Multiple);
-         opts_found :=  GSS.Slice_Count (S => subs);
-         if opts_found = zero_opts then
-            return;
-         end if;
-         for j in 1 .. opts_found loop
-            declare
-               opt : JT.Text  := JT.SUS (GSS.Slice (subs, j));
-            begin
-               if not all_ports (target).options.Contains (opt) then
-                  all_ports (target).options.Insert (Key => opt,
-                                                     New_Item => on);
-               end if;
-            end;
-         end loop;
-      end set_options;
+   ----------------------------
+   --  populate_set_options  --
+   ----------------------------
+   procedure populate_set_options (target : port_index;
+                                   line   : JT.Text;
+                                   on     : Boolean)
+   is
+      subs       : GSS.Slice_Set;
+      opts_found : GSS.Slice_Number;
+      trimline   : constant JT.Text := JT.trim (line);
+      zero_opts  : constant GSS.Slice_Number := GSS.Slice_Number (0);
+
+      use type GSS.Slice_Number;
+   begin
+      if JT.IsBlank (trimline) then
+         return;
+      end if;
+      GSS.Create (S          => subs,
+                  From       => JT.USS (trimline),
+                  Separators => " ",
+                  Mode       => GSS.Multiple);
+      opts_found :=  GSS.Slice_Count (S => subs);
+      if opts_found = zero_opts then
+         return;
+      end if;
+      for j in 1 .. opts_found loop
+         declare
+            opt : JT.Text  := JT.SUS (GSS.Slice (subs, j));
+         begin
+            if not all_ports (target).options.Contains (opt) then
+               all_ports (target).options.Insert (Key => opt,
+                                                  New_Item => on);
+            end if;
+         end;
+      end loop;
+   end populate_set_options;
+
+
+   --------------------------
+   --  populate_port_data  --
+   --------------------------
+   procedure populate_port_data (target : port_index)
+   is
+      catport  : String := get_catport (all_ports (target));
+      fullport : constant String := dir_ports & "/" & catport;
+      chroot   : constant String := "/usr/sbin/chroot " &
+                 JT.USS (PM.configuration.dir_buildbase) & ss_base;
+      command  : constant String := chroot & " /usr/bin/make -C " & fullport &
+                 " -VPKGVERSION -VPKGFILE:T -VMAKE_JOBS_NUMBER -VIGNORE" &
+                 " -VFETCH_DEPENDS -VEXTRACT_DEPENDS -VPATCH_DEPENDS" &
+                 " -VBUILD_DEPENDS -VLIB_DEPENDS -VRUN_DEPENDS" &
+                 " -VSELECTED_OPTIONS -VDESELECTED_OPTIONS -VUSE_LINUX";
+      content  : JT.Text;
+      topline  : JT.Text;
+      status   : Integer;
+
+      type result_range is range 1 .. 13;
 
    begin
       content := Unix.piped_command (command, status);
@@ -612,7 +621,6 @@ package body PortScan is
             when 1 => all_ports (target).port_version := topline;
             when 2 => all_ports (target).package_name := topline;
             when 3 =>
-               declare
                begin
                   all_ports (target).jobs :=
                     builders (Integer'Value (JT.USS (topline)));
@@ -620,17 +628,16 @@ package body PortScan is
                   when others =>
                      all_ports (target).jobs := PM.configuration.num_builders;
                end;
-            when 4 =>
-               all_ports (target).ignore_reason := topline;
-               all_ports (target).ignored := not JT.IsBlank (topline);
-            when 5 => set_depends (topline, fetch);
-            when 6 => set_depends (topline, extract);
-            when 7 => set_depends (topline, patch);
-            when 8 => set_depends (topline, build);
-            when 9 => set_depends (topline, library);
-            when 10 => set_depends (topline, runtime);
-            when 11 => set_options (topline, True);
-            when 12 => set_options (topline, False);
+            when 4 => all_ports (target).ignore_reason := topline;
+                      all_ports (target).ignored := not JT.IsBlank (topline);
+            when 5 => populate_set_depends (target, catport, topline, fetch);
+            when 6 => populate_set_depends (target, catport, topline, extract);
+            when 7 => populate_set_depends (target, catport, topline, patch);
+            when 8 => populate_set_depends (target, catport, topline, build);
+            when 9 => populate_set_depends (target, catport, topline, library);
+            when 10 => populate_set_depends (target, catport, topline, runtime);
+            when 11 => populate_set_options (target, topline, True);
+            when 12 => populate_set_options (target, topline, False);
             when 13 =>
                if not JT.IsBlank (JT.trim (topline)) then
                   all_ports (target).use_linprocfs := True;
