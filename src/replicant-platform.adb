@@ -459,17 +459,30 @@ package body Replicant.Platform is
    -----------------------
    function get_number_cpus return Positive
    is
-      bsd    : constant String := "/sbin/sysctl hw.ncpu";
-      comres : JT.Text;
-      status : Integer;
+      bsd_cmd : constant String := "/sbin/sysctl hw.ncpu";
+      lin_cmd : constant String := "/usr/bin/nproc";
+      sol_cmd : constant String := "/usr/sbin/psrinfo -p";
+      comres  : JT.Text;
+      status  : Integer;
+      start   : Positive;
    begin
-      --  expected output: "hw.ncpu: C" where C is integer
-      --  TODO: linux and solaris support
+      --  DF/Free: expected output: "hw.ncpu: C" where C is integer
+      --  NetBSD:  expected output: "hw.ncpu = C"
+      --  Linux:   expected output: "C"
+      --  TODO: solaris support
       case platform_type is
-         when dragonfly | freebsd | netbsd =>
-            comres := Unix.piped_command (bsd, status);
-         when linux   => return 1;
-         when solaris => return 1;
+         when dragonfly | freebsd =>
+            start := 10;
+            comres := Unix.piped_command (bsd_cmd, status);
+         when netbsd =>
+            start := 11;
+            comres := Unix.piped_command (bsd_cmd, status);
+         when linux   =>
+            start := 1;
+            comres := Unix.piped_command (lin_cmd, status);
+         when solaris =>
+            start := 1;
+            comres := Unix.piped_command (sol_cmd, status);
          when unknown => return 1;
       end case;
 
@@ -478,7 +491,7 @@ package body Replicant.Platform is
       end if;
       declare
          str_content : String := JT.USS (comres);
-         ncpu        : String := str_content (10 .. str_content'Last - 1);
+         ncpu        : String := str_content (start .. str_content'Last - 1);
          number      : Positive := Integer'Value (ncpu);
       begin
          return number;
