@@ -459,40 +459,74 @@ package body Replicant.Platform is
    -----------------------
    function get_number_cpus return Positive
    is
+      --  Chicken/Egg issue.
+      --  Platform type is not available.  This function is called before
+      --  The profile loading which requires the number of cpus as an argument.
+      --  Therefore, we need two commands, the first being getting the OPSYS
+      --  through the uname -s command.
+
+      type opsys is (FreeFly, NetBSD, Linux, Solaris, Unsupported);
+      uname   : constant String := "/usr/bin/uname -s";
       bsd_cmd : constant String := "/sbin/sysctl hw.ncpu";
       lin_cmd : constant String := "/usr/bin/nproc";
       sol_cmd : constant String := "/usr/sbin/psrinfo -p";
+      thissys : opsys;
       comres  : JT.Text;
       status  : Integer;
       start   : Positive;
    begin
+      comres := Unix.piped_command (uname, status);
+      if status /= 0 then
+         return 1;
+      end if;
+
+      declare
+         resstr    : String := JT.USS (comres);
+         opsys_str : String := resstr (resstr'First .. resstr'Last - 1);
+      begin
+         if opsys_str = "FreeBSD" then
+            thissys := FreeFly;
+         elsif opsys_str = "DragonFly" then
+            thissys := FreeFly;
+         elsif opsys_str = "NetBSD" then
+               thissys := NetBSD;
+         elsif opsys_str = "Linux" then
+            thissys := Linux;
+         elsif opsys_str = "SunOS" then
+            thissys := Solaris;
+         else
+            thissys := Unsupported;
+         end if;
+      end;
+
       --  DF/Free: expected output: "hw.ncpu: C" where C is integer
       --  NetBSD:  expected output: "hw.ncpu = C"
       --  Linux:   expected output: "C"
       --  Solaris: expected output: "C"
-      case platform_type is
-         when dragonfly | freebsd =>
+      case thissys is
+         when FreeFly =>
             start := 10;
             comres := Unix.piped_command (bsd_cmd, status);
-         when netbsd =>
+         when NetBSD =>
             start := 11;
             comres := Unix.piped_command (bsd_cmd, status);
-         when linux   =>
+         when Linux   =>
             start := 1;
             comres := Unix.piped_command (lin_cmd, status);
-         when solaris =>
+         when Solaris =>
             start := 1;
             comres := Unix.piped_command (sol_cmd, status);
-         when unknown => return 1;
+         when Unsupported =>
+            return 1;
       end case;
 
       if status /= 0 then
          return 1;
       end if;
       declare
-         str_content : String := JT.USS (comres);
-         ncpu        : String := str_content (start .. str_content'Last - 1);
-         number      : Positive := Integer'Value (ncpu);
+         resstr : String := JT.USS (comres);
+         ncpu   : String := resstr (start .. resstr'Last - 1);
+         number : Positive := Integer'Value (ncpu);
       begin
          return number;
       exception
