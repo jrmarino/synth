@@ -469,7 +469,7 @@ package body Replicant.Platform is
       --  DF/Free: expected output: "hw.ncpu: C" where C is integer
       --  NetBSD:  expected output: "hw.ncpu = C"
       --  Linux:   expected output: "C"
-      --  TODO: solaris support
+      --  Solaris: expected output: "C"
       case platform_type is
          when dragonfly | freebsd =>
             start := 10;

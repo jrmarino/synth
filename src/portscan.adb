@@ -459,6 +459,7 @@ package body PortScan is
       topline  : JT.Text;
       status   : Integer;
    begin
+      --  Same command for both ports collection and pkgsrc
       content := Unix.piped_command (command, status);
       if status /= 0 then
          raise bmake_execution with origin &
@@ -804,11 +805,30 @@ package body PortScan is
          AD.Get_Next_Entry (Search => Search, Directory_Entry => Dir_Ent);
          declare
             category : constant String := AD.Simple_Name (Dir_Ent);
+            good_directory : Boolean := True;
          begin
-            if category /= "distfiles" and then
-              category /= "packages" and then
-              category /= "base"
-            then
+            case software_framework is
+               when ports_collection =>
+                  if category = "base"     or else
+                    category = "distfiles" or else
+                    category = "packages"
+
+                  then
+                     good_directory := False;
+                  end if;
+               when pkgsrc =>
+                  if category = "bootstrap" or else
+                    category = "distfiles"  or else
+                    category = "doc"        or else
+                    category = "licenses"   or else
+                    category = "mk"         or else
+                    category = "packages"   or else
+                    category = "regress"
+                  then
+                     good_directory := False;
+                  end if;
+            end case;
+            if good_directory then
                categories.Append (New_Item => JT.SUS (category));
             end if;
          end;
