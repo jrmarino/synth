@@ -613,7 +613,7 @@ package body PortScan is
       ssroot   : constant String := chroot &
                  JT.USS (PM.configuration.dir_buildbase) & ss_base;
       command  : constant String :=
-                 ssroot & chroot_make_program & " -C " & fullport &
+                 ssroot & " " & chroot_make_program & " -C " & fullport &
                  " -VPKGVERSION -VPKGFILE:T -VMAKE_JOBS_NUMBER -VIGNORE" &
                  " -VFETCH_DEPENDS -VEXTRACT_DEPENDS -VPATCH_DEPENDS" &
                  " -VBUILD_DEPENDS -VLIB_DEPENDS -VRUN_DEPENDS" &
@@ -687,7 +687,7 @@ package body PortScan is
       ssroot   : constant String := chroot &
                  JT.USS (PM.configuration.dir_buildbase) & ss_base;
       command  : constant String :=
-                 ssroot & chroot_make_program & " -C " & fullport &
+                 ssroot & " " & chroot_make_program & " -C " & fullport &
                  " .MAKE.EXPAND_VARIABLES=yes " &
                  " -VPKGVERSION -VPKGFILE:T -V_MAKE_JOBS:C/^-j//" &
                  " -V_CBBH_MSGS -VBUILD_DEPENDS -VDEPENDS" &
