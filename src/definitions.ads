@@ -14,7 +14,7 @@ package Definitions is
    host_bmake          : constant String := host_localbase & "/bin/bmake";
    host_make_program   : constant String := host_make;
    chroot_make         : constant String := "/usr/bin/make";
-   chroot_bmake        : constant String := "/usr/pkg/bin/bmake";
+   chroot_bmake        : constant String := "/usr/pkg/bin/bmake -m /usr/pkg/share/mk";
    chroot_make_program : constant String := chroot_make;
    jobs_per_cpu        : constant := 2;
 
