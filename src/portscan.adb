@@ -451,9 +451,9 @@ package body PortScan is
    function get_pkg_name (origin : String) return String
    is
       fullport : constant String := dir_ports & "/" & origin;
-      chroot   : constant String := "/usr/sbin/chroot " &
+      ssroot   : constant String := chroot &
                  JT.USS (PM.configuration.dir_buildbase) & ss_base;
-      command  : constant String := chroot & chroot_make_program &
+      command  : constant String := ssroot & chroot_make_program &
                  " .MAKE.EXPAND_VARIABLES=yes -C " & fullport & " -VPKGFILE:T";
       content  : JT.Text;
       topline  : JT.Text;
@@ -595,9 +595,9 @@ package body PortScan is
    is
       catport  : String := get_catport (all_ports (target));
       fullport : constant String := dir_ports & "/" & catport;
-      chroot   : constant String := "/usr/sbin/chroot " &
+      ssroot   : constant String := chroot &
                  JT.USS (PM.configuration.dir_buildbase) & ss_base;
-      command  : constant String := chroot & " /usr/bin/make -C " & fullport &
+      command  : constant String := ssroot & " /usr/bin/make -C " & fullport &
                  " -VPKGVERSION -VPKGFILE:T -VMAKE_JOBS_NUMBER -VIGNORE" &
                  " -VFETCH_DEPENDS -VEXTRACT_DEPENDS -VPATCH_DEPENDS" &
                  " -VBUILD_DEPENDS -VLIB_DEPENDS -VRUN_DEPENDS" &

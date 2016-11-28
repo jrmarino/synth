@@ -70,6 +70,7 @@ private
    scan_slave : constant builders := 9;
    ss_base    : constant String := "/SL09";
    dir_ports  : constant String := "/xports";
+   chroot     : constant String := "/usr/sbin/chroot ";
 
    type port_id   is range -1 .. max_ports - 1;
    subtype port_index is port_id range 0 .. port_id'Last;

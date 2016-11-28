@@ -54,7 +54,6 @@ private
    testing   : Boolean;
    lock_localbase : Boolean;
 
-   chroot    : constant String := "/usr/sbin/chroot ";
    uselog    : constant Boolean := True;
 
    discerr   : constant String := "Discovery error";
