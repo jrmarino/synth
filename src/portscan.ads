@@ -16,6 +16,8 @@ with JohnnyText;
 with Parameters;
 with Definitions;  use Definitions;
 
+private with Replicant.Platform;
+
 package PortScan is
 
    package JT  renames JohnnyText;
@@ -65,6 +67,9 @@ package PortScan is
    function obvious_problem (portsdir, catport : String) return String;
 
 private
+
+   package REP  renames Replicant;
+   package PLAT renames Replicant.Platform;
 
    max_ports  : constant := 28000;
    scan_slave : constant builders := 9;

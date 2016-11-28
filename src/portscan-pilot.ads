@@ -1,8 +1,6 @@
 --  This file is covered by the Internet Software Consortium (ISC) License
 --  Reference: ../License.txt
 
-private with Replicant.Platform;
-
 package PortScan.Pilot is
 
    --  Called when command line argument counts is known to be 2 or more.
@@ -129,10 +127,6 @@ package PortScan.Pilot is
    pilot_log : exception;
 
 private
-
-   package REP  renames Replicant;
-   package PLAT renames Replicant.Platform;
-
 
    subtype logname_field is String (1 .. 19);
    type dim_logname  is array (count_type) of logname_field;

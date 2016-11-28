@@ -19,6 +19,9 @@ package Replicant.Platform is
    function get_instant_load return Float;
    function get_5_minute_load return Float;
 
+   --  Return value of ncpu (from syctl query)
+   function get_number_cpus return Positive;
+
    --  Return true if file is executable (platform-specific)
    function file_is_executable (filename : String) return Boolean;
 

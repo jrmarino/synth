@@ -751,27 +751,13 @@ package body PortScan is
    -----------------
    procedure set_cores
    is
-      command : constant String := "/sbin/sysctl hw.ncpu";
-      content : JT.Text;
-      status  : Integer;
+      number : constant Positive := Replicant.Platform.get_number_cpus;
    begin
-      --  expected output: "hw.ncpu: C" where C is integer
-      content := Unix.piped_command (command, status);
-      if status /= 0 then
-         number_cores := cpu_range'First;
-         return;
+      if number > Positive (cpu_range'Last) then
+         number_cores := cpu_range'Last;
+      else
+         number_cores := cpu_range (number);
       end if;
-      declare
-         str_content : String := JT.USS (content);
-         ncpu        : String := str_content (10 .. str_content'Last - 1);
-         number      : Positive := Integer'Value (ncpu);
-      begin
-         if number > Positive (cpu_range'Last) then
-            number_cores := cpu_range'Last;
-         else
-            number_cores := cpu_range (number);
-         end if;
-      end;
    end set_cores;
 
 

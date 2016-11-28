@@ -454,6 +454,40 @@ package body Replicant.Platform is
    end get_5_minute_load;
 
 
+   -----------------------
+   --  get_number_cpus  --
+   -----------------------
+   function get_number_cpus return Positive
+   is
+      bsd    : constant String := "/sbin/sysctl hw.ncpu";
+      comres : JT.Text;
+      status : Integer;
+   begin
+      --  expected output: "hw.ncpu: C" where C is integer
+      --  TODO: linux and solaris support
+      case platform_type is
+         when dragonfly | freebsd | netbsd =>
+            comres := Unix.piped_command (bsd, status);
+         when linux   => return 1;
+         when solaris => return 1;
+         when unknown => return 1;
+      end case;
+
+      if status /= 0 then
+         return 1;
+      end if;
+      declare
+         str_content : String := JT.USS (comres);
+         ncpu        : String := str_content (10 .. str_content'Last - 1);
+         number      : Positive := Integer'Value (ncpu);
+      begin
+         return number;
+      exception
+         when others => return 1;
+      end;
+   end get_number_cpus;
+
+
    -------------------------------
    --  standalone_pkg8_install  --
    -------------------------------
