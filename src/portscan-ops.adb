@@ -84,8 +84,13 @@ package body PortScan.Ops is
                         build_result :=
                           FPC.build_package (builder, instructions (builder));
                      when pkgsrc =>
-                        build_result :=
-                          NPS.build_package (builder, instructions (builder));
+                        if not REP.Platform.standalone_pkg8_install (builder)
+                        then
+                           build_result := False;
+                        else
+                           build_result := NPS.build_package
+                             (builder, instructions (builder));
+                        end if;
                   end case;
                   REP.destroy_slave (id => builder, opts => opts);
                   if build_result then

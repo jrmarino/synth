@@ -1490,10 +1490,12 @@ package body PortScan.Pilot is
                                            interactive => True,
                                            interphase  => brkphase);
          when pkgsrc =>
-            buildres := NPS.build_package (id          => PortScan.scan_slave,
-                                           sequence_id => ptid,
-                                           interactive => True,
-                                           interphase  => brkphase);
+            if PLAT.standalone_pkg8_install (PortScan.scan_slave) then
+               buildres := NPS.build_package (id => PortScan.scan_slave,
+                                              sequence_id => ptid,
+                                              interactive => True,
+                                              interphase  => brkphase);
+            end if;
       end case;
 
       REP.destroy_slave (id => PortScan.scan_slave, opts => noprocs);
