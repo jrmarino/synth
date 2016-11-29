@@ -70,6 +70,8 @@ package Replicant is
    --  This is a pre-run validity check
    function boot_modules_directory_missing return Boolean;
 
+   root_localbase : constant String := "/usr/local";
+
 private
 
    package PM  renames Parameters;
@@ -130,7 +132,6 @@ private
    root_packages    : constant String := "/packages";
    root_distfiles   : constant String := "/distfiles";
    root_ccache      : constant String := "/ccache";
-   root_localbase   : constant String := "/usr/local";
    chroot           : constant String := "/usr/sbin/chroot ";
 
    platform_type    : flavors   := unknown;

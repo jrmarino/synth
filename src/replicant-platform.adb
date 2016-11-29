@@ -555,16 +555,18 @@ package body Replicant.Platform is
    function standalone_pkg8_install (id : builders) return Boolean
    is
       smount  : constant String := get_slave_mount (id);
-      taropts : constant String := "-C / */pkg-static";
+      taropt1 : constant String := "*/pkg-static";
+      taropt2 : constant String := "*/pkg-static */pkgng_admin";
       command : constant String := chroot & smount &
-        " /usr/bin/tar -xf /packages/Latest/pkg.txz " & taropts;
+        " /usr/bin/tar -xf /packages/Latest/pkg.txz -C / ";
       install_make : constant String := chroot & smount &
         " /usr/pkg/sbin/pkg-static add -A /packages/Latest/bmake.txz";
    begin
-      silent_exec (command);
       case software_framework is
-         when ports_collection => null;
+         when ports_collection =>
+            silent_exec (command & taropt1);
          when pkgsrc =>
+            silent_exec (command & taropt2);
             silent_exec (install_make);
       end case;
       return True;

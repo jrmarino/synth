@@ -1507,14 +1507,12 @@ package body PortScan.Pilot is
    function synth_launch_clash return Boolean
    is
       function get_usrlocal return String;
-      function get_usrlocal return String
-      is
-         ul : constant String  := "/usr/local";
+      function get_usrlocal return String is
       begin
          if JT.equivalent (PM.configuration.dir_system, "/") then
-            return ul;
+            return host_localbase;
          end if;
-         return JT.USS (PM.configuration.dir_system) & ul;
+         return JT.USS (PM.configuration.dir_system) & host_localbase;
       end get_usrlocal;
 
       cwd      : constant String  := AD.Current_Directory;

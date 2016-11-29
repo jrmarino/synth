@@ -690,8 +690,9 @@ package body PortScan.Buildcycle is
          return "TERM=dumb ";
       end set_terminal;
 
-      PATH : constant String := "PATH=/sbin:/bin:/usr/sbin:/usr/bin:" &
-                                "/usr/local/sbin:/usr/local/bin ";
+      PATH : constant String := "PATH=/sbin:/bin:/usr/sbin:/usr/bin:"
+        & REP.root_localbase & "/sbin:" & REP.root_localbase & "/bin";
+
       TERM : constant String := set_terminal (enable_tty);
       USER : constant String := "USER=root ";
       HOME : constant String := "HOME=/root ";
@@ -1139,7 +1140,6 @@ package body PortScan.Buildcycle is
       procedure dismount;
 
       smount        : constant String := get_root (id);
-      lbase         : constant String := "/usr/local";
       slave_local   : constant String := smount & "_localbase";
 
 
@@ -1147,7 +1147,7 @@ package body PortScan.Buildcycle is
       is
          cmd_freebsd   : String := "/sbin/mount_nullfs ";
          cmd_dragonfly : String := "/sbin/mount_null ";
-         points        : String := slave_local & " " & smount & lbase;
+         points        : String := slave_local & " " & smount & REP.root_localbase;
          options       : String := "-o ro ";
          cmd           : JT.Text;
          cmd_output    : JT.Text;
@@ -1175,7 +1175,7 @@ package body PortScan.Buildcycle is
 
       procedure dismount
       is
-         cmd_unmount : constant String := "/sbin/umount " & smount & lbase;
+         cmd_unmount : constant String := "/sbin/umount " & smount & REP.root_localbase;
          cmd_output  : JT.Text;
       begin
          if not Unix.piped_mute_command (cmd_unmount, cmd_output) then
