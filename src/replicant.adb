@@ -770,6 +770,7 @@ package body Replicant is
               (makeconf,
                  "SYNTHPROFILE=" & profile & LAT.LF &
                  "PACKAGE_BUILDING=yes" & LAT.LF &
+                 "ALLOW_VULNERABLE_PACKAGES=yes" & LAT.LF &
                  "PKG_CREATE_VERBOSE=yes" & LAT.LF &
                  "PKGSRCDIR=/xports" & LAT.LF &
                  "DISTDIR=/distfiles" & LAT.LF &
