@@ -933,7 +933,7 @@ package body Replicant is
    is
       smount  : constant String := get_slave_mount (id);
       command : constant String := chroot & smount & " " &
-                host_localbase & "/sbin/pkg-static repo /packages";
+                root_localbase & "/sbin/pkg-static repo /packages";
       sc_cmd  : constant String := host_pkg8 & " repo " & smount &
                 "/packages signing_command: ";
       key_loc : constant String := "/etc/repo.key";
