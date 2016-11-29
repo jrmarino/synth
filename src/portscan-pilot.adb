@@ -211,7 +211,7 @@ package body PortScan.Pilot is
          then
             return False;
          end if;
-         TIO.Put ("Stand by, building " & desc & " package first ... ");
+         TIO.Put ("Stand by, building " & desc & " package ... ");
          pkg_good := NPS.build_package (id => PortScan.scan_slave,
                                         sequence_id => selection);
          OPS.run_hook_after_build (pkg_good, selection);
@@ -240,48 +240,42 @@ package body PortScan.Pilot is
          goto clean_exit;
       end if;
 
-      if PKG.queue_is_empty then
-         --  the mk files package exists and is current, continue
-         reset_ports_tree;
-      else
+      if not PKG.queue_is_empty then
          --  the mk files package does not exist or requires rebuilding
          result := build_it ("mk files");
          if not result then
             goto clean_exit;
          end if;
       end if;
-
-      result := scan_it (cp_digest);
-      if not result then
-         goto clean_exit;
-      end if;
-
-      if PKG.queue_is_empty then
-         --  the digest program exists and is current, continue
-         reset_ports_tree;
-      else
-         --  the digest package does not exist or requires rebuilding
-         result := build_it ("digest program");
-         if not result then
-            goto clean_exit;
-         end if;
-      end if;
+      reset_ports_tree;
 
       result := scan_it (cp_bmake);
       if not result then
          goto clean_exit;
       end if;
 
-      if PKG.queue_is_empty then
-         --  the bmake program exists and is current, continue
-         reset_ports_tree;
-      else
+      if not PKG.queue_is_empty then
          --  the bmake package does not exist or requires rebuilding
-         result := build_it ("bmake program");
+         result := build_it ("bmake");
          if not result then
             goto clean_exit;
          end if;
       end if;
+      reset_ports_tree;
+
+      result := scan_it (cp_digest);
+      if not result then
+         goto clean_exit;
+      end if;
+
+      if not PKG.queue_is_empty then
+         --  the digest package does not exist or requires rebuilding
+         result := build_it ("digest");
+         if not result then
+            goto clean_exit;
+         end if;
+      end if;
+      reset_ports_tree;
 
       result := scan_it (pkgng);
       if not result then
@@ -290,7 +284,7 @@ package body PortScan.Pilot is
 
       if not PKG.queue_is_empty then
          --  the pkg(8) package does not exist or requires rebuilding
-         result := build_it ("pkg(8) program");
+         result := build_it ("pkg(8)");
       end if;
 
       <<clean_exit>>
