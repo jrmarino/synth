@@ -296,8 +296,13 @@ package body PortScan.Buildcycle is
    ------------------------
    function split_collection (line : JT.Text; title : String) return String
    is
+      --  Support spaces in two ways
+      --  1) quoted,  e.g. TYPING="The Quick Brown Fox"
+      --  2) Escaped, e.g. TYPING=The\ Quick\ Brown\ Fox
+
       meat    : JT.Text;
       waiting : Boolean := True;
+      escaped : Boolean := False;
       quoted  : Boolean := False;
       keepit  : Boolean;
       counter : Natural := 0;
@@ -313,7 +318,24 @@ package body PortScan.Buildcycle is
          onechar := JT.SU.Slice (Source => line,
                                  Low    => counter,
                                  High   => counter);
-         if onechar (1) = LAT.Space then
+
+         if onechar (1) = LAT.Reverse_Solidus then
+            --  A) if inside quotes, it's literal
+            --  B) if it's first RS, don't keep but mark escaped
+            --  C) If it's second RS, it's literal, remove escaped
+            --  D) RS can never start a new NV pair
+            if not quoted then
+               if not escaped then
+                  keepit := False;
+               end if;
+               escaped := not escaped;
+            end if;
+         elsif escaped then
+            --  E) by definition, next character after an escape is literal
+            --     We know it's not inside quotes. Keep this (could be a space)
+            waiting := False;
+            escaped := not escaped;
+         elsif onechar (1) = LAT.Space then
             if waiting then
                keepit := False;
             else
