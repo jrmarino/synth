@@ -515,7 +515,8 @@ package body PortScan is
             end if;
             if fulldep'Length < colon1 + dirlen + 6 then
                raise make_garbage
-                 with "Specification is too short: " & fulldep;
+                 with "Specification is too short: " &
+                 fulldep & " (" & catport & ")";
             end if;
             if fulldep (colon1 .. colon1 + dirlen) = dir_ports & "/" then
                deprec := ports_keys.Find

@@ -558,8 +558,15 @@ package body Replicant.Platform is
       taropts : constant String := "-C / */pkg-static";
       command : constant String := chroot & smount &
         " /usr/bin/tar -xf /packages/Latest/pkg.txz " & taropts;
+      install_make : constant String := chroot & smount &
+        " /usr/pkg/sbin/pkg-static add -A /packages/Latest/bmake.txz";
    begin
       silent_exec (command);
+      case software_framework is
+         when ports_collection => null;
+         when pkgsrc =>
+            silent_exec (install_make);
+      end case;
       return True;
    exception
       when others => return False;
