@@ -691,7 +691,7 @@ package body PortScan.Buildcycle is
       end set_terminal;
 
       PATH : constant String := "PATH=/sbin:/bin:/usr/sbin:/usr/bin:"
-        & REP.root_localbase & "/sbin:" & REP.root_localbase & "/bin";
+        & REP.root_localbase & "/sbin:" & REP.root_localbase & "/bin ";
 
       TERM : constant String := set_terminal (enable_tty);
       USER : constant String := "USER=root ";
