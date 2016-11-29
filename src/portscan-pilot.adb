@@ -169,9 +169,10 @@ package body PortScan.Pilot is
       function scan_it (the_catport : String) return Boolean;
       function build_it (desc : String) return Boolean;
 
-      mk_files : constant String := "pkgtools/bootstrap-mk-files";
-      cp_bmake : constant String := "devel/bmake";
-      result   : Boolean := True;
+      mk_files  : constant String := "pkgtools/bootstrap-mk-files";
+      cp_bmake  : constant String := "devel/bmake";
+      cp_digest : constant String := "pkgtools/digest";
+      result    : Boolean := True;
 
       function scan_it (the_catport : String) return Boolean
       is
@@ -245,6 +246,22 @@ package body PortScan.Pilot is
       else
          --  the mk files package does not exist or requires rebuilding
          result := build_it ("mk files");
+         if not result then
+            goto clean_exit;
+         end if;
+      end if;
+
+      result := scan_it (cp_digest);
+      if not result then
+         goto clean_exit;
+      end if;
+
+      if PKG.queue_is_empty then
+         --  the digest program exists and is current, continue
+         reset_ports_tree;
+      else
+         --  the digest package does not exist or requires rebuilding
+         result := build_it ("digest program");
          if not result then
             goto clean_exit;
          end if;

@@ -36,6 +36,7 @@ package Replicant.Platform is
    --  They are just copies of hosts versions
    function host_pkgsrc_mk_install (id : builders) return Boolean;
    function host_pkgsrc_bmake_install (id : builders) return Boolean;
+   function host_pkgsrc_digest_install (id : builders) return Boolean;
    function host_pkgsrc_pkg8_install (id : builders) return Boolean;
 
    --  Cache variables that spawn to get populated to extended make.conf

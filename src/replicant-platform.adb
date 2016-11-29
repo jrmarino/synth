@@ -602,6 +602,27 @@ package body Replicant.Platform is
    end host_pkgsrc_bmake_install;
 
 
+   ----------------------------------
+   --  host_pkgsrc_digest_install  --
+   ----------------------------------
+   function host_pkgsrc_digest_install (id : builders) return Boolean
+   is
+      smount       : String := get_slave_mount (id);
+      host_digest  : String := host_localbase & "/bin/digest";
+      slave_digest : String := smount & root_localbase & "/bin/digest";
+   begin
+      if not AD.Exists (host_digest) then
+         return False;
+      end if;
+      AD.Copy_File (Source_Name => host_digest,
+                    Target_Name => slave_digest);
+      set_file_as_executable (slave_digest);
+      return True;
+   exception
+      when others => return False;
+   end host_pkgsrc_digest_install;
+
+
    --------------------------------
    --  host_pkgsrc_pkg8_install  --
    --------------------------------
