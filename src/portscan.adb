@@ -697,14 +697,14 @@ package body PortScan is
                  ssroot & " " & chroot_make_program & " -C " & fullport &
                  " .MAKE.EXPAND_VARIABLES=yes " &
                  " -VPKGVERSION -VPKGFILE:T -V_MAKE_JOBS:C/^-j//" &
-                 " -V_CBBH_MSGS -VBUILD_DEPENDS -VDEPENDS" &
+                 " -V_CBBH_MSGS -VTOOL_DEPENDS -VBUILD_DEPENDS -VDEPENDS" &
                  " -VPKG_SUPPORTED_OPTIONS -VPKG_DESELECTED_OPTIONS" &
                  " -VEMUL_PLATFORMS";
       content  : JT.Text;
       topline  : JT.Text;
       status   : Integer;
 
-      type result_range is range 1 .. 9;
+      type result_range is range 1 .. 10;
    begin
       content := Unix.piped_command (command, status);
       if status /= 0 then
@@ -732,10 +732,11 @@ package body PortScan is
             when 4 => all_ports (target).ignore_reason := topline;
                       all_ports (target).ignored := not JT.IsBlank (topline);
             when 5 => populate_set_depends (target, catport, topline, build);
-            when 6 => populate_set_depends (target, catport, topline, runtime);
-            when 7 => populate_set_options (target, topline, True);
-            when 8 => populate_set_options (target, topline, False);
-            when 9 =>
+            when 6 => populate_set_depends (target, catport, topline, build);
+            when 7 => populate_set_depends (target, catport, topline, runtime);
+            when 8 => populate_set_options (target, topline, True);
+            when 9 => populate_set_options (target, topline, False);
+            when 10 =>
                if JT.contains (topline, "linux") then
                   all_ports (target).use_linprocfs := True;
                end if;
