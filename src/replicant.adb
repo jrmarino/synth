@@ -769,6 +769,7 @@ package body Replicant is
             TIO.Put_Line
               (makeconf,
                  "SYNTHPROFILE=" & profile & LAT.LF &
+                 "USE_PACKAGE_DEPENDS_ONLY=yes" & LAT.LF &
                  "PACKAGE_BUILDING=yes" & LAT.LF &
                  "ALLOW_VULNERABLE_PACKAGES=yes" & LAT.LF &
                  "PKG_CREATE_VERBOSE=yes" & LAT.LF &
