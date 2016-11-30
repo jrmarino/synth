@@ -1800,4 +1800,18 @@ package body PortScan.Pilot is
       return JT.equivalent (topline, "yes");
    end host_pkg8_conservative_upgrade_set;
 
+
+   -----------------------------------
+   --  TERM_defined_in_environment  --
+   -----------------------------------
+   function TERM_defined_in_environment return Boolean
+   is
+      defined : constant Boolean := Unix.env_variable_defined ("TERM");
+   begin
+      if not defined then
+         TIO.Put_Line ("Please define TERM in environment first and retry.");
+      end if;
+      return defined;
+   end TERM_defined_in_environment;
+
 end PortScan.Pilot;

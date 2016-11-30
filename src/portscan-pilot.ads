@@ -114,6 +114,9 @@ package PortScan.Pilot is
    --  returns True if CONSERVATIVE_UPGRADE option on host pkg(8) is enabled
    function host_pkg8_conservative_upgrade_set return Boolean;
 
+   --  Return True when TERM is defined in environment (required)
+   function TERM_defined_in_environment return Boolean;
+
    --  Pre-initialized replicant because some functionality differs depending
    --  on the platform
    procedure set_replicant_platform;

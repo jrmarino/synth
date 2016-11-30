@@ -639,6 +639,7 @@ package body Actions is
    procedure clear_screen
    is
       result  : Boolean;
+      --  Known to work on all five platforms
       command : constant String := "/usr/bin/clear";
    begin
       result := generic_execute (command);

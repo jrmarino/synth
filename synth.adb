@@ -105,6 +105,10 @@ begin
             return;
          end if;
 
+         if not PIL.TERM_defined_in_environment then
+            return;
+         end if;
+
          if PIL.synth_launch_clash then
             TIO.Put_Line (badcwd);
             return;
@@ -268,6 +272,10 @@ begin
             PIL.set_replicant_platform;
          else
             TIO.Put_Line (badcfg);
+            return;
+         end if;
+
+         if not PIL.TERM_defined_in_environment then
             return;
          end if;
 
