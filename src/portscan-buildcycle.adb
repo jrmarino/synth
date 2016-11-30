@@ -719,6 +719,7 @@ package body PortScan.Buildcycle is
       USER : constant String := "USER=root ";
       HOME : constant String := "HOME=/root ";
       LANG : constant String := "LANG=C ";
+      FTP  : constant String := "SSL_NO_VERIFY_PEER=1 ";
       PKG8 : constant String := "PORTSDIR=" & dir_ports & " " &
                                 "PKG_DBDIR=/var/db/pkg8 " &
                                 "PKG_CACHEDIR=/var/cache/pkg8 ";
@@ -726,7 +727,7 @@ package body PortScan.Buildcycle is
       JENV : constant String := JT.USS (slave_env);
    begin
       return " /usr/bin/env -i " &
-        USER & HOME & LANG & PKG8 & TERM & PATH & JENV & CENV;
+        USER & HOME & LANG & PKG8 & TERM & FTP & PATH & JENV & CENV;
    end environment_override;
 
 
