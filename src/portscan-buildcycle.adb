@@ -1270,6 +1270,7 @@ package body PortScan.Buildcycle is
                                  return Display.builder_rec
    is
       result   : Display.builder_rec;
+      phaselen : constant Positive := phasestr'Length;
    begin
       --  123456789 123456789 123456789 123456789 1234
       --   SL  elapsed   phase              lines  origin
@@ -1304,7 +1305,17 @@ package body PortScan.Buildcycle is
          result.Elapsed := elapsed_HH_MM_SS (start => trackers (id).head_time,
                                              stop  => CAL.Clock);
          result.LLines (linehead .. 7) := numlines;
-         result.phase  (1 .. phasestr'Length) := phasestr;
+         if phaselen <= result.phase'Length then
+            result.phase  (1 .. phasestr'Length) := phasestr;
+         else
+            --  special handling for long descriptions
+            if phasestr = "bootstrap-depends" then
+               result.phase (1 .. 14) := "bootstrap-deps";
+            else
+               result.phase :=  phasestr
+                 (phasestr'First .. phasestr'First + result.phase'Length - 1);
+            end if;
+         end if;
 
          if catport'Length > 37 then
             result.origin (1 .. 36) := catport (1 .. 36);
