@@ -650,6 +650,7 @@ package body PortScan.Pilot is
       xz_meta    : constant String := main & "/meta.txz";
       xz_digest  : constant String := main & "/digests.txz";
       xz_pkgsite : constant String := main & "/packagesite.txz";
+      bs_error   : constant String := "Rebuild Repository: Failed to bootstrap builder";
       build_res  : Boolean;
    begin
       if SIG.graceful_shutdown_requested then
@@ -664,7 +665,7 @@ package body PortScan.Pilot is
          when ports_collection => null;
          when pkgsrc =>
             if not PLAT.standalone_pkg8_install (PortScan.scan_slave) then
-               TIO.Put_Line ("Rebuild Repository: Failed to bootstrap builder");
+               TIO.Put_Line (bs_error);
             end if;
       end case;
       if remove_invalid_packages then
@@ -711,6 +712,13 @@ package body PortScan.Pilot is
       TIO.Put_Line ("Packages validated, rebuilding local repository.");
       REP.initialize (testmode => False, num_cores => PortScan.cores_available);
       REP.launch_slave (id => PortScan.scan_slave, opts => noprocs);
+      case software_framework is
+         when ports_collection => null;
+         when pkgsrc =>
+            if not PLAT.standalone_pkg8_install (PortScan.scan_slave) then
+               TIO.Put_Line (bs_error);
+            end if;
+      end case;
       if valid_signing_command then
          build_res := REP.build_repository (id => PortScan.scan_slave,
                                             sign_command => signing_command);
