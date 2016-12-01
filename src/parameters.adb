@@ -135,7 +135,7 @@ package body Parameters is
 
       case software_framework is
          when pkgsrc =>
-            if AD.Exists (std_pkgsrc_loc) then
+            if AD.Exists (std_pkgsrc_loc & "/mk/pkgformat/pkgng") then
                return std_pkgsrc_loc;
             end if;
          when ports_collection =>
