@@ -406,10 +406,18 @@ package body PortScan.Pilot is
          portlist.Iterate (Process => force_delete'Access);
       end if;
 
-      if not PKG.limited_cached_options_check then
-         --  Error messages emitted by function
-         return False;
-      end if;
+      case software_framework is
+         when ports_collection =>
+            if not PKG.limited_cached_options_check then
+               --  Error messages emitted by function
+               return False;
+            end if;
+         when pkgsrc =>
+            --  There's no analog to cached options on pkgsc.
+            --  We could detect unused settings, but that's it.
+            --  And maybe that should be detected by the framework itself
+            null;
+      end case;
 
       if PM.configuration.defer_prebuilt then
          --  Before any remote operations, find the external repo
