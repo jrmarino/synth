@@ -615,6 +615,13 @@ package body PortScan.Pilot is
       PortScan.reset_ports_tree;
       REP.initialize (testmode => False, num_cores => PortScan.cores_available);
       REP.launch_slave (id => PortScan.scan_slave, opts => noprocs);
+      case software_framework is
+         when ports_collection => null;
+         when pkgsrc =>
+            if not PLAT.standalone_pkg8_install (PortScan.scan_slave) then
+               TIO.Put_Line ("Full Tree Scan: Failed to bootstrap builder");
+            end if;
+      end case;
       goodresult := PortScan.scan_entire_ports_tree
         (JT.USS (PM.configuration.dir_portsdir));
       REP.destroy_slave (id => PortScan.scan_slave, opts => noprocs);
@@ -653,6 +660,13 @@ package body PortScan.Pilot is
       REP.initialize (testmode => False,
                       num_cores => PortScan.cores_available);
       REP.launch_slave (id => PortScan.scan_slave, opts => noprocs);
+      case software_framework is
+         when ports_collection => null;
+         when pkgsrc =>
+            if not PLAT.standalone_pkg8_install (PortScan.scan_slave) then
+               TIO.Put_Line ("Rebuild Repository: Failed to bootstrap builder");
+            end if;
+      end case;
       if remove_invalid_packages then
          PKG.preclean_repository (repo);
       end if;
