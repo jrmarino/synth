@@ -14,7 +14,9 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <sys/wait.h>
+#if defined __DragonFly__ || defined __FreeBSD__
 #include <sys/procctl.h>
+#endif
 
 /*
  * reap_process kills per given pid and waits for it to return
