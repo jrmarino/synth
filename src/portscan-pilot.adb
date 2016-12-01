@@ -1401,7 +1401,7 @@ package body PortScan.Pilot is
       max_lots : constant scanners := get_max_lots;
       elap_raw : constant String := CYC.log_duration (start => scan_start,
                                                       stop  => scan_stop);
-      elapsed  : constant String := elap_raw (elap_raw'First + 9 ..
+      elapsed  : constant String := elap_raw (elap_raw'First + 10 ..
                                                 elap_raw'Last);
       goodlog  : Boolean;
 
@@ -1436,9 +1436,9 @@ package body PortScan.Pilot is
       if goodlog then
          TIO.Put_Line
            (listlog, LAT.LF &
-              "-----------------------------" & LAT.LF &
+              "------------------------------" & LAT.LF &
               "--  Statistics" & LAT.LF &
-              "-----------------------------" & LAT.LF &
+              "------------------------------" & LAT.LF &
               " Ports scanned :" & last_port'Img & LAT.LF &
               "  Elapsed time : " & elapsed & LAT.LF &
               "   Parallelism :" & max_lots'Img & " scanners" & LAT.LF &
