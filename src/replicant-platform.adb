@@ -641,7 +641,7 @@ package body Replicant.Platform is
       host_pkgst  : constant String := host_localbase & "/sbin/pkg-static";
       host_admin  : constant String := host_localbase & "/sbin/pkgng_admin";
       slave_path  : constant String := smount & root_localbase & "/sbin";
-      slave_pkg   : constant String := slave_path & "/pkg";
+      slave_pkg   : constant String := slave_path & "/pkg-static";
       slave_admin : constant String := slave_path & "/pkgng_admin";
    begin
       if not AD.Exists (host_pkgst) or else not AD.Exists (host_admin) then
