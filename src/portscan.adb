@@ -31,9 +31,9 @@ package body PortScan is
       if not prescanned then
          prescan_ports_tree (portsdir);
       end if;
-      start_time := CAL.Clock;
+      scan_start := CAL.Clock;
       parallel_deep_scan (success => good_scan, show_progress => using_screen);
-      stop_time := CAL.Clock;
+      scan_stop := CAL.Clock;
 
       return good_scan;
    end scan_entire_ports_tree;

@@ -225,6 +225,8 @@ private
    Flog        : dim_handlers;
    start_time  : CAL.Time;
    stop_time   : CAL.Time;
+   scan_start  : CAL.Time;
+   scan_stop   : CAL.Time;
    bld_counter : dim_counters := (0, 0, 0, 0, 0);
 
 end PortScan;

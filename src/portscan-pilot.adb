@@ -1399,8 +1399,10 @@ package body PortScan.Pilot is
       listlog  : TIO.File_Type;
       filename : constant String := "/tmp/synth_status_results.txt";
       max_lots : constant scanners := get_max_lots;
-      elapsed  : constant String := CYC.log_duration (start => start_time,
-                                                      stop  => stop_time);
+      elap_raw : constant String := CYC.log_duration (start => scan_start,
+                                                      stop  => scan_stop);
+      elapsed  : constant String := elap_raw (elap_raw'First + 9 ..
+                                                elap_raw'Last);
       goodlog  : Boolean;
 
       procedure print (cursor : ranking_crate.Cursor)
