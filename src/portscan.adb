@@ -504,6 +504,7 @@ package body PortScan is
          declare
             workdep : constant String  := GSS.Slice (subs, j);
             fulldep : constant String (1 .. workdep'Length) := workdep;
+            flen    : constant Natural := fulldep'Length;
             colon   : constant Natural := find_colon (fulldep);
             colon1  : constant Natural := colon + 1;
             deprec  : portkey_crate.Cursor;
@@ -515,16 +516,15 @@ package body PortScan is
                  with dtype'Img & ": " & JT.USS (trimline) &
                  " (" & catport & ")";
             end if;
-            if fulldep'Length < colon1 + dirlen + 2 then
-               raise make_garbage
-                 with "Specification is too short: " &
-                 fulldep & " (" & catport & ")";
-            end if;
-            if fulldep (colon1 .. colon1 + dirlen) = dir_ports & "/" then
+            if flen > colon1 + dirlen + 1 and then
+              fulldep (colon1 .. colon1 + dirlen) = dir_ports & "/"
+            then
                deprec := ports_keys.Find
                  (Key => scrub_phase
                     (fulldep (colon + dirlen + 2 .. fulldep'Last)));
-            elsif fulldep (colon1 .. colon1 + 5) = "../../" then
+            elsif flen > colon1 + 5 and then
+              fulldep (colon1 .. colon1 + 5) = "../../"
+            then
                deprec := ports_keys.Find
                  (Key => scrub_phase
                     (fulldep (colon1 + 6 .. fulldep'Last)));
