@@ -513,7 +513,7 @@ package body PortScan is
                  with dtype'Img & ": " & JT.USS (trimline) &
                  " (" & catport & ")";
             end if;
-            if fulldep'Length < colon1 + dirlen + 6 then
+            if fulldep'Length < colon1 + dirlen + 2 then
                raise make_garbage
                  with "Specification is too short: " &
                  fulldep & " (" & catport & ")";
@@ -902,7 +902,7 @@ package body PortScan is
    is
       archive  : TIO.File_Type;
       matches  : RGX.Match_Array (0 .. 1);
-      pattern  : constant String := "SUBDIR[[:space:]]*[:+:]=[[:space:]]*(.*)";
+      pattern  : constant String := "^SUBDIR[[:space:]]*[:+:]=[[:space:]]*([[:graph:]]*)";
       regex    : constant RGX.Pattern_Matcher := RGX.Compile (pattern);
       max_lots : constant scanners := get_max_lots;
    begin
@@ -911,7 +911,7 @@ package body PortScan is
                 Name => portsdir & "/" & category & "/Makefile");
       while not TIO.End_Of_File (File => archive) loop
          declare
-            line      : constant String := TIO.Get_Line (File => archive);
+            line      : constant String := JT.trim (TIO.Get_Line (File => archive));
             blank_rec : port_record;
             kc        : portkey_crate.Cursor;
             success   : Boolean;
