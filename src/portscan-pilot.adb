@@ -1398,6 +1398,9 @@ package body PortScan.Pilot is
       procedure print (cursor : ranking_crate.Cursor);
       listlog  : TIO.File_Type;
       filename : constant String := "/tmp/synth_status_results.txt";
+      max_lots : constant scanners := get_max_lots;
+      elapsed  : constant String := CYC.log_duration (start => start_time,
+                                                      stop  => stop_time);
       goodlog  : Boolean;
 
       procedure print (cursor : ranking_crate.Cursor)
@@ -1417,7 +1420,6 @@ package body PortScan.Pilot is
          end if;
       end print;
    begin
-      declare
       begin
          TIO.Create (File => listlog, Mode => TIO.Out_File, Name => filename);
          goodlog := True;
@@ -1430,6 +1432,15 @@ package body PortScan.Pilot is
       TIO.Put_Line ("Total packages that would be built:" &
                       rank_queue.Length'Img);
       if goodlog then
+         TIO.Put_Line
+           (listlog, LAT.LF &
+              "-----------------------------" & LAT.LF &
+              "--  Statistics" & LAT.LF &
+              "-----------------------------" & LAT.LF &
+              " Ports scanned :" & last_port'Img & LAT.LF &
+              "  Elapsed time : " & elapsed & LAT.LF &
+              "   Parallelism :" & max_lots'Img & " scanners" & LAT.LF &
+              "          ncpu :" & number_cores'Img);
          TIO.Close (listlog);
          TIO.Put_Line ("The complete build list can also be found at:"
                        & LAT.LF & filename);
