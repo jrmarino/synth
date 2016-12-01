@@ -453,7 +453,7 @@ package body PortScan is
       fullport : constant String := dir_ports & "/" & origin;
       ssroot   : constant String := chroot &
                  JT.USS (PM.configuration.dir_buildbase) & ss_base;
-      command  : constant String := ssroot & chroot_make_program &
+      command  : constant String := ssroot & " " & chroot_make_program &
                  " .MAKE.EXPAND_VARIABLES=yes -C " & fullport & " -VPKGFILE:T";
       content  : JT.Text;
       topline  : JT.Text;

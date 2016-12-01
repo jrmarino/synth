@@ -658,25 +658,28 @@ package body PortScan.Pilot is
          return False;
       end if;
 
-      REP.initialize (testmode => False,
-                      num_cores => PortScan.cores_available);
-      REP.launch_slave (id => PortScan.scan_slave, opts => noprocs);
-      case software_framework is
+      if remove_invalid_packages then
+         REP.initialize (testmode => False,
+                         num_cores => PortScan.cores_available);
+         REP.launch_slave (id => PortScan.scan_slave, opts => noprocs);
+         case software_framework is
          when ports_collection => null;
          when pkgsrc =>
             if not PLAT.standalone_pkg8_install (PortScan.scan_slave) then
                TIO.Put_Line (bs_error);
             end if;
-      end case;
-      if remove_invalid_packages then
+         end case;
+
          PKG.preclean_repository (repo);
+
+         REP.destroy_slave (id => PortScan.scan_slave, opts => noprocs);
+         REP.finalize;
+         if SIG.graceful_shutdown_requested then
+            TIO.Put_Line (shutreq);
+            return False;
+         end if;
       end if;
-      REP.destroy_slave (id => PortScan.scan_slave, opts => noprocs);
-      REP.finalize;
-      if SIG.graceful_shutdown_requested then
-         TIO.Put_Line (shutreq);
-         return False;
-      end if;
+
       TIO.Put ("Stand by, recursively scanning");
       if Natural (portlist.Length) = 1 then
          TIO.Put (" 1 port");
@@ -717,6 +720,7 @@ package body PortScan.Pilot is
          when pkgsrc =>
             if not PLAT.standalone_pkg8_install (PortScan.scan_slave) then
                TIO.Put_Line (bs_error);
+
             end if;
       end case;
       if valid_signing_command then
