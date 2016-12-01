@@ -698,7 +698,7 @@ package body PortScan is
                  " .MAKE.EXPAND_VARIABLES=yes " &
                  " -VPKGVERSION -VPKGFILE:T -V_MAKE_JOBS:C/^-j//" &
                  " -V_CBBH_MSGS -VTOOL_DEPENDS -VBUILD_DEPENDS -VDEPENDS" &
-                 " -VPKG_OPTIONS -VPKG_DESELECTED_OPTIONS" &
+                 " -VPKG_OPTIONS -VPKG_DISABLED_OPTIONS" &
                  " -VEMUL_PLATFORMS";
       content  : JT.Text;
       topline  : JT.Text;
