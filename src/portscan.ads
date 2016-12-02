@@ -218,6 +218,7 @@ private
    function get_max_lots return scanners;
    function get_pkg_name (origin : String) return String;
    function timestamp (hack : CAL.Time; www_format : Boolean := False) return String;
+   function clean_up_pkgsrc_ignore_reason (dirty_string : String) return JT.Text;
 
    type dim_counters is array (count_type) of Natural;
 

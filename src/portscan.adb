@@ -731,8 +731,10 @@ package body PortScan is
                           PM.configuration.num_builders;
                   end;
                end if;
-            when 4 => all_ports (target).ignore_reason := topline;
-                      all_ports (target).ignored := not JT.IsBlank (topline);
+            when 4 =>
+               all_ports (target).ignore_reason :=
+                 clean_up_pkgsrc_ignore_reason (JT.USS (topline));
+               all_ports (target).ignored := not JT.IsBlank (topline);
             when 5 => populate_set_depends (target, catport, topline, build);
             when 6 => populate_set_depends (target, catport, topline, build);
             when 7 => populate_set_depends (target, catport, topline, runtime);
@@ -1106,6 +1108,49 @@ package body PortScan is
          return " (port deleted)";
       end if;
    end obvious_problem;
+
+
+   -------------------------------------
+   --  clean_up_pkgsrc_ignore_reason  --
+   -------------------------------------
+   function clean_up_pkgsrc_ignore_reason (dirty_string : String) return JT.Text
+   is
+      --  1. strip out all double-quotation marks
+      --  2. strip out all single reverse solidus ("\")
+      --  3. condense contiguous spaces to a single space
+      product : String (1 .. dirty_string'Length);
+      dstx    : Natural := 0;
+      keep_it : Boolean;
+      last_was_slash : Boolean := False;
+      last_was_space : Boolean := False;
+   begin
+      for srcx in dirty_string'Range loop
+         keep_it := True;
+         case dirty_string (srcx) is
+            when LAT.Quotation | LAT.LF =>
+               keep_it := False;
+            when LAT.Reverse_Solidus =>
+               if not last_was_slash then
+                  keep_it := False;
+               end if;
+               last_was_slash := not last_was_slash;
+            when LAT.Space =>
+               if last_was_space then
+                  keep_it := False;
+               end if;
+               last_was_space := True;
+               last_was_slash := False;
+            when others =>
+               last_was_space := False;
+               last_was_slash := False;
+         end case;
+         if keep_it then
+            dstx := dstx + 1;
+            product (dstx) := dirty_string (srcx);
+         end if;
+      end loop;
+      return JT.SUS (product (1 .. dstx));
+   end clean_up_pkgsrc_ignore_reason;
 
 
    -----------------
