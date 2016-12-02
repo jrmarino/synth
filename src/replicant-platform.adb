@@ -725,7 +725,12 @@ package body Replicant.Platform is
          else
             NN := OSR (FL .. FL + 1);
          end if;
-         return JT.trim (MM) & "." & JT.trim (NN) & "-SYNTH";
+         case software_framework is
+            when ports_collection =>
+               return JT.trim (MM) & "." & JT.trim (NN) & "-SYNTH";
+            when pkgsrc =>
+               return JT.trim (MM) & "." & JT.trim (NN);
+         end case;
       end create_OSRELEASE;
 
       release : constant String := create_OSRELEASE (OSVER);
