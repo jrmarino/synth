@@ -156,9 +156,9 @@ function skip_info (result, info) {
 
 function portsmon (origin) {
 	var parts = origin.split('/');
-	return '<a title="portsmon for "' + origin +
-		'" href="http://portsmon.freebsd.org/portoverview.py?category=' +
-		parts[0] + '&portname=' + parts[1] + '">' + origin + '</a>';
+	var FPClink = '<a title="portsmon for "' + origin + '" href="http://portsmon.freebsd.org/portoverview.py?category=' + parts[0] + '&portname=' + parts[1] + '">' + origin + '</a>';
+	var NPSlink = '<a title="pkgsrc.se overview" href="http://pkgsrc.se/' + origin + '">' + origin + '</a>';
+	return FPClink;
 }
 
 function process_history_file(data, k) {
