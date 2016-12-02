@@ -773,6 +773,7 @@ package body Replicant is
                  "PACKAGE_BUILDING=yes" & LAT.LF &
                  "ALLOW_VULNERABLE_PACKAGES=yes" & LAT.LF &
                  "PKG_CREATE_VERBOSE=yes" & LAT.LF &
+                 "PKG_FORMAT=pkgng" & LAT.LF &
                  "PKGSRCDIR=/xports" & LAT.LF &
                  "DISTDIR=/distfiles" & LAT.LF &
                  "WRKOBJDIR=/construction" & LAT.LF &
