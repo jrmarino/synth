@@ -1118,6 +1118,23 @@ package body PortScan is
       --  1. strip out all double-quotation marks
       --  2. strip out all single reverse solidus ("\")
       --  3. condense contiguous spaces to a single space
+      function strip_this_package_has_set (raw : String) return String;
+      function strip_this_package_has_set (raw : String) return String
+      is
+         pattern : constant String := "This package has set ";
+      begin
+         if JT.contains (raw, pattern) then
+            declare
+               uno : String := JT.part_1 (raw, pattern);
+               duo : String := JT.part_2 (raw, pattern);
+            begin
+               return strip_this_package_has_set (uno & duo);
+            end;
+         else
+            return raw;
+         end if;
+      end strip_this_package_has_set;
+
       product : String (1 .. dirty_string'Length);
       dstx    : Natural := 0;
       keep_it : Boolean;
@@ -1149,7 +1166,7 @@ package body PortScan is
             product (dstx) := dirty_string (srcx);
          end if;
       end loop;
-      return JT.SUS (product (1 .. dstx));
+      return JT.SUS (strip_this_package_has_set (product (1 .. dstx)));
    end clean_up_pkgsrc_ignore_reason;
 
 
