@@ -5,13 +5,11 @@ with Ada.Strings.Hash;
 with Ada.Calendar.Formatting;
 with GNAT.Regpat;
 with GNAT.String_Split;
-with Ada.Exceptions;
 with Signals;
 with Unix;
 
 package body PortScan is
 
-   package EX  renames Ada.Exceptions;
    package ACF renames Ada.Calendar.Formatting;
    package RGX renames GNAT.Regpat;
    package GSS renames GNAT.String_Split;

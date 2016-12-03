@@ -11,6 +11,7 @@ with Ada.Containers.Ordered_Sets;
 with Ada.Containers.Vectors;
 with Ada.Characters.Latin_1;
 with Ada.Directories;
+with Ada.Exceptions;
 
 with JohnnyText;
 with Parameters;
@@ -24,6 +25,7 @@ package PortScan is
    package AC  renames Ada.Containers;
    package CAL renames Ada.Calendar;
    package AD  renames Ada.Directories;
+   package EX  renames Ada.Exceptions;
    package TIO renames Ada.Text_IO;
    package LAT renames Ada.Characters.Latin_1;
    package PM  renames Parameters;

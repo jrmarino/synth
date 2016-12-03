@@ -70,6 +70,8 @@ package body PortScan.Packages is
       declare
          pkgname  : constant String := JT.USS (all_ports (id).package_name);
          fullpath : constant String := repository & "/" & pkgname;
+         msg_opt  : constant String := pkgname & " failed option check.";
+         msg_abi  : constant String := pkgname & " failed architecture (ABI) check.";
       begin
          if AD.Exists (fullpath) then
             all_ports (id).pkg_present := True;
@@ -77,12 +79,12 @@ package body PortScan.Packages is
             return;
          end if;
          if not passed_option_check (repository, id, True) then
-            TIO.Put_Line (pkgname & " failed option check.");
+            obsolete_notice (msg_opt, True);
             all_ports (id).deletion_due := True;
             return;
          end if;
          if not passed_abi_check (repository, id, True) then
-            TIO.Put_Line (pkgname & " failed architecture (ABI) check.");
+            obsolete_notice (msg_abi, True);
             all_ports (id).deletion_due := True;
             return;
          end if;
@@ -230,9 +232,11 @@ package body PortScan.Packages is
       for m in scanners'Range loop
          mq_progress (m) := 0;
       end loop;
+      start_obsolete_package_logging;
       parallel_package_scan (repository, False, using_screen);
 
       if SIG.graceful_shutdown_requested then
+         TIO.Close (obsolete_pkg_log);
          return;
       end if;
 
@@ -251,6 +255,7 @@ package body PortScan.Packages is
          parallel_package_scan (repository, True, using_screen);
 
          if SIG.graceful_shutdown_requested then
+            TIO.Close (obsolete_pkg_log);
             return;
          end if;
 
@@ -262,6 +267,7 @@ package body PortScan.Packages is
             rank_queue.Iterate (check_package'Access);
          end loop;
       end if;
+      TIO.Close (obsolete_pkg_log);
       if SIG.graceful_shutdown_requested then
          return;
       end if;
@@ -461,43 +467,52 @@ package body PortScan.Packages is
                counter := counter + 1;
                if counter > required then
                   --  package has more options than we are looking for
-                  if debug_opt_check then
-                     TIO.Put_Line ("options " & JT.USS (namekey));
-                     TIO.Put_Line (pkg_name & " has more options than required "
-                                     & "(" & JT.int2str (required) & ")");
-                  end if;
+                  declare
+                     msg : String := "options " & JT.USS (namekey) & LAT.LF &
+                       pkg_name & " has more options than required " &
+                       "(" & JT.int2str (required) & ")";
+                  begin
+                     obsolete_notice (msg, debug_opt_check);
+                  end;
                   return False;
                end if;
                if all_ports (id).options.Contains (namekey) then
                   if knobval /= all_ports (id).options.Element (namekey) then
                      --  port option value doesn't match package option value
-                     if debug_opt_check then
+                     declare
+                        msg_on  : String := pkg_name & " " & JT.USS (namekey) &
+                          " is ON but port says it must be OFF";
+                        msg_off : String := pkg_name & " " & JT.USS (namekey) &
+                          " is OFF but port says it must be ON";
+                     begin
                         if knobval then
-                           TIO.Put_Line (pkg_name & " " & JT.USS (namekey) &
-                              " is ON but port says it must be OFF");
+                           obsolete_notice (msg_on, debug_opt_check);
                         else
-                           TIO.Put_Line (pkg_name & " " & JT.USS (namekey) &
-                              " is OFF but port says it must be ON");
+                           obsolete_notice (msg_off, debug_opt_check);
                         end if;
-                     end if;
+                     end;
                      return False;
                   end if;
                else
                   --  Name of package option not found in port options
-                  if debug_opt_check then
-                     TIO.Put_Line (pkg_name & " option " & JT.USS (namekey) &
-                                  " is no longer present in the port");
-                  end if;
+                  declare
+                     msg : String := pkg_name & " option " & JT.USS (namekey) &
+                       " is no longer present in the port";
+                  begin
+                     obsolete_notice (msg, debug_opt_check);
+                  end;
                   return False;
                end if;
             end;
          end loop;
          if counter < required then
             --  The ports tree has more options than the existing package
-            if debug_opt_check then
-               TIO.Put_Line (pkg_name & " has less options than required "
-                             & "(" & JT.int2str (required) & ")");
-            end if;
+            declare
+               msg : String := pkg_name & " has less options than required "
+                 & "(" & JT.int2str (required) & ")";
+            begin
+               obsolete_notice (msg, debug_opt_check);
+            end;
             return False;
          end if;
 
@@ -505,10 +520,9 @@ package body PortScan.Packages is
          return True;
       end;
    exception
-      when others =>
-         if debug_opt_check then
-            TIO.Put_Line ("option check exception");
-         end if;
+      when issue : others =>
+         obsolete_notice ("option check exception" & LAT.LF &
+                            EX.Exception_Message (issue), debug_opt_check);
          return False;
    end passed_option_check;
 
@@ -576,46 +590,54 @@ package body PortScan.Packages is
                if target_id = port_match_failed then
                   --  package has a dependency that has been removed from
                   --  the ports tree
-                  if debug_dep_check then
-                     TIO.Put_Line (JT.USS (origin) &
-                                  " has been removed from the ports tree");
-                  end if;
+                  declare
+                     msg : String := JT.USS (origin) &
+                       " has been removed from the ports tree";
+                  begin
+                     obsolete_notice (msg, debug_dep_check);
+                  end;
                   return False;
                end if;
                counter := counter + 1;
                if counter > required then
                   --  package has more dependencies than we are looking for
-                  if debug_dep_check then
-                     TIO.Put_Line
-                       (headport & " package has more dependencies than " &
-                          "the port requires (" & JT.int2str (required) & ")");
-                     TIO.Put_Line ("Query: " & JT.USS (query_result));
-                     TIO.Put_Line ("Tripped on: " & JT.USS (target_pkg) &
-                                     ":" & JT.USS (origin));
-                  end if;
+                  declare
+                     msg : String := headport & " package has more " &
+                       "dependencies than the port requires (" &
+                       JT.int2str (required) & ")" & LAT.LF &
+                       "Query: " & JT.USS (query_result) & LAT.LF &
+                       "Tripped on: " & JT.USS (target_pkg) & ":" &
+                       JT.USS (origin);
+                  begin
+                     obsolete_notice (msg, debug_dep_check);
+                  end;
                   return False;
                end if;
                if deppkg /= JT.USS (target_pkg)
                then
                   --  The version that the package requires differs from the
                   --  version that the ports tree will now produce
-                  if debug_dep_check then
-                     TIO.Put_Line
-                       ("Current " & headport & " package depends on " &
-                          deppkg & ", but this is a different version than " &
-                          "requirement of " & JT.USS (target_pkg));
-                  end if;
+                  declare
+                     msg : String :=
+                       "Current " & headport & " package depends on " &
+                       deppkg & ", but this is a different version than " &
+                       "requirement of " & JT.USS (target_pkg);
+                  begin
+                     obsolete_notice (msg, debug_dep_check);
+                  end;
                   return False;
                end if;
                if not available then
                   --  Even if all the versions are matching, we still need
                   --  the package to be in repository.
-                  if debug_dep_check then
-                     TIO.Put_Line
-                       (headport & " package depends on " & JT.USS (target_pkg)
-                        & " which doesn't exist or has been scheduled " &
-                          "for deletion");
-                  end if;
+                  declare
+                     msg : String :=
+                       headport & " package depends on " & JT.USS (target_pkg) &
+                       " which doesn't exist or has been scheduled " &
+                       "for deletion";
+                  begin
+                     obsolete_notice (msg, debug_dep_check);
+                  end;
                   return False;
                end if;
             end;
@@ -623,12 +645,14 @@ package body PortScan.Packages is
          if counter < required then
             --  The ports tree requires more dependencies than the existing
             --  package does
-            if debug_dep_check then
-               TIO.Put_Line
-                 (headport & " package has less dependencies than the port " &
-                    "requires (" & JT.int2str (required) & ")");
-               TIO.Put_Line ("Query: " & JT.USS (query_result));
-            end if;
+            declare
+               msg : String :=
+                 headport & " package has less dependencies than the port " &
+                 "requires (" & JT.int2str (required) & ")" & LAT.LF &
+                 "Query: " & JT.USS (query_result);
+            begin
+               obsolete_notice (msg, debug_dep_check);
+            end;
             return False;
          end if;
 
@@ -637,10 +661,9 @@ package body PortScan.Packages is
          return True;
       end;
    exception
-      when others =>
-         if debug_dep_check then
-            TIO.Put_Line ("Dependency check exception");
-         end if;
+      when issue : others =>
+         obsolete_notice ("Dependency check exception" & LAT.LF &
+                            EX.Exception_Message (issue), debug_dep_check);
          return False;
    end passed_dependency_check;
 
@@ -1160,5 +1183,41 @@ package body PortScan.Packages is
       pc := percent (100.0 * Float (complete) / total);
       return " progress:" & pc'Img & "%              " & LAT.CR;
    end package_scan_progress;
+
+
+   --------------------------------------
+   --  start_obsolete_package_logging  --
+   --------------------------------------
+   procedure start_obsolete_package_logging
+   is
+      logpath : constant String := JT.USS (PM.configuration.dir_logs)
+        & "/06_obsolete_packages.log";
+   begin
+      if AD.Exists (logpath) then
+         AD.Delete_File (logpath);
+      end if;
+      TIO.Create (File => obsolete_pkg_log,
+                  Mode => TIO.Out_File,
+                  Name => logpath);
+      obsolete_log_open := True;
+      exception
+      when others =>
+         obsolete_log_open := False;
+   end start_obsolete_package_logging;
+
+
+   -----------------------
+   --  obsolete_notice  --
+   -----------------------
+   procedure obsolete_notice (message : String; write_to_screen : Boolean)
+   is
+   begin
+      if obsolete_log_open then
+         TIO.Put_Line (obsolete_pkg_log, message);
+      end if;
+      if write_to_screen then
+         TIO.Put (message);
+      end if;
+   end obsolete_notice;
 
 end PortScan.Packages;

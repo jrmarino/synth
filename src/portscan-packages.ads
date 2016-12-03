@@ -63,6 +63,8 @@ private
    abi_formats         : Replicant.package_abi;
    external_repository : JT.Text;
    original_queue_len  : AC.Count_Type;
+   obsolete_pkg_log    : TIO.File_Type;
+   obsolete_log_open   : Boolean := False;
 
    --  Debugging purposes only, can be turned on by environment variable
    debug_dep_check : Boolean := False;
@@ -143,5 +145,11 @@ private
 
    --  Dedicated progress meter for prescanning packages
    function package_scan_progress return String;
+
+   --  Open log to document packages that get deleted and the reason why
+   procedure start_obsolete_package_logging;
+
+   --  Write to log if open and optionally output a copy to screen.
+   procedure obsolete_notice (message : String; write_to_screen : Boolean);
 
 end PortScan.Packages;

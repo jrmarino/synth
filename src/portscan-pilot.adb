@@ -3,7 +3,6 @@
 
 with Ada.Command_Line;
 with Ada.Strings.Fixed;
-with Ada.Exceptions;
 with PortScan.Ops;
 with PortScan.Packages;
 with PortScan.Buildcycle.Ports;
@@ -13,7 +12,6 @@ with Unix;
 
 package body PortScan.Pilot is
 
-   package EX  renames Ada.Exceptions;
    package CLI renames Ada.Command_Line;
    package ASF renames Ada.Strings.Fixed;
    package OPS renames PortScan.Ops;

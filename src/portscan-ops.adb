@@ -1,7 +1,6 @@
 --  This file is covered by the Internet Software Consortium (ISC) License
 --  Reference: ../License.txt
 
-with Ada.Exceptions;
 with Ada.Numerics.Discrete_Random;
 with GNAT.String_Split;
 with PortScan.Buildcycle.Pkgsrc;
@@ -12,7 +11,6 @@ with Unix;
 
 package body PortScan.Ops is
 
-   package EX  renames Ada.Exceptions;
    package GSS renames GNAT.String_Split;
    package CYC renames PortScan.Buildcycle;
    package FPC renames PortScan.Buildcycle.Ports;
