@@ -164,7 +164,7 @@ package body PortScan.Packages is
                --  silently fail, remote packages are a bonus anyway
                all_ports (target).remote_pkg := False;
             else
-               TIO.Put_Line (pkgname & " failed dependency check.");
+               obsolete_notice (pkgname & " failed dependency check.", True);
                all_ports (target).deletion_due := True;
             end if;
             clean_pass := False;
