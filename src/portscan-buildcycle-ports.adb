@@ -12,7 +12,8 @@ package body PortScan.Buildcycle.Ports is
                            interphase  : String  := "") return Boolean
    is
       R : Boolean;
-      break_phase : constant phases := valid_test_phase (interphase);
+      break_phase  : constant phases := valid_test_phase (interphase);
+      run_selftest : constant Boolean := Unix.env_variable_defined (selftest);
    begin
       trackers (id).seq_id := sequence_id;
       trackers (id).loglines := 0;
@@ -44,6 +45,11 @@ package body PortScan.Buildcycle.Ports is
 
             when build =>
                R := exec_phase_build (id);
+
+            when test =>
+               if testing and run_selftest then
+                  R := exec_phase_generic (id, phase);
+               end if;
 
             when stage =>
                if testing then
@@ -119,6 +125,7 @@ package body PortScan.Buildcycle.Ports is
          when build           => return "build";
          when run_depends     => return "run-depends";
          when stage           => return "stage";
+         when test            => return "test";
          when pkg_package     => return "package";
          when install_mtree   => return "install-mtree";
          when install         => return "install";
@@ -150,6 +157,7 @@ package body PortScan.Buildcycle.Ports is
          when build            => base := 25;   --  for gcc linking, tex
          when run_depends      => base := 15;   --  octave-forge is driver
          when stage            => base := 20;   --  desire 15 but too many rogue builders-in-stage
+         when test             => base := 25;
          when check_plist      => base := 10;   --  For packages with thousands of files
          when pkg_package      => base := 80;
          when install_mtree    => base := 3;

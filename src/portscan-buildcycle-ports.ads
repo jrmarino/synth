@@ -22,8 +22,8 @@ private
    type phases is (check_sanity, pkg_depends, fetch_depends, fetch, checksum,
                    extract_depends, extract, patch_depends, patch,
                    build_depends, lib_depends, configure, build, run_depends,
-                   stage, check_plist, pkg_package, install_mtree, install,
-                   deinstall);
+                   stage, test, check_plist, pkg_package, install_mtree,
+                   install, deinstall);
 
    type dim_phase_trackers is array (builders) of phases;
 

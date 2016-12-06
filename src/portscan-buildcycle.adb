@@ -5,7 +5,6 @@ with Ada.Calendar.Arithmetic;
 with Ada.Calendar.Formatting;
 with Ada.Direct_IO;
 with Replicant.Platform;
-with Unix;
 
 package body PortScan.Buildcycle is
 

@@ -3,6 +3,7 @@
 
 with JohnnyText;
 with Display;
+with Unix;
 
 package PortScan.Buildcycle is
 
@@ -57,6 +58,7 @@ private
    uselog    : constant Boolean := True;
 
    discerr   : constant String := "Discovery error";
+   selftest  : constant String := "SELFTEST";
 
    function  initialize_log (id : builders) return Boolean;
    procedure finalize_log   (id : builders);

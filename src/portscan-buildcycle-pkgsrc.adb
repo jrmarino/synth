@@ -12,7 +12,8 @@ package body PortScan.Buildcycle.Pkgsrc is
                            interphase  : String  := "") return Boolean
    is
       R : Boolean;
-      break_phase : constant phases := valid_test_phase (interphase);
+      break_phase  : constant phases := valid_test_phase (interphase);
+      run_selftest : constant Boolean := Unix.env_variable_defined (selftest);
    begin
       trackers (id).seq_id := sequence_id;
       trackers (id).loglines := 0;
@@ -45,13 +46,18 @@ package body PortScan.Buildcycle.Pkgsrc is
             when build =>
                R := exec_phase_build (id);
 
+            when test =>
+               if testing and run_selftest then
+                  R := exec_phase_generic (id, phase);
+               end if;
+
             when stage_install =>
                if testing then
                   mark_file_system (id, "prestage");
                end if;
                R := exec_phase_generic (id, phase);
 
-            when test | package_install =>
+            when package_install =>
                if testing then
                   R := exec_phase_generic (id, phase);
                end if;
@@ -296,7 +302,7 @@ package body PortScan.Buildcycle.Pkgsrc is
          when wrapper           => base := 3;
          when configure         => base := 15;
          when build             => base := 25;
-         when test              => base := 10;
+         when test              => base := 25;
          when stage_install     => base := 20;
          when create_package    => base := 80;
          when package_install   => base := 10;
