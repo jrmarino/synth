@@ -622,7 +622,8 @@ package body PortScan.Packages is
                      msg : String :=
                        "Current " & headport & " package depends on " &
                        deppkg & ", but this is a different version than " &
-                       "requirement of " & JT.USS (target_pkg);
+                       "requirement of " & JT.USS (target_pkg) & " (from " &
+                       JT.USS (origin) & ")";
                   begin
                      obsolete_notice (msg, debug_dep_check);
                   end;
