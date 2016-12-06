@@ -1,4 +1,4 @@
-.Dd October 14, 2016
+.Dd December 6, 2016
 .Dt SYNTH 1
 .Os
 .Sh NAME
@@ -440,6 +440,13 @@ tool aimed at pinpointing file system violations as a port is not supposed
 to write to localbase prior to staging.  Note that the localbase tmpfs
 setting will considered as False in this mode, so building may be
 noticeably slower than normal.
+.It Ev SELFTEST
+This environment variable only applies with the
+.Cm test
+command.  When it is defined, the
+.Dq test
+target is executed as part of the build cycle; this target is not executed
+under any other circumstances.
 .El
 .Sh FILES
 The following files may be used or created:
