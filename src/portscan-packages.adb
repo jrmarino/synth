@@ -1217,7 +1217,7 @@ package body PortScan.Packages is
          TIO.Put_Line (obsolete_pkg_log, message);
       end if;
       if write_to_screen then
-         TIO.Put (message);
+         TIO.Put_Line (message);
       end if;
    end obsolete_notice;
 
