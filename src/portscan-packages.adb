@@ -558,12 +558,13 @@ package body PortScan.Packages is
                                      return Boolean is
    begin
       declare
-         content   : JT.Text := query_result;
-         topline   : JT.Text;
-         colon     : Natural;
-         required  : Natural := Natural (all_ports (id).librun.Length);
-         headport  : constant String := get_catport (all_ports (id));
-         counter   : Natural := 0;
+         content  : JT.Text := query_result;
+         topline  : JT.Text;
+         colon    : Natural;
+         min_deps : constant Natural := all_ports (id).min_librun;
+         max_deps : constant Natural := Natural (all_ports (id).librun.Length);
+         headport : constant String := get_catport (all_ports (id));
+         counter  : Natural := 0;
       begin
          loop
             JT.nextline (lineblock => content, firstline => topline);
@@ -599,12 +600,12 @@ package body PortScan.Packages is
                   return False;
                end if;
                counter := counter + 1;
-               if counter > required then
+               if counter > max_deps then
                   --  package has more dependencies than we are looking for
                   declare
                      msg : String := headport & " package has more " &
                        "dependencies than the port requires (" &
-                       JT.int2str (required) & ")" & LAT.LF &
+                       JT.int2str (max_deps) & ")" & LAT.LF &
                        "Query: " & JT.USS (query_result) & LAT.LF &
                        "Tripped on: " & JT.USS (target_pkg) & ":" &
                        JT.USS (origin);
@@ -642,13 +643,13 @@ package body PortScan.Packages is
                end if;
             end;
          end loop;
-         if counter < required then
+         if counter < min_deps then
             --  The ports tree requires more dependencies than the existing
             --  package does
             declare
                msg : String :=
                  headport & " package has less dependencies than the port " &
-                 "requires (" & JT.int2str (required) & ")" & LAT.LF &
+                 "requires (" & JT.int2str (min_deps) & ")" & LAT.LF &
                  "Query: " & JT.USS (query_result);
             begin
                obsolete_notice (msg, debug_dep_check);

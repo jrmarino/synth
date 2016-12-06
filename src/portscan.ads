@@ -165,6 +165,7 @@ private
          use_procfs    : Boolean              := False;
          use_linprocfs : Boolean              := False;
          reverse_score : port_index           := 0;
+         min_librun    : Natural              := 0;
          librun        : block_crate.Map;
          blocked_by    : block_crate.Map;
          blocks        : block_crate.Map;

@@ -190,6 +190,7 @@ package body PortScan is
          PR.use_procfs    := False;
          PR.use_linprocfs := False;
          PR.reverse_score := 0;
+         PR.min_librun    := 0;
          PR.librun.Clear;
          PR.blocks.Clear;
          PR.blocked_by.Clear;
@@ -483,6 +484,7 @@ package body PortScan is
       trimline   : constant JT.Text := JT.trim (line);
       zero_deps  : constant GSS.Slice_Number := GSS.Slice_Number (0);
       dirlen     : constant Natural := dir_ports'Length;
+      bracketed  : Natural := 0;
 
       use type GSS.Slice_Number;
    begin
@@ -537,24 +539,44 @@ package body PortScan is
                  with fulldep &
                  " (required dependency of " & catport & ") does not exist.";
             end if;
-               declare
-                  depindex : port_index := portkey_crate.Element (deprec);
-               begin
-                  if not all_ports (target).blocked_by.Contains (depindex) then
-                     all_ports (target).blocked_by.Insert
+            declare
+               depindex : port_index := portkey_crate.Element (deprec);
+            begin
+               if not all_ports (target).blocked_by.Contains (depindex) then
+                  all_ports (target).blocked_by.Insert
+                    (Key      => depindex,
+                     New_Item => depindex);
+               end if;
+               if dtype in LR_set then
+                  if not all_ports (target).librun.Contains (depindex) then
+                     all_ports (target).librun.Insert
                        (Key      => depindex,
                         New_Item => depindex);
+                     all_ports (target).min_librun :=
+                       all_ports (target).min_librun + 1;
+                     case software_framework is
+                        when ports_collection => null;
+                        when pkgsrc =>
+                           if fulldep (1) = '{' then
+                              bracketed := bracketed + 1;
+                           end if;
+                     end case;
                   end if;
-                  if dtype in LR_set then
-                     if not all_ports (target).librun.Contains (depindex) then
-                        all_ports (target).librun.Insert
-                          (Key      => depindex,
-                           New_Item => depindex);
-                     end if;
-                  end if;
-               end;
+               end if;
+            end;
          end;
       end loop;
+      if bracketed > 0 and then all_ports (target).min_librun > 1 then
+         declare
+            newval : Integer := all_ports (target).min_librun - bracketed;
+         begin
+            if newval <= 1 then
+               all_ports (target).min_librun := 1;
+            else
+               all_ports (target).min_librun := newval;
+            end if;
+         end;
+      end if;
    end populate_set_depends;
 
 
