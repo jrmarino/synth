@@ -1151,7 +1151,7 @@ package body PortScan.Pilot is
       end;
       TIO.Put_Line ("Stand by, comparing installed packages against the " &
                       "ports tree.");
-      if build_pkg8_as_necessary and then
+      if prerequisites_available and then
         scan_stack_of_single_ports (testmode => False) and then
         sanity_check_then_prefail (delete_first => False, dry_run => dry_run)
       then
