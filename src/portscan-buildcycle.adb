@@ -670,7 +670,7 @@ package body PortScan.Buildcycle is
       pkgname : constant String := pkgfile (1 .. pkgfile'Last - 4);
       root    : constant String := get_root (id);
       command : constant String := chroot & root & " " &
-        host_localbase & "/sbin/pkg query %Fp " & pkgname;
+        REP.root_localbase & "/sbin/pkg-static query %Fp " & pkgname;
 
       procedure log_dump (cursor : string_crate.Cursor) is
       begin
