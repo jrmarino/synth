@@ -556,39 +556,51 @@ package body Parameters is
       command : constant String := "/sbin/sysctl hw.physmem";
       content : JT.Text;
       status  : Integer;
-      CR_loc  : Integer;
-      SP_loc  : Integer;
-      CR      : constant String (1 .. 1) := (1 => Character'Val (10));
-      SP1     : constant String (1 .. 2) := (1 => LAT.Colon,
-                                             2 => LAT.Space);
-      SP2     : constant String (1 .. 2) := (1 => LAT.Equals_Sign,
-                                             2 => LAT.Space);
    begin
+      memory_megs := 1024;
       content := Unix.piped_command (command, status);
       if status /= 0 then
-         raise make_query with command;
-      end if;
-      SP_loc := JT.SU.Index (Source => content, Pattern => SP1);
-      if SP_loc = 0 then
-         SP_loc := JT.SU.Index (Source => content, Pattern => SP2);
-      end if;
-      if SP_loc = 0 then
-         memory_megs := 1024;
-         TIO.Put_Line ("Anomaly, unable to detect physical memory");
-         TIO.Put_Line (JT.USS (content));
+         TIO.Put_Line ("command failed: " & command);
          return;
       end if;
-      CR_loc := JT.SU.Index (Source => content, Pattern => CR);
-
       declare
-         type memtype is mod 2**64;
-         numbers : String := JT.USS (content)(SP_loc + 2 .. CR_loc - 1);
-         bytes   : constant memtype := memtype'Value (numbers);
-         megs    : constant memtype := bytes / 1024 / 1024;
+         type styles is (unknown, dragonfly, netbsd);
+         function get_number_string return String;
+         style    : styles := unknown;
+         response : constant String :=
+           JT.USS (content) (1 .. JT.SU.Length (content) - 1);
+         SP1 : constant String (1 .. 2) := (1 => LAT.Colon,
+                                            2 => LAT.Space);
+         SP2 : constant String (1 .. 2) := (1 => LAT.Equals_Sign,
+                                            2 => LAT.Space);
+         function get_number_string return String is
+         begin
+            case style is
+               when dragonfly => return JT.part_2 (response, SP1);
+               when netbsd    => return JT.part_2 (response, SP2);
+               when unknown   => return "1073741824";
+            end case;
+         end get_number_string;
       begin
-         memory_megs := Natural (megs);
-      end;
+         if JT.contains (response, SP1) then
+            style := dragonfly;
+         elsif JT.contains (response, SP2) then
+            style := netbsd;
+         else
+            TIO.Put_Line ("Anomaly, unable to detect physical memory");
+            TIO.Put_Line (response);
+            return;
+         end if;
 
+         declare
+            type memtype is mod 2**64;
+            numbers : String := get_number_string;
+            bytes   : constant memtype := memtype'Value (numbers);
+            megs    : constant memtype := bytes / 1024 / 1024;
+         begin
+            memory_megs := Natural (megs);
+         end;
+      end;
    end query_physical_memory;
 
 
