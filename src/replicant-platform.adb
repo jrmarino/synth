@@ -857,7 +857,8 @@ package body Replicant.Platform is
       is
          DFVER  : constant String := "#define __DragonFly_version ";
          FBVER  : constant String := "#define __FreeBSD_version ";
-         NBVER  : constant String := "#define __NetBSD_Version ";
+         NBVER  : constant String := "#define" & LAT.HT &
+                                     "__NetBSD_Version__" & LAT.HT;
          BADVER : constant String := "#define __Unknown_version ";
       begin
          case platform_type is

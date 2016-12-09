@@ -114,10 +114,8 @@ package body Replicant is
    procedure initialize (testmode : Boolean; num_cores : cpu_range)
    is
       mm      : constant String := get_master_mount;
-      maspas  : constant String := "/master.passwd";
-      etcmp   : constant String := "/etc" & maspas;
-      command : constant String := "/usr/sbin/pwd_mkdb -p -d " & mm & " " &
-                                   mm & maspas;
+      etcmp   : constant String := "/etc/master.passwd";
+      command : constant String := "/usr/sbin/pwd_mkdb -p -d ";
    begin
       smp_cores := num_cores;
       developer_mode := testmode;
@@ -129,7 +127,7 @@ package body Replicant is
          annihilate_directory_tree (mm);
       end if;
 
-      AD.Create_Path (mm);
+      AD.Create_Path (mm & "/etc");
       case platform_type is
          when dragonfly |
               netbsd    |
@@ -138,8 +136,14 @@ package body Replicant is
          when solaris   => null;  -- master.passwd not used
          when unknown   => null;
       end case;
-      execute (command);
       create_base_group (mm);
+      case platform_type is
+         when dragonfly | freebsd =>
+            execute (command & mm & "/etc " & mm & etcmp);
+         when netbsd =>
+            execute (command & mm & " " & mm & etcmp);
+         when others => null;
+      end case;
       PLT.cache_port_variables (mm);
       create_mtree_exc_preinst (mm);
       create_mtree_exc_preconfig (mm);
@@ -624,8 +628,8 @@ package body Replicant is
       masterpwd   : TIO.File_Type;
       live_file   : TIO.File_Type;
       keepit      : Boolean;
-      target      : constant String  := path_to_mm & "/master.passwd";
       live_origin : constant String  := "/etc/master.passwd";
+      target      : constant String  := path_to_mm & live_origin;
    begin
       TIO.Open   (File => live_file, Mode => TIO.In_File, Name => live_origin);
       TIO.Create (File => masterpwd, Mode => TIO.Out_File, Name => target);
@@ -674,19 +678,19 @@ package body Replicant is
    ---------------------
    procedure create_passwd (path_to_etc : String)
    is
-      mm     : constant String := get_master_mount;
+      mmetc  : constant String := get_master_mount & "/etc";
       maspwd : constant String := "/master.passwd";
       passwd : constant String := "/passwd";
       spwd   : constant String := "/spwd.db";
       pwd    : constant String := "/pwd.db";
    begin
-      AD.Copy_File (Source_Name => mm & passwd,
+      AD.Copy_File (Source_Name => mmetc & passwd,
                     Target_Name => path_to_etc & passwd);
-      AD.Copy_File (Source_Name => mm & maspwd,
+      AD.Copy_File (Source_Name => mmetc & maspwd,
                     Target_Name => path_to_etc & maspwd);
-      AD.Copy_File (Source_Name => mm & spwd,
+      AD.Copy_File (Source_Name => mmetc & spwd,
                     Target_Name => path_to_etc & spwd);
-      AD.Copy_File (Source_Name => mm & pwd,
+      AD.Copy_File (Source_Name => mmetc & pwd,
                     Target_Name => path_to_etc & pwd);
    end create_passwd;
 
