@@ -551,24 +551,38 @@ package body Parameters is
    -----------------------------
    procedure query_physical_memory is
       --  Works for *BSD, DragonFly, Bitrig
+      --  DF/Free "hw.physmem: 8525971456"  (8G)
+      --  NetBSD  "hw.physmem = 1073278976" (1G)
       command : constant String := "/sbin/sysctl hw.physmem";
       content : JT.Text;
       status  : Integer;
       CR_loc  : Integer;
       SP_loc  : Integer;
       CR      : constant String (1 .. 1) := (1 => Character'Val (10));
-      SP      : constant String (1 .. 1) := (1 => LAT.Space);
+      SP1     : constant String (1 .. 2) := (1 => LAT.Colon,
+                                             2 => LAT.Space);
+      SP2     : constant String (1 .. 2) := (1 => LAT.Equals_Sign,
+                                             2 => LAT.Space);
    begin
       content := Unix.piped_command (command, status);
       if status /= 0 then
          raise make_query with command;
       end if;
-      SP_loc := JT.SU.Index (Source => content, Pattern => SP);
+      SP_loc := JT.SU.Index (Source => content, Pattern => SP1);
+      if SP_loc = 0 then
+         SP_loc := JT.SU.Index (Source => content, Pattern => SP2);
+      end if;
+      if SP_loc = 0 then
+         memory_megs := 1024;
+         TIO.Put_Line ("Anomaly, unable to detect physical memory");
+         TIO.Put_Line (JT.USS (content));
+         return;
+      end if;
       CR_loc := JT.SU.Index (Source => content, Pattern => CR);
 
       declare
          type memtype is mod 2**64;
-         numbers : String := JT.USS (content)(SP_loc + 1 .. CR_loc - 1);
+         numbers : String := JT.USS (content)(SP_loc + 2 .. CR_loc - 1);
          bytes   : constant memtype := memtype'Value (numbers);
          megs    : constant memtype := bytes / 1024 / 1024;
       begin
