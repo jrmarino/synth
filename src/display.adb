@@ -23,9 +23,8 @@ package body Display is
       end if;
       if not TIC.Has_Colors or else not establish_colors then
          Return_To_Text_Mode;
-         TIO.Put_Line ("This XTERM value (" &
-                         Unix.env_variable_value ("XTERM") &
-                         ") does not support colors.");
+         TIO.Put_Line ("This TERM value (" & Unix.env_variable_value ("TERM")
+                       & ") does not support colors.");
          TIO.Put_Line ("Falling back to text mode.");
          return False;
       end if;
