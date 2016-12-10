@@ -1121,8 +1121,6 @@ package body PortScan.Buildcycle is
    end interact_with_builder;
 
 
-
-
    ---------------------------------
    --  obtain_custom_environment  --
    ---------------------------------

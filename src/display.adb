@@ -1,13 +1,16 @@
 --  This file is covered by the Internet Software Consortium (ISC) License
 --  Reference: ../License.txt
 
+with Ada.Text_IO;
 with JohnnyText;
 with Signals;
+with Unix;
 
 package body Display is
 
    package  JT renames JohnnyText;
    package SIG renames Signals;
+   package TIO renames Ada.Text_IO;
 
    ----------------------
    --  launch_monitor  --
@@ -15,10 +18,15 @@ package body Display is
    function launch_monitor (num_builders : builders) return Boolean is
    begin
       if not Start_Curses_Mode then
+         TIO.Put_Line ("Failed to enter curses modes");
          return False;
       end if;
       if not TIC.Has_Colors or else not establish_colors then
          Return_To_Text_Mode;
+         TIO.Put_Line ("This XTERM value (" &
+                         Unix.env_variable_value ("XTERM") &
+                         ") does not support colors.");
+         TIO.Put_Line ("Falling back to text mode.");
          return False;
       end if;
       begin
