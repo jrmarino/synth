@@ -712,6 +712,7 @@ package body Replicant.Platform is
          OSR : constant String (1 .. len) := OSRELEASE;
          MM  : String (1 .. 2) := "  ";
          NN  : String (1 .. 2) := "  ";
+         PP  : String (1 .. 2) := "  ";
          FL  : Natural;
          one_digit : Boolean := True;
       begin
@@ -732,6 +733,11 @@ package body Replicant.Platform is
                   one_digit := False;
                end if;
                FL := len - 7;
+               if OSR (FL + 4) = '0' then
+                  PP (2) := OSR (FL + 5);
+               else
+                  PP := OSR (FL + 4 .. FL + 5);
+               end if;
             when unknown => null;
             when linux | solaris => null;  --  TBD
          end case;
@@ -749,7 +755,13 @@ package body Replicant.Platform is
             when ports_collection =>
                return JT.trim (MM) & "." & JT.trim (NN) & "-SYNTH";
             when pkgsrc =>
-               return JT.trim (MM) & "." & JT.trim (NN);
+               case platform_type is
+                  when netbsd =>
+                     return JT.trim (MM) & "." & JT.trim (NN) & "." &
+                       JT.trim (PP);
+                  when others =>
+                     return JT.trim (MM) & "." & JT.trim (NN);
+               end case;
          end case;
       end create_OSRELEASE;
 
