@@ -223,7 +223,7 @@ package body PortScan.Pilot is
    begin
       OPS.initialize_hooks;
       REP.initialize (testmode => False, num_cores => PortScan.cores_available);
-      REP.launch_slave (id => PortScan.scan_slave, opts => noprocs);
+      REP.launch_slave (id => PortScan.scan_slave, opts => npsboot);
       if not PLAT.host_pkgsrc_mk_install (id => PortScan.scan_slave) or else
         not PLAT.host_pkgsrc_bmake_install (id => PortScan.scan_slave) or else
         not PLAT.host_pkgsrc_pkg8_install (id => PortScan.scan_slave)

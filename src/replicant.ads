@@ -20,6 +20,7 @@ package Replicant is
    type slave_options is record
       need_procfs    : Boolean := False;
       need_linprocfs : Boolean := False;
+      skip_cwrappers : Boolean := False;
    end record;
 
    type package_abi is record
@@ -183,7 +184,8 @@ private
    procedure populate_var_folder (path : String);
 
    --  create /etc/make.conf in slave
-   procedure create_make_conf (path_to_etc : String);
+   procedure create_make_conf (path_to_etc : String;
+                               skip_cwrappers : Boolean);
 
    --  create /etc/passwd (and databases) to define system users
    procedure create_passwd      (path_to_etc : String);

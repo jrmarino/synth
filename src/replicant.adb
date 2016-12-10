@@ -728,7 +728,7 @@ package body Replicant is
    ------------------------
    --  create_make_conf  --
    ------------------------
-   procedure create_make_conf (path_to_etc : String)
+   procedure create_make_conf (path_to_etc : String; skip_cwrappers : Boolean)
    is
       makeconf  : TIO.File_Type;
       profilemc : constant String := PM.synth_confdir & "/" &
@@ -785,6 +785,9 @@ package body Replicant is
                  "PACKAGES=/packages" & LAT.LF &
                  "MAKE_JOBS=" & JT.int2str (mjnum));
 
+            if skip_cwrappers then
+               TIO.Put_Line (makeconf, "USE_CWRAPPERS=no");
+            end if;
             if developer_mode then
                TIO.Put_Line (makeconf, "PKG_DEVELOPER=yes");
             end if;
@@ -1112,7 +1115,7 @@ package body Replicant is
       copy_mtree_files    (location (slave_base, etc_mtree));
       copy_rc_default     (location (slave_base, etc));
       copy_resolv_conf    (location (slave_base, etc));
-      create_make_conf    (location (slave_base, etc));
+      create_make_conf    (location (slave_base, etc), opts.skip_cwrappers);
       create_passwd       (location (slave_base, etc));
       create_group        (location (slave_base, etc));
       create_etc_services (location (slave_base, etc));

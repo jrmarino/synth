@@ -147,6 +147,8 @@ private
                                       "03_ignored_list.log",
                                       "04_skipped_list.log");
    noprocs : constant REP.slave_options := (others => False);
+   npsboot : constant REP.slave_options := (skip_cwrappers => True,
+                                            others => False);
    duplist : portkey_crate.Map;
 
    --  scan given file.  Everything line must be either blank (whitespace
