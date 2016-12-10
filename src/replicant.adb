@@ -416,8 +416,8 @@ package body Replicant is
       command       : JT.Text;
    begin
       if not AD.Exists (path) then
-         raise scenario_unexpected with
-           "chflags: " & path & " path does not exist";
+         --  e.g. <slave>/var/empty does not exist on NetBSD
+         return;
       end if;
       case platform_type is
          when freebsd   => command := JT.SUS (cmd_freebsd);
@@ -427,7 +427,7 @@ package body Replicant is
          when solaris   => command := JT.SUS (cmd_solaris);
          when unknown   =>
             raise scenario_unexpected with
-              "Executing cflags on unknown operating system";
+              "Executing chflags on unknown operating system";
       end case;
       case platform_type is
          when freebsd | dragonfly | netbsd =>
