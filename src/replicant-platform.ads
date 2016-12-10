@@ -42,6 +42,9 @@ package Replicant.Platform is
    --  Cache variables that spawn to get populated to extended make.conf
    procedure cache_port_variables (path_to_mm : String);
 
+   --  Shell for interactive use
+   function interactive_shell return String;
+
 private
 
    function isolate_arch_from_file_type (fileinfo : String) return filearch;

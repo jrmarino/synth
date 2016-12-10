@@ -351,6 +351,26 @@ package body Replicant.Platform is
    end swapinfo_command;
 
 
+   -------------------------
+   --  interactive_shell  --
+   -------------------------
+   function interactive_shell return String is
+   begin
+      case platform_type is
+         when dragonfly | freebsd =>
+            return "/bin/tcsh";
+         when netbsd =>
+            return "/bin/sh";
+         when linux =>
+            return "/bin/bash";
+         when solaris =>
+            return "TBD";
+         when unknown =>
+            return "DONTCARE";
+      end case;
+   end interactive_shell;
+
+
    -----------------
    --  load_core  --
    -----------------

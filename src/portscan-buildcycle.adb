@@ -1110,7 +1110,8 @@ package body PortScan.Buildcycle is
    is
       root      : constant String := get_root (id);
       command   : constant String := chroot & root &
-                  environment_override (enable_tty => True) & "/bin/tcsh";
+                  environment_override (enable_tty => True) &
+                  REP.Platform.interactive_shell;
       result    : Boolean;
    begin
       TIO.Put_Line ("Entering interactive test mode at the builder root " &
