@@ -319,7 +319,8 @@ package body Replicant is
          when dragonfly |
               freebsd   => execute (bsd_command);
          when linux     => execute (lin_command);
-         when netbsd    => null;
+         when netbsd    => mount_nullfs (target      => "/dev",
+                                         mount_point => path_to_dev);
          when solaris   => null;
          when unknown   => null;
       end case;
@@ -335,7 +336,7 @@ package body Replicant is
          when dragonfly |
               freebsd   |
               linux     => unmount (path_to_dev);
-         when netbsd    => null;
+         when netbsd    => unmount (path_to_dev);
          when solaris   => null;
          when unknown   => null;
       end case;
