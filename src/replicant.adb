@@ -32,6 +32,7 @@ package body Replicant is
          when usr_sbin    => return mount_base & root_usr_sbin;
          when usr_share   => return mount_base & root_usr_share;
          when usr_src     => return mount_base & root_usr_src;
+         when usr_x11r7   => return mount_base & root_X11R7;
          when lib         => return mount_base & root_lib;
          when dev         => return mount_base & root_dev;
          when etc         => return mount_base & root_etc;
@@ -1086,7 +1087,16 @@ package body Replicant is
                   mount_tmpfs (slave_base & root_kmodules, 100);
                end if;
             end;
-         when netbsd  => null;  -- for now
+         when netbsd  =>
+            declare
+               x11_dir : String := clean_mount_point (usr_x11r7);
+            begin
+               if AD.Exists (x11_dir) then
+                  mount_nullfs
+                    (target      => x11_dir,
+                     mount_point => location (slave_base, usr_x11r7));
+               end if;
+            end;
          when linux   => null;  -- for now
          when solaris => null;  -- for now
          when unknown => null;
@@ -1180,7 +1190,10 @@ package body Replicant is
                unmount (slave_base & root_kmodules);
                unmount (location (slave_base, boot));
             end if;
-         when netbsd  => null;
+         when netbsd  =>
+            if AD.Exists (location (dir_system, usr_x11r7)) then
+               unmount (location (slave_base, usr_x11r7));
+            end if;
          when linux   => null;
          when solaris => null;
          when unknown => null;
