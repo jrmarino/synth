@@ -113,10 +113,10 @@ package body PortScan.Buildcycle is
                       Leap_Seconds => leap_secs);
       if diff_days > 0 then
          if diff_days = 1 then
-            JT.SU.Append (raw, " 1 day and" &
+            JT.SU.Append (raw, " 1 day and " &
                             ACF.Image (Elapsed_Time => diff_secs));
          else
-            JT.SU.Append (raw, diff_days'Img & " days and" &
+            JT.SU.Append (raw, diff_days'Img & " days and " &
                             ACF.Image (Elapsed_Time => diff_secs));
          end if;
       else
