@@ -952,8 +952,12 @@ package body PortScan.Pilot is
                end if;
             end;
          end loop;
+         TIO.Close (handle);
       exception
-         when others => null;
+         when others =>
+            if TIO.Is_Open (handle) then
+               TIO.Close (handle);
+            end if;
       end scan;
 
       procedure walk (name : String)
