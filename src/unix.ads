@@ -63,6 +63,10 @@ package Unix is
    --  It resolves symlinks and relative directories to get the true path
    function true_path (provided_path : String) return String;
 
+   --  Ignore SIGTTOU signal (background process trying to write to terminal)
+   --  If that happens, synth will suspend and ultimately fail.
+   procedure ignore_background_tty;
+
 private
 
    type uInt8 is mod 2 ** 16;
@@ -89,6 +93,12 @@ private
 
    function signal_runaway (pid : pid_t) return IC.int;
    pragma Import (C, signal_runaway, "__shut_it_down");
+
+   function ignore_tty_write return uInt8;
+   pragma Import (C, ignore_tty_write, "__ignore_background_tty_writes");
+
+   function ignore_tty_read return uInt8;
+   pragma Import (C, ignore_tty_read, "__ignore_background_tty_reads");
 
    --  internal pipe close command
    function pipe_close (OpenFile : CSM.FILEs) return Integer;

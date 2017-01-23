@@ -148,6 +148,7 @@ begin
          end if;
 
          PIL.create_pidfile;
+         Unix.ignore_background_tty;
          Unix.cone_of_silence (deploy => True);
 
          ----------------------------------
@@ -312,6 +313,7 @@ begin
          end if;
 
          PIL.create_pidfile;
+         Unix.ignore_background_tty;
 
          if mandate /= configure then
             Unix.cone_of_silence (deploy => True);

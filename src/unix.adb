@@ -61,6 +61,24 @@ package body Unix is
    end cone_of_silence;
 
 
+   -----------------------------
+   --  ignore_background_tty  --
+   -----------------------------
+   procedure ignore_background_tty
+   is
+      result : uInt8;
+   begin
+      result := ignore_tty_write;
+      if result > 0 then
+         TIO.Put_Line ("Notice: ignoring background tty write signal failed");
+      end if;
+      result := ignore_tty_read;
+      if result > 0 then
+         TIO.Put_Line ("Notice: ignoring background tty read signal failed");
+      end if;
+   end ignore_background_tty;
+
+
    -------------------------
    --  kill_process_tree  --
    -------------------------

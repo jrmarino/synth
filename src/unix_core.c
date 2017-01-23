@@ -92,3 +92,30 @@ int __shut_it_down (pid_t dead_pid_walking)
 {
    return (kill(dead_pid_walking, SIGUSR1));
 }
+
+/*
+ * Ignore all background attempts to write to TTY
+ * If this signal comes during an ncurses display, synth will be suspended
+ */
+u_int8_t
+__ignore_background_tty_writes ()
+{
+   sig_t prev_val;
+   prev_val = signal(SIGTTOU, SIG_IGN);
+
+   /* return 1 on failure, 0 on success */
+   return (prev_val == SIG_ERR); 
+}
+
+/*
+ * Ignore all background attempts to read TTY
+ */
+u_int8_t
+__ignore_background_tty_reads ()
+{
+   sig_t prev_val;
+   prev_val = signal(SIGTTIN, SIG_IGN);
+
+   /* return 1 on failure, 0 on success */
+   return (prev_val == SIG_ERR); 
+}
