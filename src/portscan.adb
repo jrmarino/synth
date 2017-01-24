@@ -808,6 +808,8 @@ package body PortScan is
    --------------------------
    procedure prescan_ports_tree (portsdir : String)
    is
+      package sorter is new string_crate.Generic_Sorting ("<" => JT.SU."<");
+
       procedure quick_scan (cursor : string_crate.Cursor);
       Search     : AD.Search_Type;
       Dir_Ent    : AD.Directory_Entry_Type;
@@ -866,6 +868,7 @@ package body PortScan is
          end;
       end loop;
       AD.End_Search (Search => Search);
+      sorter.Sort (Container => categories);
       categories.Iterate (Process => quick_scan'Access);
       prescanned := True;
    end prescan_ports_tree;
