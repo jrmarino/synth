@@ -882,6 +882,58 @@ package body Replicant is
    end create_etc_fstab;
 
 
+   -------------------------
+   --  create_etc_shells  --
+   -------------------------
+   procedure create_etc_shells (path_to_etc : String)
+   is
+      shells : TIO.File_Type;
+   begin
+      TIO.Create (File => shells,
+                  Mode => TIO.Out_File,
+                  Name => path_to_etc & "/shells");
+      case platform_type is
+         when dragonfly | freebsd =>
+            TIO.Put_Line (shells,
+                            "/bin/sh" & LAT.LF &
+                            "/bin/csh" & LAT.LF &
+                            "/bin/tcsh" & LAT.LF);
+         when netbsd =>
+            TIO.Put_Line (shells,
+                            "/bin/sh" & LAT.LF &
+                            "/bin/csh" & LAT.LF &
+                            "/bin/ksh" & LAT.LF);
+         when linux =>
+            TIO.Put_Line (shells,
+                            "/bin/sh" & LAT.LF &
+                            "/bin/bash" & LAT.LF &
+                            "/sbin/nologin" & LAT.LF &
+                            "/usr/bin/sh" & LAT.LF &
+                            "/usr/bin/bash" & LAT.LF &
+                            "/usr/sbin/nologin" & LAT.LF);
+         when solaris =>
+            TIO.Put_Line (shells,
+                            "/bin/bash" & LAT.LF &
+                            "/bin/csh" & LAT.LF &
+                            "/bin/ksh" & LAT.LF &
+                            "/bin/ksh93" & LAT.LF &
+                            "/bin/sh" & LAT.LF &
+                            "/bin/tcsh" & LAT.LF &
+                            "/bin/zsh" & LAT.LF &
+                            "/sbin/sh" & LAT.LF &
+                            "/usr/bin/bash" & LAT.LF &
+                            "/usr/bin/csh" & LAT.LF &
+                            "/usr/bin/ksh" & LAT.LF &
+                            "/usr/bin/ksh93" & LAT.LF &
+                            "/usr/bin/sh" & LAT.LF &
+                            "/usr/bin/tcsh" & LAT.LF &
+                            "/usr/bin/zsh");
+         when unknown => null;
+      end case;
+      TIO.Close (shells);
+   end create_etc_shells;
+
+
    ------------------------
    --  execute_ldconfig  --
    ------------------------
@@ -1129,6 +1181,7 @@ package body Replicant is
       create_passwd       (location (slave_base, etc));
       create_group        (location (slave_base, etc));
       create_etc_services (location (slave_base, etc));
+      create_etc_shells   (location (slave_base, etc));
       create_etc_fstab    (location (slave_base, etc));
 
       execute_ldconfig (id);

@@ -211,6 +211,9 @@ private
    --  create a dummy fstab for linux packages (looks for linprocfs)
    procedure create_etc_fstab (path_to_etc : String);
 
+   --  create /etc/shells, required by install scripts of some packages
+   procedure create_etc_shells (path_to_etc : String);
+
    --  mount the devices
    procedure mount_devices (path_to_dev : String);
    procedure unmount_devices (path_to_dev : String);
