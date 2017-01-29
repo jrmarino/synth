@@ -23,6 +23,7 @@ package body Replicant is
          when bin         => return mount_base & root_bin;
          when sbin        => return mount_base & root_sbin;
          when usr_bin     => return mount_base & root_usr_bin;
+         when usr_games   => return mount_base & root_usr_games;
          when usr_include => return mount_base & root_usr_include;
          when usr_lib     => return mount_base & root_usr_lib;
          when usr_lib32   => return mount_base & root_usr_lib32;
@@ -1108,6 +1109,15 @@ package body Replicant is
                   mount_tmpfs (slave_base & root_lmodules, 100);
                end if;
             end;
+            declare
+               games : String := clean_mount_point (usr_games);
+            begin
+               if AD.Exists (games) then
+                  mount_nullfs
+                    (target      => games,
+                     mount_point => location (slave_base, usr_games));
+               end if;
+            end;
          when freebsd =>
             if opts.need_linprocfs then
                if PM.configuration.tmpfs_localbase then
@@ -1137,6 +1147,15 @@ package body Replicant is
                   mount_nullfs (target      => bootdir,
                                 mount_point => location (slave_base, boot));
                   mount_tmpfs (slave_base & root_kmodules, 100);
+               end if;
+            end;
+            declare
+               games : String := clean_mount_point (usr_games);
+            begin
+               if AD.Exists (games) then
+                  mount_nullfs
+                    (target      => games,
+                     mount_point => location (slave_base, usr_games));
                end if;
             end;
          when netbsd  =>
@@ -1228,6 +1247,9 @@ package body Replicant is
                unmount (slave_base & root_lmodules);
                unmount (location (slave_base, boot));
             end if;
+            if AD.Exists (location (dir_system, usr_games)) then
+               unmount (location (slave_base, usr_games));
+            end if;
          when freebsd =>
             if opts.need_linprocfs then
                unmount (slave_base & root_linproc);
@@ -1242,6 +1264,9 @@ package body Replicant is
             if AD.Exists (location (dir_system, boot)) then
                unmount (slave_base & root_kmodules);
                unmount (location (slave_base, boot));
+            end if;
+            if AD.Exists (location (dir_system, usr_games)) then
+               unmount (location (slave_base, usr_games));
             end if;
          when netbsd  =>
             if AD.Exists (location (dir_system, usr_x11r7)) then

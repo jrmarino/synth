@@ -93,7 +93,7 @@ private
                    usr_lib32, xports, options, packages, distfiles,
                    dev, etc, etc_default, etc_mtree, etc_rcd, home, linux,
                    proc, root, tmp, var, wrkdirs, usr_local, usr_src, ccache,
-                   boot, usr_x11r7);
+                   boot, usr_x11r7, usr_games);
    subtype subfolder is folder range bin .. usr_share;
    subtype filearch is String (1 .. 11);
 
@@ -103,6 +103,7 @@ private
    root_sbin        : constant String := "/sbin";
    root_X11R7       : constant String := "/usr/X11R7";
    root_usr_bin     : constant String := "/usr/bin";
+   root_usr_games   : constant String := "/usr/games";
    root_usr_include : constant String := "/usr/include";
    root_usr_lib     : constant String := "/usr/lib";
    root_usr_lib32   : constant String := "/usr/lib32";
