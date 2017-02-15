@@ -151,7 +151,7 @@ package body PortScan.Buildcycle.Ports is
          when extract          => base := 20;
          when patch_depends    => base := 3;
          when patch            => base := 3;
-         when build_depends    => base := 5;
+         when build_depends    => base := 11;   -- for texlive
          when lib_depends      => base := 5;
          when configure        => base := 15;
          when build            => base := 25;   --  for gcc linking, tex
