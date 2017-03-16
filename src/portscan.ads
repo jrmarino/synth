@@ -73,7 +73,7 @@ private
    package REP  renames Replicant;
    package PLAT renames Replicant.Platform;
 
-   max_ports  : constant := 28000;
+   max_ports  : constant := 32000;
    scan_slave : constant builders := 9;
    ss_base    : constant String := "/SL09";
    dir_ports  : constant String := "/xports";
