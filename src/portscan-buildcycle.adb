@@ -620,9 +620,9 @@ package body PortScan.Buildcycle is
    end generic_execute;
 
 
-   ----------------------------
-   --  log_linked_libraries  --
-   ----------------------------
+   ------------------------------
+   --  stack_linked_libraries  --
+   ------------------------------
    procedure stack_linked_libraries (id : builders; base, filename : String)
    is
       command : String := chroot & base & " /usr/bin/objdump -p " & filename;
@@ -862,7 +862,6 @@ package body PortScan.Buildcycle is
       TIO.Put (resfile, JT.USS (result));
       TIO.Close (resfile);
    exception
-      when cycle_cmd_error => null;
       when others =>
          if TIO.Is_Open (resfile) then
             TIO.Close (resfile);
