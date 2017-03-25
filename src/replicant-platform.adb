@@ -148,6 +148,8 @@ package body Replicant.Platform is
                when solaris   => return "x86_64";
                when unknown   => return badarch;
             end case;
+         elsif arch (arch'First .. arch'First + 2) = "ARM" then
+            return "armv6";
          elsif arch = "Intel 80386" then
             return "i386";
          else
@@ -185,6 +187,8 @@ package body Replicant.Platform is
            arch (arch'First .. arch'First + 4) = "AMD64"
          then
             return "x86:64";
+         elsif arch (arch'First .. arch'First + 2) = "ARM" then
+            return "armv6:32:el:eabi:softfp";
          elsif arch = "Intel 80386" then
             return "x86:32";
          else
@@ -198,6 +202,8 @@ package body Replicant.Platform is
            arch (arch'First .. arch'First + 4) = "AMD64"
          then
             return "amd64";
+         elsif arch (arch'First .. arch'First + 2) = "ARM" then
+            return "armv6";
          elsif arch = "Intel 80386" then
             return "i386";
          else
