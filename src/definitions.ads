@@ -6,7 +6,7 @@ package Definitions is
    pragma Pure;
 
    synth_version_major : constant String := "1";
-   synth_version_minor : constant String := "68";
+   synth_version_minor : constant String := "69";
    copyright_years     : constant String := "2015-2017";
    host_localbase      : constant String := "/usr/local";
    host_make           : constant String := "/usr/bin/make";
