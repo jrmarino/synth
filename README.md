@@ -378,6 +378,74 @@ While synth is building, you can run __ccache -s__ command repeatedly in
 another terminal to check if the statistics are changing during the build.
 If they are, ccache is properly configured.
 
+### How to configure Synth to crossbuild binaries
+
+Synth can be configured to crossbuild packages with a bit of help from
+`binmiscctl(1)` and the `qemu-user-static` port. Currently, synth supports
+armv6 and aarch64 crossbuilds. The following example demonstrates how to
+build crossbuild armv6 from an amd64 host, and uses [QemuUserModeHowTo](https://wiki.freebsd.org/QemuUserModeHowTo)
+as a reference:
+
+First, set up a armv6 sysroot that can be used with `chroot(1)`:
+```
+# SYSROOT=/crossbuild/armv6
+# cd /usr/src
+# make -j 6 TARGET=arm TARGET_ARCH=armv6 buildworld
+# make DESTDIR=$SYSROOT TARGET=arm TARGET_ARCH=armv6 installworld
+```
+
+If this is a new sysroot, you will also need to:
+```
+# make DESTDIR=$SYSROOT TARGET=arm TARGET_ARCH=armv6 distribution
+```
+
+On the host environment, build `qemu-user-static` and copy the emulator binary
+into a sysroot directory that will be mounted by synth builds, eg `/sbin`.
+Register armv6 binaries to use the the emulator when chroot'd.
+```
+# synth install emulators/qemu-user-static
+# cp /usr/local/bin/qemu-arm-static $SYSROOT/sbin
+# binmiscctl add armelf \
+  --interpreter /sbin/qemu-user-static \
+  --magic "\x7f\x45\x4c\x46\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28\x00" \
+  --mask  "\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff" \
+  --size 20 --set-enabled
+# mount -t devfs devfs ${DESTDIR}/dev
+```
+
+The sysroot is now ready to be used, and can be tested:
+```
+# chroot -u root $SYSROOT
+root@helios:/ # file /usr/bin/file
+/usr/bin/file: ELF 32-bit LSB executable, ARM, EABI5 version 1 (FreeBSD), dynamically linked, interpreter /libexec/ld-elf.so.1, for FreeBSD 11.0 (1100510), FreeBSD-style, stripped
+```
+
+On a new chroot environment, `/var/run/ld-elf.so.hints` needs to be generated:
+```
+root@helios:/ # service ldconfig start
+```
+
+Set up separate log directories and package repos for synth on the host:
+```
+# mkdir /var/synth/armv6
+# mkdir /var/log/synth-armv6
+```
+
+Create a new profile, eg: *ArmBuild* to use when crossbuilding. In
+particular, change:
+* Packages directory : `/var/synth/armv6`
+* Build logs directory : `/var/log/synth-armv6`
+* System root directory : `/crossbuild/armv6`
+
+To run the crossbuilding synth from the host environment, you will need to
+ensure that correct profile and package repository database is consulted, eg:
+```
+# env SYNTHPROFILE=ArmBuild PKG_DBDIR="${SYSROOT}/var/db/pkg" synth build x11/xorg
+```
+
+Current drawbacks:
+* `synth upgrade-system` will not work, as it updates the host, not the crossbuild
+
 ## Overview Diagrams
 
 ![Relationship with ports and pkg(8)](http://downloads.dragonlace.net/misc/synth-img/synth-arch.png)
