@@ -382,7 +382,11 @@ If they are, ccache is properly configured.
 
 Synth can be configured to crossbuild packages with a bit of help from
 `binmiscctl(1)` and the `qemu-user-static` port. Currently, synth supports
-armv6 and aarch64 crossbuilds. The following example demonstrates how to
+armv6 and aarch64 crossbuilds on FreeBSD. Note that synth also works
+natively on FreeBSD/ARM64 (aarch64), but that option is not available for
+FreeBSD/ARM (armv6).
+
+The following example demonstrates how to
 build crossbuild armv6 from an amd64 host, and uses [QemuUserModeHowTo](https://wiki.freebsd.org/QemuUserModeHowTo)
 as a reference:
 
@@ -445,6 +449,8 @@ ensure that correct profile and package repository database is consulted, eg:
 
 Current drawbacks:
 * `synth upgrade-system` will not work, as it updates the host, not the crossbuild
+
+(Courtesy of Jonathan Chen)
 
 ## Overview Diagrams
 
