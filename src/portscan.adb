@@ -127,10 +127,14 @@ package body PortScan is
       else
          return False;
       end if;
-      declare
       begin
-         populate_port_data (target);
-         all_ports (target).never_remote := always_build;
+         if all_ports (new_target).scanned then
+            --  This can happen when a dependency is also on the build list.
+            return True;
+         else
+            populate_port_data (target);
+            all_ports (target).never_remote := always_build;
+         end if;
       exception
          when issue : others =>
             TIO.Put ("Encountered issue with " & catport &
