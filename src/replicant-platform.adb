@@ -148,7 +148,9 @@ package body Replicant.Platform is
                when solaris   => return "x86_64";
                when unknown   => return badarch;
             end case;
-         elsif arch (arch'First .. arch'First + 2) = "ARM" then
+         elsif arch = "ARM aarch64" then
+            return "aarch64";
+         elsif arch = "ARM, EABI5 " then
             return "armv6";
          elsif arch = "Intel 80386" then
             return "i386";
