@@ -61,4 +61,11 @@ package JohnnyText is
    --  Filters out control characters from String S
    function strip_control (S : String) return String;
 
+   --  Given a single line (presumably no line feeds) with data separated by <delimited>,
+   --  return the field given by field_number (starts counting at 1).
+   function specific_field
+     (S            : String;
+      field_number : Positive;
+      delimiter    : String := " ") return String;
+
 end JohnnyText;

@@ -101,27 +101,22 @@ package body Replicant.Platform is
    -----------------------------------
    function isolate_arch_from_file_type (fileinfo : String) return filearch
    is
-      --  DF: ELF 64-bit LSB executable, x86-64
-      --  FB: ELF 64-bit LSB executable, x86-64
-      --  FB: ELF 32-bit LSB executable, Intel 80386
-      --  NB: ELF 64-bit LSB executable, x86-64
-      --   L: ELF 64-bit LSB executable, x86-64
-      --   S: /usr/bin/sh:    ELF 64-bit LSB executable AMD64 Version 1
+      --   DF: ELF 64-bit LSB executable, x86-64
+      --   FB: ELF 64-bit LSB executable, x86-64
+      --   FB: ELF 32-bit LSB executable, Intel 80386
+      --   NB: ELF 64-bit LSB executable, x86-64
+      --    L: ELF 64-bit LSB executable, x86-64
+      --  OPN: ELF 64-bit LSB shared object, x86-64, version 1 (FreeBSD), ...
+
+      fragment : constant String := JT.trim (JT.specific_field (fileinfo, 2, ","));
+      answer   : filearch := (others => ' ');
    begin
-      case platform_type is
-         when freebsd | netbsd | dragonfly | linux =>
-            return fileinfo (fileinfo'First + 27 .. fileinfo'First + 37);
-         when solaris =>
-            --  Solaris has no brief mode, so we need to search for arch.
-            --  We could do this for all platforms but it's not efficient
-            --  The solaris format is also slightly different than rest
-            declare
-               rest : String := JT.part_2 (fileinfo, "executable ");
-            begin
-               return rest (rest'First .. rest'First + 10);
-            end;
-         when unknown => return "XXX XXX XXX";
-      end case;
+      if fragment'Length > filearch'Length then
+         answer := fragment (fragment'First .. fragment'First + filearch'Length - 1);
+      else
+         answer (answer'First .. answer'First + fragment'Length - 1) := fragment;
+      end if;
+      return answer;
    end isolate_arch_from_file_type;
 
 
