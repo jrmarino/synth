@@ -128,7 +128,7 @@ package body PortScan is
          return False;
       end if;
       begin
-         if all_ports (new_target).scanned then
+         if all_ports (target).scanned then
             --  This can happen when a dependency is also on the build list.
             return True;
          else
