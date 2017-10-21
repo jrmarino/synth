@@ -145,7 +145,7 @@ package body Replicant.Platform is
             end case;
          elsif arch = "ARM aarch64" then
             return "aarch64";
-         elsif arch = "ARM, EABI5 " then
+         elsif arch = "ARM        " then
             return "armv6";
          elsif arch = "Intel 80386" then
             return "i386";
@@ -188,7 +188,7 @@ package body Replicant.Platform is
             return "x86:32";
          elsif arch = "ARM aarch64" then
             return "aarch64:64";
-         elsif arch = "ARM, EABI5 " then
+         elsif arch = "ARM        " then
             return "armv6:32:el:eabi:softfp";
          else
             return "unknown:" & arch;
@@ -205,7 +205,7 @@ package body Replicant.Platform is
             return "i386";
          elsif arch = "ARM aarch64" then
             return "arm64";
-         elsif arch = "ARM, EABI5 " then
+         elsif arch = "ARM        " then
             return "armv6";
          else
             return "unknown:" & arch;
