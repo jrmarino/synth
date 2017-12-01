@@ -27,7 +27,7 @@ package body PortScan is
       --  tree must be already mounted in the scan slave.
       --  However, prescan works on the real ports tree, not the mount.
       if not prescanned then
-         prescan_ports_tree (portsdir);
+         read_flavor_index;
       end if;
       scan_start := CAL.Clock;
       parallel_deep_scan (success => good_scan, show_progress => using_screen);
@@ -120,7 +120,7 @@ package body PortScan is
          return False;
       end if;
       if not prescanned then
-         prescan_ports_tree (xports);
+         read_flavor_index;
       end if;
       if ports_keys.Contains (Key => uscatport) then
          target := ports_keys.Element (Key => uscatport);
@@ -1422,7 +1422,6 @@ package body PortScan is
       all_flavors  : string_crate.Vector;
       basecatport  : JT.Text;
       using_screen : constant Boolean := Unix.screen_attached;
-      index_path   : constant String  := "/var/cache/synth";
       error_prefix : constant String  := "Flavor index generation failed: ";
       index_full   : constant String  := index_path & "/" & JT.USS (PM.configuration.profile) &
                                          "-index";
@@ -1495,5 +1494,52 @@ package body PortScan is
       reset_ports_tree;
       return True;
    end generate_ports_index;
+
+
+   ----------------------------
+   --  read_flavor_index  --
+   ----------------------------
+   procedure read_flavor_index
+   is
+      handle     : TIO.File_Type;
+      max_lots   : constant scanners := get_max_lots;
+      index_full : constant String :=
+        index_path & "/" & JT.USS (PM.configuration.profile) & "-index";
+   begin
+      TIO.Open (File => handle,
+                Mode => TIO.In_File,
+                Name => index_full);
+      while not TIO.End_Of_File (handle) loop
+         declare
+            portkey   : JT.Text := JT.SUS (JT.trim (TIO.Get_Line (handle)));
+            blank_rec : port_record;
+            kc        : portkey_crate.Cursor;
+            success   : Boolean;
+         begin
+            ports_keys.Insert (Key      => portkey,
+                               New_Item => lot_counter,
+                               Position => kc,
+                               Inserted => success);
+            last_port := lot_counter;
+            all_ports (last_port).sequence_id := last_port;
+            all_ports (last_port).key_cursor := kc;
+            make_queue (lot_number).Append (last_port);
+         end;
+
+         lot_counter := lot_counter + 1;
+         if lot_number = max_lots then
+            lot_number := 1;
+         else
+            lot_number := lot_number + 1;
+         end if;
+      end loop;
+      TIO.Close (handle);
+      prescanned := True;
+   exception
+      when others =>
+         if TIO.Is_Open (handle) then
+            TIO.Close (handle);
+         end if;
+   end read_flavor_index;
 
 end PortScan;

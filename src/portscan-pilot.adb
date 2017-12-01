@@ -153,7 +153,7 @@ package body PortScan.Pilot is
       REP.destroy_slave (id => PortScan.scan_slave, opts => noprocs);
       REP.finalize;
       reset_ports_tree;
-      prescan_ports_tree (JT.USS (PM.configuration.dir_portsdir));
+      read_flavor_index;
       return result;
 
    end build_pkg8_as_necessary;
@@ -293,7 +293,7 @@ package body PortScan.Pilot is
       REP.destroy_slave (id => PortScan.scan_slave, opts => noprocs);
       REP.finalize;
       reset_ports_tree;
-      prescan_ports_tree (JT.USS (PM.configuration.dir_portsdir));
+      read_flavor_index;
       return result;
 
    end build_pkgsrc_prerequisites;
@@ -1042,7 +1042,7 @@ package body PortScan.Pilot is
       end kill;
 
    begin
-      PortScan.prescan_ports_tree (JT.USS (PM.configuration.dir_portsdir));
+      read_flavor_index;
       TIO.Put ("Scanning the distinfo file of every port in the tree ... ");
       ports_keys.Iterate (Process => scan'Access);
       TIO.Put_Line ("done");

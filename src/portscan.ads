@@ -92,6 +92,7 @@ private
    ss_base    : constant String := "/SL09";
    dir_ports  : constant String := "/xports";
    chroot     : constant String := "/usr/sbin/chroot ";
+   index_path : constant String := "/var/cache/synth";
 
    type port_id   is range -1 .. max_ports - 1;
    subtype port_index is port_id range 0 .. port_id'Last;
@@ -227,6 +228,7 @@ private
    procedure grep_Makefile (portsdir, category : String);
    procedure walk_all_subdirectories (portsdir, category : String);
    procedure wipe_make_queue;
+   procedure read_flavor_index;
    procedure parallel_deep_scan (success : out Boolean;
                                  show_progress : Boolean);
 
