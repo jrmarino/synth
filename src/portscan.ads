@@ -68,6 +68,20 @@ package PortScan is
    --  otherwise return blank string
    function obvious_problem (portsdir, catport : String) return String;
 
+   --  Attempts to generate a ports index file after acquiring all port origins
+   --  Returns False (with an outputted message) if it fails to:
+   --    a. create directories
+   --    b. scan fails
+   --    c. index file creation fails
+   function generate_ports_index (index_file, portsdir : String) return Boolean;
+
+   --  Recursively scans a ports directory tree, returning True as soon as a file or directory
+   --  newer than the given time is found.
+   function tree_newer_than_reference
+     (portsdir  : String;
+      reference : CAL.Time;
+      valid     : out Boolean) return Boolean;
+
 private
 
    package REP  renames Replicant;
@@ -222,6 +236,8 @@ private
    function get_pkg_name (origin : String) return String;
    function timestamp (hack : CAL.Time; www_format : Boolean := False) return String;
    function clean_up_pkgsrc_ignore_reason (dirty_string : String) return JT.Text;
+   function subdirectory_is_older (portsdir, category : String;
+                                   reference : CAL.Time) return Boolean;
 
    type dim_counters is array (count_type) of Natural;
 

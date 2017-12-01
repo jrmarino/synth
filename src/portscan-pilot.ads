@@ -127,6 +127,16 @@ package PortScan.Pilot is
    --  Returns True unless a failure was encountered.
    function prerequisites_available return Boolean;
 
+   --  framework specific
+   --  On FPC, it gathers all port directories (on FreeBSD, through grepping
+   --  categore makefiles and on DragonFly through reading directory entries).
+   --  Then it parallel scans the entire tree for flavors.  It saves the
+   --  sorted result at /var/cache/synth/<profile>-index.  If this file exists
+   --  and is newer than ports tree, nothing happens.
+   --  On pkgsrc, the result of gathering origins is written because flavors
+   --  are not supported.
+   function ensure_port_index return Boolean;
+
    pilot_log : exception;
 
 private
@@ -218,5 +228,9 @@ private
    --  Prebuilds bootstrap-mk files, bmake, and pkg(8)
    --  Returns True unless a failure was encountered.
    function build_pkgsrc_prerequisites return Boolean;
+
+   --  Returns True if index_file is older than an file or directory in the profile's
+   --  port directory
+   function index_out_of_date (index_file : String; valid : out Boolean) return Boolean;
 
 end PortScan.Pilot;

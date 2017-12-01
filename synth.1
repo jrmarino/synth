@@ -499,6 +499,17 @@ containing the SHA 256 hash of the public key that is the counterpart of
 the key that signed the repository.  For the default profile, the file
 is normally located at
 .Pa /usr/local/etc/synth/LiveSystem-fingerprint
+.It <profile>-index
+The introduction of flavors within FreeBSD ports destroyed the 1:1
+relationship between port directories and packages.  Now any port
+can generated any number of packages.  This requires scanning every
+port in the tree to determine the true origin range.  This is a time
+consuming task, so Synth caches the scan results and reuses it as long
+as all ports files are older than the generated index.  When Synth
+detects the index is out-of-date or if it doesn't exist, it is
+automatically generated.  One index exists for each profile, with the
+default profile index normally located at
+.Pa /var/cache/synth/LiveSystem-index
 .It synth_status_results.txt
 Whenever a status command is run, a list of ports that would build with the
 actual command is produced at

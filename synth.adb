@@ -114,11 +114,6 @@ begin
             return;
          end if;
 
-         if not PIL.store_origins then
-            --  error messages emitted by store_origins, just exit now
-            return;
-         end if;
-
          if PIL.insufficient_privileges then
             TIO.Put_Line (regjoe);
             return;
@@ -144,6 +139,16 @@ begin
          end if;
 
          if PIL.synthexec_missing then
+            return;
+         end if;
+
+         if not PIL.ensure_port_index then
+            --  error messages emitted by ensure_port_index
+            return;
+         end if;
+
+         if not PIL.store_origins then
+            --  error messages emitted by store_origins, just exit now
             return;
          end if;
 
@@ -257,7 +262,6 @@ begin
             when others => null;
          end case;
 
-
          if PIL.insufficient_privileges then
             TIO.Put_Line (regjoe);
             return;
@@ -309,6 +313,11 @@ begin
          end if;
 
          if PIL.synthexec_missing then
+            return;
+         end if;
+
+         if not PIL.ensure_port_index then
+            --  error messages emitted by ensure_port_index
             return;
          end if;
 

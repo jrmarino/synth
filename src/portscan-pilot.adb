@@ -1863,4 +1863,61 @@ package body PortScan.Pilot is
       return defined;
    end TERM_defined_in_environment;
 
+
+   -------------------------
+   --  ensure_port_index  --
+   -------------------------
+   function ensure_port_index return Boolean
+   is
+      index_file  : constant String := "/var/cache/synth/" &
+                    JT.USS (PM.configuration.profile) & "-index";
+      needs_gen   : Boolean := True;
+      valid_check : Boolean;
+   begin
+      if AD.Exists (index_file) then
+         needs_gen := index_out_of_date (index_file, valid_check);
+         if not valid_check then
+            return False;
+         end if;
+      end if;
+
+      if needs_gen then
+         return generate_ports_index (index_file, JT.USS (PM.configuration.dir_portsdir));
+      else
+         return True;
+      end if;
+   end ensure_port_index;
+
+
+   -------------------------
+   --  index_out_of_date  --
+   -------------------------
+   function index_out_of_date (index_file : String; valid : out Boolean) return Boolean
+   is
+      index_file_modtime : CAL.Time;
+      result : Boolean;
+   begin
+      valid := False;
+      begin
+         index_file_modtime := AD.Modification_Time (index_file);
+      exception
+         when AD.Use_Error =>
+            TIO.Put_Line ("File system doesn't support modification times, must eject!");
+            return False;
+         when others =>
+            TIO.Put_Line ("index_out_of_date: problem getting index file modification time");
+            return False;
+      end;
+      result := PortScan.tree_newer_than_reference
+        (portsdir  => JT.USS (PM.configuration.dir_portsdir),
+         reference => index_file_modtime,
+         valid     => valid);
+      if valid then
+         return result;
+      else
+         TIO.Put_Line ("Failed to determine if index is out of date, must eject!");
+         return False;
+      end if;
+   end index_out_of_date;
+
 end PortScan.Pilot;

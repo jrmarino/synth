@@ -850,7 +850,6 @@ package body PortScan is
                   if category = "base"     or else
                     category = "distfiles" or else
                     category = "packages"
-
                   then
                      good_directory := False;
                   end if;
@@ -876,6 +875,97 @@ package body PortScan is
       categories.Iterate (Process => quick_scan'Access);
       prescanned := True;
    end prescan_ports_tree;
+
+
+   ---------------------------------
+   --  tree_newer_than_reference  --
+   ---------------------------------
+   function tree_newer_than_reference
+     (portsdir  : String;
+      reference : CAL.Time;
+      valid     : out Boolean) return Boolean
+   is
+      procedure quick_scan (cursor : string_crate.Cursor);
+
+      Search      : AD.Search_Type;
+      Dir_Ent     : AD.Directory_Entry_Type;
+      categories  : string_crate.Vector;
+      top_modtime : CAL.Time;
+      keep_going  : Boolean := True;
+
+      procedure quick_scan (cursor : string_crate.Cursor)
+      is
+         category : constant String :=
+           JT.USS (string_crate.Element (Position => cursor));
+      begin
+         if keep_going then
+            keep_going := subdirectory_is_older (portsdir  => portsdir,
+                                                 category  => category,
+                                                 reference => reference);
+         end if;
+      end quick_scan;
+
+      use type CAL.Time;
+   begin
+      valid := True;
+      top_modtime := AD.Modification_Time (portsdir);
+      if reference < top_modtime then
+         return True;
+      end if;
+
+      AD.Start_Search (Search    => Search,
+                       Directory => portsdir,
+                       Filter    => (AD.Directory => True, others => False),
+                       Pattern   => "[a-z]*");
+
+      while keep_going and then
+        AD.More_Entries (Search => Search)
+      loop
+         AD.Get_Next_Entry (Search => Search, Directory_Entry => Dir_Ent);
+         declare
+            category : constant String := AD.Simple_Name (Dir_Ent);
+            good_directory : Boolean := True;
+         begin
+            case software_framework is
+               when ports_collection =>
+                  if category = "base"     or else
+                    category = "distfiles" or else
+                    category = "packages"
+                  then
+                     good_directory := False;
+                  end if;
+               when pkgsrc =>
+                  if category = "bootstrap" or else
+                    category = "distfiles"  or else
+                    category = "doc"        or else
+                    category = "licenses"   or else
+                    category = "mk"         or else
+                    category = "packages"   or else
+                    category = "regress"
+                  then
+                     good_directory := False;
+                  end if;
+            end case;
+            if good_directory then
+               if reference < AD.Modification_Time (Dir_Ent) then
+                  keep_going := False;
+               else
+                  categories.Append (New_Item => JT.SUS (category));
+               end if;
+            end if;
+         end;
+      end loop;
+      AD.End_Search (Search => Search);
+      if not keep_going then
+         return True;
+      end if;
+      categories.Iterate (Process => quick_scan'Access);
+      return not keep_going;
+   exception
+      when others =>
+         valid := False;
+         return False;
+   end tree_newer_than_reference;
 
 
    ------------------
@@ -1019,7 +1109,40 @@ package body PortScan is
             end if;
          end;
       end loop;
+      AD.End_Search (inner_search);
    end walk_all_subdirectories;
+
+
+   -----------------------------
+   --  subdirectory_is_older  --
+   -----------------------------
+   function subdirectory_is_older (portsdir, category : String;
+                                   reference : CAL.Time) return Boolean
+   is
+      inner_search  : AD.Search_Type;
+      inner_dirent  : AD.Directory_Entry_Type;
+      already_older : Boolean := False;
+
+      use type CAL.Time;
+   begin
+      AD.Start_Search (Search    => inner_search,
+                       Directory => portsdir & "/" & category,
+                       Filter    => (others => True),
+                       Pattern   => "");
+      while not already_older and then
+        AD.More_Entries (Search => inner_search)
+      loop
+         AD.Get_Next_Entry (Search => inner_search, Directory_Entry => inner_dirent);
+
+         --  We're going to get "." and "..".  It's faster to check them (always older)
+         --  than convert to simple name and exclude them.
+         if reference < AD.Modification_Time (inner_dirent) then
+            already_older := True;
+         end if;
+      end loop;
+      AD.End_Search (inner_search);
+      return already_older;
+   end subdirectory_is_older;
 
 
    -----------------
@@ -1244,5 +1367,15 @@ package body PortScan is
         MON (CAL.Month (hack)) & CAL.Year (hack)'Img & " at" &
         ACF.Image (hack)(11 .. 19) & " UTC";
    end timestamp;
+
+
+   ----------------------------
+   --  generate_ports_index  --
+   ----------------------------
+   function generate_ports_index (index_file, portsdir : String) return Boolean
+   is
+   begin
+      return False;
+   end generate_ports_index;
 
 end PortScan;
