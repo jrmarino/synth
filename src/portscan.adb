@@ -200,6 +200,7 @@ package body PortScan is
          PR.blocked_by.Clear;
          PR.all_reverse.Clear;
          PR.options.Clear;
+         PR.flavors.Clear;
       end loop;
       ports_keys.Clear;
       rank_queue.Clear;
@@ -623,6 +624,41 @@ package body PortScan is
 
 
    --------------------------
+   --  populate_flavors  --
+   --------------------------
+   procedure populate_flavors (target : port_index; line : JT.Text)
+   is
+      subs       : GSS.Slice_Set;
+      flav_found : GSS.Slice_Number;
+      trimline   : constant JT.Text := JT.trim (line);
+      zero_flav  : constant GSS.Slice_Number := GSS.Slice_Number (0);
+
+      use type GSS.Slice_Number;
+   begin
+      if JT.IsBlank (trimline) then
+         return;
+      end if;
+      GSS.Create (S          => subs,
+                  From       => JT.USS (trimline),
+                  Separators => " ",
+                  Mode       => GSS.Multiple);
+      flav_found :=  GSS.Slice_Count (S => subs);
+      if flav_found = zero_flav then
+         return;
+      end if;
+      for j in 1 .. flav_found loop
+         declare
+            flavor : JT.Text := JT.SUS (GSS.Slice (subs, j));
+         begin
+            if not all_ports (target).flavors.Contains (flavor) then
+               all_ports (target).flavors.Append (flavor);
+            end if;
+         end;
+      end loop;
+   end populate_flavors;
+
+
+   --------------------------
    --  populate_port_data  --
    --------------------------
    procedure populate_port_data (target : port_index) is
@@ -650,12 +686,13 @@ package body PortScan is
                  " -VPKGVERSION -VPKGFILE:T -VMAKE_JOBS_NUMBER -VIGNORE" &
                  " -VFETCH_DEPENDS -VEXTRACT_DEPENDS -VPATCH_DEPENDS" &
                  " -VBUILD_DEPENDS -VLIB_DEPENDS -VRUN_DEPENDS" &
-                 " -VSELECTED_OPTIONS -VDESELECTED_OPTIONS -VUSE_LINUX";
+                 " -VSELECTED_OPTIONS -VDESELECTED_OPTIONS -VUSE_LINUX" &
+                 " -VFLAVORS";
       content  : JT.Text;
       topline  : JT.Text;
       status   : Integer;
 
-      type result_range is range 1 .. 13;
+      type result_range is range 1 .. 14;
 
    begin
       content := Unix.piped_command (command, status);
@@ -691,6 +728,7 @@ package body PortScan is
                if not JT.IsBlank (JT.trim (topline)) then
                   all_ports (target).use_linprocfs := True;
                end if;
+            when 14 => populate_flavors (target, topline);
          end case;
       end loop;
       all_ports (target).scanned := True;
@@ -1374,8 +1412,88 @@ package body PortScan is
    ----------------------------
    function generate_ports_index (index_file, portsdir : String) return Boolean
    is
+      package sorter is new string_crate.Generic_Sorting ("<" => JT.SU."<");
+
+      procedure add_flavor (cursor : string_crate.Cursor);
+      procedure write_line (cursor : string_crate.Cursor);
+
+      good_scan    : Boolean;
+      handle       : TIO.File_Type;
+      all_flavors  : string_crate.Vector;
+      basecatport  : JT.Text;
+      using_screen : constant Boolean := Unix.screen_attached;
+      index_path   : constant String  := "/var/cache/synth";
+      error_prefix : constant String  := "Flavor index generation failed: ";
+      index_full   : constant String  := index_path & "/" & JT.USS (PM.configuration.profile) &
+                                         "-index";
+
+      procedure add_flavor (cursor : string_crate.Cursor)
+      is
+         line : JT.Text := basecatport;
+      begin
+         JT.SU.Append (line, "@");
+         JT.SU.Append (line, string_crate.Element (Position => cursor));
+         all_flavors.Append (line);
+      end add_flavor;
+
+      procedure write_line (cursor : string_crate.Cursor)
+      is
+         line : constant String := JT.USS (string_crate.Element (Position => cursor));
+      begin
+         TIO.Put_Line (handle, line);
+      end write_line;
+
    begin
-      return False;
+      begin
+         AD.Create_Path (index_path);
+      exception
+         when others =>
+            TIO.Put_Line (error_prefix & "could not create " & index_path);
+            return False;
+      end;
+
+      TIO.Put_Line ("Regenerating flavor index: this may take a while ...");
+      prescan_ports_tree (portsdir);
+
+      case software_framework is
+         when ports_collection =>
+            scan_start := CAL.Clock;
+            parallel_deep_scan (success => good_scan, show_progress => using_screen);
+            scan_stop := CAL.Clock;
+
+            if not good_scan then
+               TIO.Put_Line (error_prefix & "ports scan");
+               return False;
+            end if;
+         when pkgsrc =>
+            null;
+      end case;
+
+      begin
+         for port in port_index'First .. last_port loop
+            basecatport := portkey_crate.Key (all_ports (port).key_cursor);
+            if all_ports (port).flavors.Is_Empty then
+               all_ports (port).flavors.Iterate (add_flavor'Access);
+            else
+               all_flavors.Append (basecatport);
+            end if;
+         end loop;
+         sorter.Sort (Container => all_flavors);
+
+         TIO.Create (File => handle, Mode => TIO.Out_File, Name => index_full);
+         all_flavors.Iterate (write_line'Access);
+         TIO.Close (handle);
+      exception
+         when others =>
+            if TIO.Is_Open (handle) then
+               TIO.Close (handle);
+            end if;
+            TIO.Put_Line (error_prefix & "writing out index");
+            return False;
+      end;
+
+      reset_ports_tree;
+      return True;
    end generate_ports_index;
 
 end PortScan;

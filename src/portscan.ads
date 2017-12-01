@@ -185,6 +185,7 @@ private
          blocks        : block_crate.Map;
          all_reverse   : block_crate.Map;
          options       : package_crate.Map;
+         flavors       : string_crate.Vector;
       end record;
    type port_record_access is access all port_record;
 
@@ -213,6 +214,8 @@ private
    procedure populate_set_options (target  : port_index;
                                    line    : JT.Text;
                                    on      : Boolean);
+   procedure populate_flavors     (target  : port_index;
+                                   line    : JT.Text);
    procedure populate_port_data   (target : port_index);
    procedure populate_port_data_fpc (target : port_index);
    procedure populate_port_data_nps (target : port_index);
