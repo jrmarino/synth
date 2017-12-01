@@ -677,10 +677,27 @@ package body PortScan is
    ------------------------------
    procedure populate_port_data_fpc (target : port_index)
    is
-      catport  : String := get_catport (all_ports (target));
-      fullport : constant String := dir_ports & "/" & catport;
-      ssroot   : constant String := chroot &
-                 JT.USS (PM.configuration.dir_buildbase) & ss_base;
+      function get_fullport return String;
+
+      catport  : constant String := get_catport (all_ports (target));
+
+      function get_fullport return String is
+      begin
+         --  if format is cat/port@something then
+         --     return "cat/port FLAVOR=something"
+         --  else
+         --     return $catport
+
+         if JT.contains (catport, "@") then
+            return dir_ports & "/" & JT.part_1 (catport, "@") &
+              " FLAVOR=" & JT.part_2 (catport, "@");
+         else
+            return dir_ports & "/" & catport;
+         end if;
+      end get_fullport;
+
+      fullport : constant String := get_fullport;
+      ssroot   : constant String := chroot & JT.USS (PM.configuration.dir_buildbase) & ss_base;
       command  : constant String :=
                  ssroot & " " & chroot_make_program & " -C " & fullport &
                  " -VPKGVERSION -VPKGFILE:T -VMAKE_JOBS_NUMBER -VIGNORE" &

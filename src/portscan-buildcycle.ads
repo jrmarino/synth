@@ -88,6 +88,7 @@ private
    function  environment_override (enable_tty : Boolean := False) return String;
    function  format_loglines (numlines : Natural) return String;
    function  timeout_multiplier_x10 return Positive;
+   function  port_specification (catport : String) return String;
    function  detect_leftovers_and_MIA (id : builders; action : String;
                                        description : String) return Boolean;
 

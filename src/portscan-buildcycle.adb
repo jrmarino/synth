@@ -274,9 +274,10 @@ package body PortScan.Buildcycle is
    function get_options_configuration (id : builders) return String
    is
       root    : constant String := get_root (id);
+      catport : constant String := get_catport (all_ports (trackers (id).seq_id));
       command : constant String := chroot & root & environment_override &
-        chroot_make_program & " -C " & dir_ports & "/" &
-        get_catport (all_ports (trackers (id).seq_id));
+        chroot_make_program & " -C " & port_specification (catport);
+
    begin
       case software_framework is
          when ports_collection =>
@@ -368,9 +369,10 @@ package body PortScan.Buildcycle is
    function get_port_variables (id : builders) return JT.Text
    is
       root    : constant String := get_root (id);
+      catport : constant String := get_catport (all_ports (trackers (id).seq_id));
       command : constant String := chroot & root & environment_override &
-        chroot_make_program & " -C " & dir_ports & "/" &
-        get_catport (all_ports (trackers (id).seq_id));
+        chroot_make_program & " -C " & port_specification (catport);
+
       cmd_fpc : constant String := command &
         " -VCONFIGURE_ENV -VCONFIGURE_ARGS -VMAKE_ENV -VMAKE_ARGS" &
         " -VPLIST_SUB -VSUB_LIST";
@@ -1324,5 +1326,20 @@ package body PortScan.Buildcycle is
       end;
       return result;
    end builder_status_core;
+
+
+   ------------------------
+   --  port_specification  --
+   ------------------------
+   function port_specification (catport : String) return String is
+   begin
+      if JT.contains (catport, "@") then
+         return dir_ports & "/" & JT.part_1 (catport, "@") &
+           " FLAVOR=" & JT.part_2 (catport, "@");
+      else
+         return dir_ports & "/" & catport;
+      end if;
+   end port_specification;
+
 
 end PortScan.Buildcycle;
