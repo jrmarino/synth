@@ -160,7 +160,6 @@ package body PortScan.Pilot is
       REP.destroy_slave (id => PortScan.scan_slave, opts => noprocs);
       REP.finalize;
       reset_ports_tree;
-      read_flavor_index;
       return result;
 
    end build_pkg8_as_necessary;
@@ -300,7 +299,6 @@ package body PortScan.Pilot is
       REP.destroy_slave (id => PortScan.scan_slave, opts => noprocs);
       REP.finalize;
       reset_ports_tree;
-      read_flavor_index;
       return result;
 
    end build_pkgsrc_prerequisites;
