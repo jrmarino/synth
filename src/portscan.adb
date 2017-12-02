@@ -967,6 +967,7 @@ package body PortScan is
       valid := True;
       top_modtime := AD.Modification_Time (portsdir);
       if reference < top_modtime then
+         TIO.Put_Line ("topline: newer!");
          return True;
       end if;
 
@@ -1005,6 +1006,7 @@ package body PortScan is
             end case;
             if good_directory then
                if reference < AD.Modification_Time (Dir_Ent) then
+                  TIO.Put_Line (category & ": newer!");
                   keep_going := False;
                else
                   categories.Append (New_Item => JT.SUS (category));
@@ -1017,6 +1019,9 @@ package body PortScan is
          return True;
       end if;
       categories.Iterate (Process => quick_scan'Access);
+      if not keep_going then
+         TIO.Put_Line ("some files newer .... ###");
+      end if;
       return not keep_going;
    exception
       when others =>
@@ -1105,6 +1110,10 @@ package body PortScan is
                                      New_Item => lot_counter,
                                      Position => kc,
                                      Inserted => success);
+
+                  if not success then
+                     TIO.Put_Line ("failed to insert " & JT.USS (portkey));
+                  end if;
 
                   last_port := lot_counter;
                   all_ports (lot_counter).sequence_id := lot_counter;
