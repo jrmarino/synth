@@ -116,7 +116,7 @@ package body PortScan is
       end dig;
    begin
       fatal := False;
-      if not AD.Exists (xports & "/" & catport & "/Makefile") then
+      if not AD.Exists (xports & "/" & JT.part_1 (catport, "@") & "/Makefile") then
          return False;
       end if;
       if not prescanned then
