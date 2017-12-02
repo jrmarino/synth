@@ -967,7 +967,6 @@ package body PortScan is
       valid := True;
       top_modtime := AD.Modification_Time (portsdir);
       if reference < top_modtime then
-         TIO.Put_Line ("topline: newer!");
          return True;
       end if;
 
@@ -1006,7 +1005,6 @@ package body PortScan is
             end case;
             if good_directory then
                if reference < AD.Modification_Time (Dir_Ent) then
-                  TIO.Put_Line (category & ": newer!");
                   keep_going := False;
                else
                   categories.Append (New_Item => JT.SUS (category));
@@ -1019,9 +1017,6 @@ package body PortScan is
          return True;
       end if;
       categories.Iterate (Process => quick_scan'Access);
-      if not keep_going then
-         TIO.Put_Line ("some files newer .... ###");
-      end if;
       return not keep_going;
    exception
       when others =>
@@ -1187,7 +1182,7 @@ package body PortScan is
    is
       inner_search  : AD.Search_Type;
       inner_dirent  : AD.Directory_Entry_Type;
-      already_older : Boolean := False;
+      already_newer : Boolean := False;
 
       use type CAL.Time;
    begin
@@ -1195,7 +1190,7 @@ package body PortScan is
                        Directory => portsdir & "/" & category,
                        Filter    => (others => True),
                        Pattern   => "");
-      while not already_older and then
+      while not already_newer and then
         AD.More_Entries (Search => inner_search)
       loop
          AD.Get_Next_Entry (Search => inner_search, Directory_Entry => inner_dirent);
@@ -1203,11 +1198,11 @@ package body PortScan is
          --  We're going to get "." and "..".  It's faster to check them (always older)
          --  than convert to simple name and exclude them.
          if reference < AD.Modification_Time (inner_dirent) then
-            already_older := True;
+            already_newer := True;
          end if;
       end loop;
       AD.End_Search (inner_search);
-      return already_older;
+      return not already_newer;
    end subdirectory_is_older;
 
 
