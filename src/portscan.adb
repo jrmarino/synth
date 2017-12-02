@@ -1438,6 +1438,7 @@ package body PortScan is
       handle       : TIO.File_Type;
       all_flavors  : string_crate.Vector;
       basecatport  : JT.Text;
+      noprocs      : constant REP.slave_options := (others => False);
       using_screen : constant Boolean := Unix.screen_attached;
       error_prefix : constant String  := "Flavor index generation failed: ";
       index_full   : constant String  := index_path & "/" & JT.USS (PM.configuration.profile) &
@@ -1473,9 +1474,15 @@ package body PortScan is
 
       case software_framework is
          when ports_collection =>
+            REP.initialize (testmode => False, num_cores => cores_available);
+            REP.launch_slave (id => scan_slave, opts => noprocs);
+
             scan_start := CAL.Clock;
             parallel_deep_scan (success => good_scan, show_progress => using_screen);
             scan_stop := CAL.Clock;
+
+            REP.destroy_slave (id => scan_slave, opts => noprocs);
+            REP.finalize;
 
             if not good_scan then
                TIO.Put_Line (error_prefix & "ports scan");
