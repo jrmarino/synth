@@ -145,7 +145,6 @@ private
    type dim_logname  is array (count_type) of logname_field;
    type verdiff is (newbuild, rebuild, change);
 
-   badport : constant String := "Invalid port origin: ";
    bailing : constant String := "  (Synth must exit)";
    shutreq : constant String := "Graceful shutdown requested, exiting ...";
    pkgng   : constant String := "ports-mgmt/pkg";
@@ -165,9 +164,6 @@ private
    --  ignored) or a valid port origin, and returns true if it is.
    --  Internally, the ports are stacked.
    function valid_file (path : String) return Boolean;
-
-   --  return true if "cat" exists and "port" exists
-   function valid_catport (catport : String) return Boolean;
 
    --  wrapper for portlist.insert that prevents duplicate key inserts
    procedure plinsert (key : String; dummy : Natural);

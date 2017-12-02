@@ -42,21 +42,26 @@ package body PortScan.Pilot is
          return False;
       end if;
       portlist.Clear;
+      load_index_for_store_origins;
+
       if CLI.Argument_Count = 2 then
          --  Check if this is a file
          declare
             Arg2 : constant String := trimmed_catport (CLI.Argument (2));
          begin
             if AD.Exists (Arg2) then
+               clear_store_origin_data;
                return valid_file (Arg2);
             end if;
-            if valid_catport (catport => Arg2) then
+            if input_origin_valid (candidate => Arg2) then
                if Arg2 /= pkgng then
                   plinsert (Arg2, 2);
                end if;
+               clear_store_origin_data;
                return True;
             else
-               TIO.Put_Line (badport & Arg2);
+               suggest_flavor_for_bad_origin (candidate => Arg2);
+               clear_store_origin_data;
                return False;
             end if;
          end;
@@ -65,16 +70,18 @@ package body PortScan.Pilot is
          declare
             Argk : constant String := trimmed_catport (CLI.Argument (k));
          begin
-            if valid_catport (catport => Argk) then
+            if input_origin_valid (candidate => Argk) then
                if Argk /= pkgng then
                   plinsert (Argk, k);
                end if;
             else
-               TIO.Put_Line (badport & "'" & Argk & "'" & k'Img);
+               suggest_flavor_for_bad_origin (candidate => Argk);
+               clear_store_origin_data;
                return False;
             end if;
          end;
       end loop;
+      clear_store_origin_data;
       return True;
    end store_origins;
 
@@ -765,11 +772,11 @@ package body PortScan.Pilot is
             line : constant String := JT.trim (TIO.Get_Line (handle));
          begin
             if not JT.IsBlank (line) then
-               if valid_catport (line) then
+               if input_origin_valid (candidate => line) then
                   plinsert (line, total);
                   total := total + 1;
                else
-                  TIO.Put_Line (badport & line);
+                  suggest_flavor_for_bad_origin (candidate => line);
                   good := False;
                   exit;
                end if;
@@ -781,59 +788,6 @@ package body PortScan.Pilot is
    exception
       when others => return False;
    end valid_file;
-
-
-   ---------------------
-   --  valid_catport  --
-   ---------------------
-   function valid_catport (catport : String) return Boolean
-   is
-      use type AD.File_Kind;
-   begin
-      if catport'Length = 0 then
-         return False;
-      end if;
-      if catport (catport'First) = '/' then
-         --  Invalid case where catport starts with "/" will cause an
-         --  exception later as "cat" would be unexpectedly empty.
-         return False;
-      end if;
-      if JT.contains (catport, "/") then
-         declare
-            cat   : constant String := JT.part_1 (catport);
-            port  : constant String := JT.part_2 (catport);
-            path1 : constant String := JT.USS (PM.configuration.dir_portsdir) &
-                                       "/" & cat;
-            fpath : constant String := path1 & "/" & port;
-            alpha : constant Character := cat (1);
-         begin
-            if not AD.Exists (path1) then
-               return False;
-            end if;
-
-            if alpha in 'A' .. 'Z' then
-               return False;
-            end if;
-
-            if cat = "distfiles" or else cat = "packages" then
-               return False;
-            end if;
-
-            if JT.contains (port, "/") then
-               return False;
-            end if;
-
-            if not AD.Exists (fpath) then
-               return False;
-            end if;
-
-            if AD.Kind (fpath) = AD.Directory then
-               return True;
-            end if;
-         end;
-      end if;
-      return False;
-   end valid_catport;
 
 
    ----------------
