@@ -539,7 +539,7 @@ package body PortScan.Packages is
       command  : constant String := host_pkg8 & " query -F " & fullpath & " %do:%dn-%dv:";
       remocmd  : constant String := host_pkg8 & " rquery -r " &
                  JT.USS (external_repository) & " -U %do:%dn-%dv: " & pkg_base;
-      flcm     : constant String := host_pkg8 & " query -F " & fullpath & " %At %Av";
+      flcm     : constant String := host_pkg8 & " query -F " & fullpath & " %At:%Av";
       remoflcm : constant String := host_pkg8 & " rquery -r " &
                  JT.USS (external_repository) & " -U %At Av " & pkg_base;
       result1  : JT.Text;
@@ -558,10 +558,10 @@ package body PortScan.Packages is
          result2str : String := JT.USS (result2);
       begin
          JT.initialize_markers (result2str, markers);
-         if JT.next_line_with_content_present (result2str, "flavor ", markers) then
+         if JT.next_line_with_content_present (result2str, "flavor:", markers) then
             declare
                line   : constant String := JT.extract_line (result2str, markers);
-               flavor : constant String := JT.specific_field (line, 2);
+               flavor : constant String := JT.specific_field (line, 2, ":");
             begin
                JT.SU.Append (result1, flavor);
             end;
