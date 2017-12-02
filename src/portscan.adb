@@ -547,7 +547,7 @@ package body PortScan is
                   flport  : port_index;
                begin
                   if so_porthash.Contains (pkey) then
-                     flport := portkey_crate.Element (so_porthash.Find (pkey));
+                     flport := so_porthash.Element (pkey);
                      if not all_ports (flport).flavors.Is_Empty then
                         JT.SU.Append (pkey, "@");
                         JT.SU.Append (pkey, all_ports (flport).flavors.First_Element);
