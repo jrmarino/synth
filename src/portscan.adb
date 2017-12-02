@@ -266,8 +266,7 @@ package body PortScan is
             end if;
          exception
             when issue : others =>
-               TIO.Put_Line (LAT.LF & "culprit: " &
-                               get_catport (all_ports (target_port)));
+               TIO.Put_Line (LAT.LF & "culprit: " & get_catport (all_ports (target_port)));
                EX.Reraise_Occurrence (issue);
          end populate;
       begin
@@ -346,6 +345,9 @@ package body PortScan is
          end if;
       end loop;
       success := not aborted;
+      if show_progress then
+         TIO.Put (scan_progress);
+      end if;
    end parallel_deep_scan;
 
 
@@ -1496,7 +1498,8 @@ package body PortScan is
 
       begin
          for port in port_index'First .. last_port loop
-            basecatport := portkey_crate.Key (all_ports (port).key_cursor);
+            --           basecatport := portkey_crate.Key (all_ports (port).key_cursor);
+            basecatport := JT.SUS (get_catport (all_ports (port)));
             if all_ports (port).flavors.Is_Empty then
                all_ports (port).flavors.Iterate (add_flavor'Access);
             else
