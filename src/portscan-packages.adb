@@ -608,21 +608,25 @@ package body PortScan.Packages is
                raise unknown_format with JT.USS (topline);
             end if;
             declare
-               line    : constant String := JT.USS (topline);
-               borigin : constant String := JT.specific_field (line, 1, ":");
-               deppkg  : constant String := JT.specific_field (line, 2, ":") & ".txz";
-               flavor  : constant String := JT.specific_field (line, 3, ":");
-               origin  : constant String := build_origin (borigin, flavor);
-               target_id : port_index := ports_keys.Element (Key => JT.SUS (origin));
-               target_pkg : JT.Text := all_ports (target_id).package_name;
-               available : constant Boolean :=
-                 all_ports (target_id).remote_pkg or else
-                 (all_ports (target_id).pkg_present and then
-                      not all_ports (target_id).deletion_due);
+               line       : constant String := JT.USS (topline);
+               borigin    : constant String := JT.specific_field (line, 1, ":");
+               deppkg     : constant String := JT.specific_field (line, 2, ":") & ".txz";
+               flavor     : constant String := JT.specific_field (line, 3, ":");
+               origin     : constant String := build_origin (borigin, flavor);
+               origintxt  : JT.Text := JT.SUS (origin);
+
+               target_id  : port_index;
+               target_pkg : JT.Text;
+               available  : Boolean;
             begin
-               if target_id = port_match_failed then
-                  --  package has a dependency that has been removed from
-                  --  the ports tree
+               if ports_keys.Contains (origintxt) then
+                  target_id  := ports_keys.Element (origintxt);
+                  target_pkg := all_ports (target_id).package_name;
+                  available  := all_ports (target_id).remote_pkg or else
+                    (all_ports (target_id).pkg_present and then
+                         not all_ports (target_id).deletion_due);
+               else
+                  --  package has a dependency that has been removed from the ports tree
                   declare
                      msg : String := origin & " has been removed from the ports tree";
                   begin
@@ -630,6 +634,7 @@ package body PortScan.Packages is
                   end;
                   return False;
                end if;
+
                counter := counter + 1;
                if counter > max_deps then
                   --  package has more dependencies than we are looking for
