@@ -1280,7 +1280,7 @@ package body PortScan is
    -----------------------
    function obvious_problem (portsdir, catport : String) return String
    is
-      fullpath : constant String := portsdir & "/" & catport;
+      fullpath : constant String := portsdir & "/" & JT.part_1 (catport, "@");
    begin
       if AD.Exists (fullpath) then
          declare
@@ -1496,19 +1496,13 @@ package body PortScan is
             null;
       end case;
 
-      declare
-         use type portkey_crate.Cursor;
       begin
          for port in port_index'First .. last_port loop
-            if all_ports (port).key_cursor = portkey_crate.No_Element then
-               TIO.Put_Line ("choking on port#" & port'Img);
+            basecatport := portkey_crate.Key (all_ports (port).key_cursor);
+            if not all_ports (port).flavors.Is_Empty then
+               all_ports (port).flavors.Iterate (add_flavor'Access);
             else
-               basecatport := portkey_crate.Key (all_ports (port).key_cursor);
-               if not all_ports (port).flavors.Is_Empty then
-                  all_ports (port).flavors.Iterate (add_flavor'Access);
-               else
-                  all_flavors.Append (basecatport);
-               end if;
+               all_flavors.Append (basecatport);
             end if;
          end loop;
          sorter.Sort (Container => all_flavors);
@@ -1655,7 +1649,7 @@ package body PortScan is
    begin
       if JT.contains (candidate, "@") then
          declare
-            catport : constant String := JT.part_1 (candidate);
+            catport : constant String := JT.part_1 (candidate, "@");
          begin
             canlast := catport'Length + 1;
             adjusted_candidate (1 .. canlast) := catport & "@";
