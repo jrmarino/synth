@@ -1106,10 +1106,6 @@ package body PortScan is
                                      Position => kc,
                                      Inserted => success);
 
-                  if not success then
-                     TIO.Put_Line ("failed to insert " & JT.USS (portkey));
-                  end if;
-
                   last_port := lot_counter;
                   all_ports (lot_counter).sequence_id := lot_counter;
                   all_ports (lot_counter).key_cursor := kc;
@@ -1198,6 +1194,7 @@ package body PortScan is
          --  We're going to get "." and "..".  It's faster to check them (always older)
          --  than convert to simple name and exclude them.
          if reference < AD.Modification_Time (inner_dirent) then
+            TIO.Put_Line (AD.Simple_Name (inner_dirent) & " is newer than reference");
             already_newer := True;
          end if;
       end loop;
@@ -1500,14 +1497,19 @@ package body PortScan is
             null;
       end case;
 
+      declare
+         use type portkey_crate.Cursor;
       begin
          for port in port_index'First .. last_port loop
-            --           basecatport := portkey_crate.Key (all_ports (port).key_cursor);
-            basecatport := JT.SUS (get_catport (all_ports (port)));
-            if not all_ports (port).flavors.Is_Empty then
-               all_ports (port).flavors.Iterate (add_flavor'Access);
+            if all_ports (port).key_cursor = portkey_crate.No_Element then
+               TIO.Put_Line ("choking on port#" & port'Img);
             else
-               all_flavors.Append (basecatport);
+               basecatport := portkey_crate.Key (all_ports (port).key_cursor);
+               if not all_ports (port).flavors.Is_Empty then
+                  all_ports (port).flavors.Iterate (add_flavor'Access);
+               else
+                  all_flavors.Append (basecatport);
+               end if;
             end if;
          end loop;
          sorter.Sort (Container => all_flavors);
