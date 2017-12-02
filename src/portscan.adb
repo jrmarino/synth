@@ -542,19 +542,16 @@ package body PortScan is
                --  This dependency apparently does not exist.
                --  However, it could be flavored port that doesn't specify the flavor, so
                --  in this case, we have to look up the FIRST defined flavor (the default)
+               --  The flavor order of the flavor index is therefore critical
 
                declare
                   flport  : port_index;
                begin
                   if so_porthash.Contains (pkey) then
                      flport := so_porthash.Element (pkey);
-                     if not all_ports (flport).flavors.Is_Empty then
-                        JT.SU.Append (pkey, "@");
-                        JT.SU.Append (pkey, all_ports (flport).flavors.First_Element);
-                        deprec := ports_keys.Find (pkey);
-                        if deprec /= portkey_crate.No_Element then
-                           DNE := False;
-                        end if;
+                     deprec := all_ports (flport).key_cursor;
+                     if deprec /= portkey_crate.No_Element then
+                        DNE := False;
                      end if;
                   end if;
                end;
@@ -564,6 +561,7 @@ package body PortScan is
                     with fulldep & " (required dependency of " & catport & ") does not exist.";
                end if;
             end if;
+
             declare
                depindex : port_index := portkey_crate.Element (deprec);
             begin
@@ -1449,8 +1447,6 @@ package body PortScan is
    ----------------------------
    function generate_ports_index (index_file, portsdir : String) return Boolean
    is
-      package sorter is new string_crate.Generic_Sorting ("<" => JT.SU."<");
-
       procedure add_flavor (cursor : string_crate.Cursor);
       procedure write_line (cursor : string_crate.Cursor);
 
@@ -1523,7 +1519,6 @@ package body PortScan is
                all_flavors.Append (basecatport);
             end if;
          end loop;
-         sorter.Sort (Container => all_flavors);
 
          TIO.Create (File => handle, Mode => TIO.Out_File, Name => index_full);
          all_flavors.Iterate (write_line'Access);
