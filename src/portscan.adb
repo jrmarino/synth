@@ -493,7 +493,7 @@ package body PortScan is
 
       use type GSS.Slice_Number;
    begin
-      if JT.IsBlank (trimline) then
+      if not fullpop or else JT.IsBlank (trimline) then
          return;
       end if;
 
@@ -599,7 +599,7 @@ package body PortScan is
 
       use type GSS.Slice_Number;
    begin
-      if JT.IsBlank (trimline) then
+      if not fullpop or else JT.IsBlank (trimline) then
          return;
       end if;
       GSS.Create (S          => subs,
@@ -1477,9 +1477,11 @@ package body PortScan is
             REP.initialize (testmode => False, num_cores => cores_available);
             REP.launch_slave (id => scan_slave, opts => noprocs);
 
+            fullpop := False;
             scan_start := CAL.Clock;
             parallel_deep_scan (success => good_scan, show_progress => using_screen);
             scan_stop := CAL.Clock;
+            fullpop := True;
 
             REP.destroy_slave (id => scan_slave, opts => noprocs);
             REP.finalize;

@@ -214,6 +214,7 @@ private
    lot_counter  : port_index := 0;
    last_port    : port_index := 0;
    prescanned   : Boolean    := False;
+   fullpop      : Boolean    := True;
 
    so_porthash  : portkey_crate.Map;
    so_serial    : string_crate.Vector;
