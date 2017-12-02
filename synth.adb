@@ -316,9 +316,11 @@ begin
             return;
          end if;
 
-         if not PIL.ensure_port_index then
-            --  error messages emitted by ensure_port_index
-            return;
+         if mandate /= configure then
+            if not PIL.ensure_port_index then
+               --  error messages emitted by ensure_port_index
+               return;
+            end if;
          end if;
 
          PIL.create_pidfile;

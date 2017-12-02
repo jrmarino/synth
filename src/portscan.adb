@@ -1500,7 +1500,7 @@ package body PortScan is
          for port in port_index'First .. last_port loop
             --           basecatport := portkey_crate.Key (all_ports (port).key_cursor);
             basecatport := JT.SUS (get_catport (all_ports (port)));
-            if all_ports (port).flavors.Is_Empty then
+            if not all_ports (port).flavors.Is_Empty then
                all_ports (port).flavors.Iterate (add_flavor'Access);
             else
                all_flavors.Append (basecatport);
