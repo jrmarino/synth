@@ -2,8 +2,11 @@
 --  Reference: ../License.txt
 
 with Ada.Strings.Fixed;
+with Ada.Characters.Latin_1;
 
 package body JohnnyText is
+
+   package LAT renames Ada.Characters.Latin_1;
 
    -----------
    --  USS  --
@@ -334,5 +337,127 @@ package body JohnnyText is
    begin
       return leads (USS (US), fragment);
    end leads;
+
+
+   --------------------------------------------------------------------------------------------
+   --  initialize_markers
+   --------------------------------------------------------------------------------------------
+   procedure initialize_markers
+     (block_text : in String;
+      shuttle    : out Line_Markers) is
+   begin
+      shuttle.back_marker  := block_text'First;
+      shuttle.front_marker := block_text'First;
+      if block_text'Length > 0 then
+         shuttle.zero_length  := block_text (shuttle.back_marker) = LAT.LF;
+      end if;
+      shuttle.utilized := False;
+   end initialize_markers;
+
+
+   --------------------------------------------------------------------------------------------
+   --  extract_line
+   --------------------------------------------------------------------------------------------
+   function extract_line
+     (block_text : in String;
+      shuttle    : in Line_Markers)
+      return String is
+   begin
+      if shuttle.zero_length or else
+        shuttle.back_marker < block_text'First or else
+        shuttle.front_marker < shuttle.back_marker or else
+        shuttle.front_marker > block_text'Last
+      then
+         return "";
+      end if;
+      return block_text (shuttle.back_marker .. shuttle.front_marker);
+   end extract_line;
+
+
+   --------------------------------------------------------------------------------------------
+   --  next_line_present
+   --------------------------------------------------------------------------------------------
+   function next_line_present
+     (block_text : in String;
+      shuttle    : in out Line_Markers)
+      return Boolean is
+   begin
+      if shuttle.front_marker + 2 > block_text'Last then
+         return False;
+      end if;
+      if shuttle.utilized then
+         if shuttle.zero_length then
+            shuttle.back_marker  := shuttle.front_marker + 1;
+         else
+            shuttle.back_marker  := shuttle.front_marker + 2;
+         end if;
+         shuttle.front_marker := shuttle.back_marker;
+         shuttle.zero_length  := block_text (shuttle.back_marker) = LAT.LF;
+      else
+         if block_text'Length = 0 then
+            return False;
+         end if;
+      end if;
+      loop
+         shuttle.utilized := True;
+         exit when shuttle.front_marker = block_text'Last;
+         exit when block_text (shuttle.back_marker) = LAT.LF;
+         exit when block_text (shuttle.front_marker + 1) = LAT.LF;
+         shuttle.front_marker := shuttle.front_marker + 1;
+      end loop;
+      return True;
+   end next_line_present;
+
+
+    --------------------------------------------------------------------------------------------
+   --  next_line_with_content_present
+   --------------------------------------------------------------------------------------------
+   function next_line_with_content_present
+     (block_text : in String;
+      start_with : in String;
+      shuttle    : in out Line_Markers) return Boolean
+   is
+      ndx : Natural;
+   begin
+      if shuttle.front_marker + 2 > block_text'Last then
+         return False;
+      end if;
+      if shuttle.utilized then
+         ndx := AS.Fixed.Index (Source  => block_text,
+                                Pattern => LAT.LF & start_with,
+                                From    => shuttle.front_marker + 1);
+         if ndx = 0 then
+            return False;
+         else
+            shuttle.back_marker := ndx + 1;
+         end if;
+      else
+         if start_with'Length = 0 then
+            return False;
+         end if;
+         if leads (block_text, start_with) then
+            shuttle.back_marker := block_text'First;
+         else
+            ndx := AS.Fixed.Index (block_text, LAT.LF & start_with);
+            if ndx = 0 then
+               return False;
+            else
+               shuttle.back_marker := ndx + 1;
+            end if;
+         end if;
+      end if;
+      shuttle.utilized    := True;
+      shuttle.zero_length := False;
+      ndx := AS.Fixed.Index (Source  => block_text,
+                             Pattern => single_LF,
+                             From    => shuttle.back_marker + 1);
+      if ndx = 0 then
+         shuttle.front_marker := block_text'Last;
+      else
+         shuttle.front_marker := ndx - 1;
+      end if;
+      return True;
+
+   end next_line_with_content_present;
 
 end JohnnyText;

@@ -536,16 +536,40 @@ package body PortScan.Packages is
       pkg_base : constant String := id2pkgname (id);
       pkg_name : constant String := JT.USS (all_ports (id).package_name);
       fullpath : constant String := repository & "/" & pkg_name;
-      command  : constant String := host_pkg8 & " query -F " & fullpath &
-                                    " %do:%dn-%dv";
+      command  : constant String := host_pkg8 & " query -F " & fullpath & " %do:%dn-%dv:";
       remocmd  : constant String := host_pkg8 & " rquery -r " &
-                 JT.USS (external_repository) & " -U %do:%dn-%dv " & pkg_base;
+                 JT.USS (external_repository) & " -U %do:%dn-%dv: " & pkg_base;
+      flcm     : constant String := host_pkg8 & " query -F " & fullpath & " %At %Av";
+      remoflcm : constant String := host_pkg8 & " rquery -r " &
+                 JT.USS (external_repository) & " -U %At Av " & pkg_base;
+      result1  : JT.Text;
+      result2  : JT.Text;
+      markers  : JT.Line_Markers;
    begin
       if repository = "" then
-         return generic_system_command (remocmd);
+         result1 := generic_system_command (remocmd);
+         result2 := generic_system_command (remoflcm);
       else
-         return generic_system_command (command);
+         result1 := generic_system_command (command);
+         result2 := generic_system_command (flcm);
       end if;
+
+      declare
+         result2str : String := JT.USS (result2);
+      begin
+         JT.initialize_markers (result2str, markers);
+         if JT.next_line_with_content_present (result2str, "flavor ", markers) then
+            declare
+               line   : constant String := JT.extract_line (result2str, markers);
+               flavor : constant String := JT.specific_field (line, 2);
+            begin
+               JT.SU.Append (result1, flavor);
+            end;
+         end if;
+      end;
+
+      return result1;
+
    exception
       when others => return JT.blank;
    end result_of_dependency_query;
@@ -555,7 +579,17 @@ package body PortScan.Packages is
    --  passed_dependency_check  --
    -------------------------------
    function passed_dependency_check (query_result : JT.Text; id : port_id)
-                                     return Boolean is
+                                     return Boolean
+   is
+      function build_origin (base_origin, flavor : String) return String;
+      function build_origin (base_origin, flavor : String) return String is
+      begin
+         if JT.IsBlank (flavor) then
+            return base_origin;
+         else
+            return base_origin & "@" & flavor;
+         end if;
+      end build_origin;
    begin
       declare
          content  : JT.Text := query_result;
@@ -574,14 +608,12 @@ package body PortScan.Packages is
                raise unknown_format with JT.USS (topline);
             end if;
             declare
-               deppkg : String := JT.SU.Slice (Source => topline,
-                                               Low    => colon + 1,
-                                               High   => JT.SU.Length (topline))
-                 & ".txz";
-               origin : JT.Text := JT.SUS (JT.SU.Slice (Source => topline,
-                                                        Low    => 1,
-                                                        High   => colon - 1));
-               target_id : port_index := ports_keys.Element (Key => origin);
+               line    : constant String := JT.USS (topline);
+               borigin : constant String := JT.specific_field (line, 1, ":");
+               deppkg  : constant String := JT.specific_field (line, 2, ":") & ".txz";
+               flavor  : constant String := JT.specific_field (line, 3, ":");
+               origin  : constant String := build_origin (borigin, flavor);
+               target_id : port_index := ports_keys.Element (Key => JT.SUS (origin));
                target_pkg : JT.Text := all_ports (target_id).package_name;
                available : constant Boolean :=
                  all_ports (target_id).remote_pkg or else
@@ -592,8 +624,7 @@ package body PortScan.Packages is
                   --  package has a dependency that has been removed from
                   --  the ports tree
                   declare
-                     msg : String := JT.USS (origin) &
-                       " has been removed from the ports tree";
+                     msg : String := origin & " has been removed from the ports tree";
                   begin
                      obsolete_notice (msg, debug_dep_check);
                   end;
@@ -603,12 +634,10 @@ package body PortScan.Packages is
                if counter > max_deps then
                   --  package has more dependencies than we are looking for
                   declare
-                     msg : String := headport & " package has more " &
-                       "dependencies than the port requires (" &
-                       JT.int2str (max_deps) & ")" & LAT.LF &
+                     msg : String := headport & " package has more dependencies than the port " &
+                       "requires (" & JT.int2str (max_deps) & ")" & LAT.LF &
                        "Query: " & JT.USS (query_result) & LAT.LF &
-                       "Tripped on: " & JT.USS (target_pkg) & ":" &
-                       JT.USS (origin);
+                       "Tripped on: " & JT.USS (target_pkg) & ":" & origin;
                   begin
                      obsolete_notice (msg, debug_dep_check);
                   end;
@@ -620,10 +649,9 @@ package body PortScan.Packages is
                   --  version that the ports tree will now produce
                   declare
                      msg : String :=
-                       "Current " & headport & " package depends on " &
-                       deppkg & ", but this is a different version than " &
-                       "requirement of " & JT.USS (target_pkg) & " (from " &
-                       JT.USS (origin) & ")";
+                       "Current " & headport & " package depends on " & deppkg &
+                       ", but this is a different version than requirement of " &
+                       JT.USS (target_pkg) & " (from " & origin & ")";
                   begin
                      obsolete_notice (msg, debug_dep_check);
                   end;

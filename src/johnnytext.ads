@@ -9,6 +9,8 @@ package JohnnyText is
    package AS  renames Ada.Strings;
    package SU  renames Ada.Strings.Unbounded;
    subtype Text is SU.Unbounded_String;
+   type Line_Markers is private;
+
    blank : constant Text := SU.Null_Unbounded_String;
 
    --  converters : Text <==> String
@@ -71,5 +73,38 @@ package JohnnyText is
    --  Return True if S leads with fragment exactly
    function leads (S  : String; fragment : String) return Boolean;
    function leads (US : Text;   fragment : String) return Boolean;
+
+    --  Iterate though block of text, LF is delimiter
+   procedure initialize_markers
+     (block_text : in String;
+      shuttle    : out Line_Markers);
+
+   function next_line_present
+     (block_text : in String;
+      shuttle    : in out Line_Markers)
+      return Boolean;
+
+   function next_line_with_content_present
+     (block_text : in String;
+      start_with : in String;
+      shuttle    : in out Line_Markers)
+      return Boolean;
+
+   function extract_line
+     (block_text : in String;
+      shuttle    : in Line_Markers)
+      return String;
+
+private
+
+   single_LF : constant String (1 .. 1) := (1 => ASCII.LF);
+
+   type Line_Markers is
+      record
+         back_marker  : Natural := 0;
+         front_marker : Natural := 0;
+         zero_length  : Boolean := False;
+         utilized     : Boolean := False;
+      end record;
 
 end JohnnyText;
