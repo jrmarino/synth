@@ -536,9 +536,9 @@ package body PortScan.Packages is
       pkg_base : constant String := id2pkgname (id);
       pkg_name : constant String := JT.USS (all_ports (id).package_name);
       fullpath : constant String := repository & "/" & pkg_name;
-      command  : constant String := host_pkg8 & " query -F " & fullpath & " %do:%dn-%dv:";
+      command  : constant String := host_pkg8 & " query -F " & fullpath & " %do:%dn-%dv";
       remocmd  : constant String := host_pkg8 & " rquery -r " &
-                 JT.USS (external_repository) & " -U %do:%dn-%dv: " & pkg_base;
+                 JT.USS (external_repository) & " -U %do:%dn-%dv " & pkg_base;
    begin
       if repository = "" then
          return generic_system_command (remocmd);
