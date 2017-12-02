@@ -514,7 +514,9 @@ package body PortScan is
             flen    : constant Natural := fulldep'Length;
             colon   : constant Natural := find_colon (fulldep);
             colon1  : constant Natural := colon + 1;
+            DNE     : Boolean := True;
             deprec  : portkey_crate.Cursor;
+            pkey    : JT.Text;
 
             use type portkey_crate.Cursor;
          begin
@@ -526,25 +528,41 @@ package body PortScan is
             if flen > colon1 + dirlen + 1 and then
               fulldep (colon1 .. colon1 + dirlen) = dir_ports & "/"
             then
-               deprec := ports_keys.Find
-                 (Key => scrub_phase
-                    (fulldep (colon + dirlen + 2 .. fulldep'Last)));
+               pkey := scrub_phase (fulldep (colon + dirlen + 2 .. fulldep'Last));
             elsif flen > colon1 + 5 and then
               fulldep (colon1 .. colon1 + 5) = "../../"
             then
-               deprec := ports_keys.Find
-                 (Key => scrub_phase
-                    (fulldep (colon1 + 6 .. fulldep'Last)));
+               pkey := scrub_phase (fulldep (colon1 + 6 .. fulldep'Last));
             else
-               deprec := ports_keys.Find
-                 (Key => scrub_phase
-                    (fulldep (colon1 .. fulldep'Last)));
+               pkey := scrub_phase (fulldep (colon1 .. fulldep'Last));
             end if;
+            deprec := ports_keys.Find (pkey);
 
             if deprec = portkey_crate.No_Element then
-               raise nonexistent_port
-                 with fulldep &
-                 " (required dependency of " & catport & ") does not exist.";
+               --  This dependency apparently does not exist.
+               --  However, it could be flavored port that doesn't specify the flavor, so
+               --  in this case, we have to look up the FIRST defined flavor (the default)
+
+               declare
+                  flport  : port_index;
+               begin
+                  if so_porthash.Contains (pkey) then
+                     flport := portkey_crate.Element (so_porthash.Find (pkey));
+                     if not all_ports (flport).flavors.Is_Empty then
+                        JT.SU.Append (pkey, "@");
+                        JT.SU.Append (pkey, all_ports (flport).flavors.First_Element);
+                        deprec := ports_keys.Find (pkey);
+                        if deprec /= portkey_crate.No_Element then
+                           DNE := False;
+                        end if;
+                     end if;
+                  end if;
+               end;
+
+               if DNE then
+                  raise nonexistent_port
+                    with fulldep & " (required dependency of " & catport & ") does not exist.";
+               end if;
             end if;
             declare
                depindex : port_index := portkey_crate.Element (deprec);
@@ -1534,12 +1552,15 @@ package body PortScan is
       index_full : constant String :=
         index_path & "/" & JT.USS (PM.configuration.profile) & "-index";
    begin
+      so_porthash.Clear;
       TIO.Open (File => handle,
                 Mode => TIO.In_File,
                 Name => index_full);
       while not TIO.End_Of_File (handle) loop
          declare
-            portkey   : JT.Text := JT.SUS (JT.trim (TIO.Get_Line (handle)));
+            line      : constant String := JT.trim (TIO.Get_Line (handle));
+            baseport  : JT.Text := JT.SUS (JT.part_1 (line, "@"));
+            portkey   : JT.Text := JT.SUS (line);
             blank_rec : port_record;
             kc        : portkey_crate.Cursor;
             success   : Boolean;
@@ -1552,6 +1573,12 @@ package body PortScan is
             all_ports (last_port).sequence_id := last_port;
             all_ports (last_port).key_cursor := kc;
             make_queue (lot_number).Append (last_port);
+
+            --  Map baseport name to first encounted flavor
+            --  This is used to lookup default flavor when @ modifier is not provided
+            if not so_porthash.Contains (baseport) then
+               so_porthash.Insert (Key => baseport, New_Item => last_port);
+            end if;
          end;
 
          lot_counter := lot_counter + 1;
