@@ -1513,9 +1513,9 @@ package body PortScan is
    end generate_ports_index;
 
 
-   ----------------------------
-   --  read_flavor_index  --
-   ----------------------------
+   --------------------------
+   --  read_flavor_index   --
+   --------------------------
    procedure read_flavor_index
    is
       handle     : TIO.File_Type;
@@ -1558,5 +1558,96 @@ package body PortScan is
             TIO.Close (handle);
          end if;
    end read_flavor_index;
+
+
+   -------------------------------------
+   --  load_index_for_store_origins   --
+   -------------------------------------
+   procedure load_index_for_store_origins
+   is
+      handle     : TIO.File_Type;
+      index_full : constant String :=
+                   index_path & "/" & JT.USS (PM.configuration.profile) & "-index";
+      ndx        : port_id := 1;
+   begin
+      TIO.Open (File => handle,
+                Mode => TIO.In_File,
+                Name => index_full);
+      while not TIO.End_Of_File (handle) loop
+         declare
+            portkey : JT.Text := JT.SUS (JT.trim (TIO.Get_Line (handle)));
+         begin
+            so_serial.Append (portkey);
+            so_porthash.Insert (Key => portkey, New_Item => ndx);
+            ndx := ndx + 1;
+         end;
+      end loop;
+      TIO.Close (handle);
+   exception
+      when others =>
+         if TIO.Is_Open (handle) then
+            TIO.Close (handle);
+         end if;
+   end load_index_for_store_origins;
+
+
+   --------------------------------
+   --  clear_store_origin_data   --
+   --------------------------------
+   procedure clear_store_origin_data is
+   begin
+      so_serial.Clear;
+      so_porthash.Clear;
+   end clear_store_origin_data;
+
+
+   ---------------------------
+   --  input_origin_valid   --
+   ---------------------------
+   function input_origin_valid (candidate : String) return Boolean is
+   begin
+      return so_porthash.Contains (JT.SUS (candidate));
+   end input_origin_valid;
+
+
+   --------------------------------------
+   --  suggest_flavor_for_bad_origin   --
+   --------------------------------------
+   procedure suggest_flavor_for_bad_origin (candidate : String)
+   is
+      procedure suggest (cursor : string_crate.Cursor);
+
+      adjusted_candidate : String (1 .. candidate'Length + 1) := (others => ' ');
+      pretext : Boolean := False;
+      canlast : Natural := adjusted_candidate'Last;
+
+      procedure suggest (cursor : string_crate.Cursor)
+      is
+         payload : constant String := JT.USS (string_crate.Element (Position => cursor));
+      begin
+         if JT.leads (S        => payload,
+                      fragment => adjusted_candidate (1 .. canlast))
+         then
+            if not pretext then
+               TIO.Put_Line ("Perhaps you intended one of the following port flavors?");
+               pretext := True;
+            end if;
+            TIO.Put_Line ("   - " & payload);
+         end if;
+      end suggest;
+   begin
+      if JT.contains (candidate, "@") then
+         declare
+            catport : constant String := JT.part_1 (candidate);
+         begin
+            canlast := catport'Length + 1;
+            adjusted_candidate (1 .. canlast) := catport & "@";
+         end;
+      else
+         adjusted_candidate := candidate & "@";
+      end if;
+      TIO.Put_Line ("Error: port origin '" & candidate & "' is not recognized.");
+      so_serial.Iterate (suggest'Access);
+   end suggest_flavor_for_bad_origin;
 
 end PortScan;

@@ -68,4 +68,8 @@ package JohnnyText is
       field_number : Positive;
       delimiter    : String := " ") return String;
 
+   --  Return True if S leads with fragment exactly
+   function leads (S  : String; fragment : String) return Boolean;
+   function leads (US : Text;   fragment : String) return Boolean;
+
 end JohnnyText;

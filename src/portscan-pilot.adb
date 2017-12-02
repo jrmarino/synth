@@ -815,7 +815,7 @@ package body PortScan.Pilot is
                return False;
             end if;
 
-            if path1 = "distfiles" or else path1 = "packages" then
+            if cat = "distfiles" or else cat = "packages" then
                return False;
             end if;
 

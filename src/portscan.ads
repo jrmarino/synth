@@ -82,6 +82,15 @@ package PortScan is
       reference : CAL.Time;
       valid     : out Boolean) return Boolean;
 
+   --  Store origin support
+   --  * store data from flavor index in hash and vector
+   --  * clear data when complete
+   --  * valid origin returns true when candidate available verbatim
+   procedure load_index_for_store_origins;
+   procedure clear_store_origin_data;
+   function input_origin_valid (candidate : String) return Boolean;
+   procedure suggest_flavor_for_bad_origin (candidate : String);
+
 private
 
    package REP  renames Replicant;
@@ -205,6 +214,9 @@ private
    lot_counter  : port_index := 0;
    last_port    : port_index := 0;
    prescanned   : Boolean    := False;
+
+   so_porthash  : portkey_crate.Map;
+   so_serial    : string_crate.Vector;
 
    procedure iterate_reverse_deps;
    procedure iterate_drill_down;
