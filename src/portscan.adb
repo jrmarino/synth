@@ -1110,16 +1110,16 @@ package body PortScan is
                   all_ports (lot_counter).sequence_id := lot_counter;
                   all_ports (lot_counter).key_cursor := kc;
                   make_queue (lot_number).Append (lot_counter);
+
+                  lot_counter := lot_counter + 1;
+                  if lot_number = max_lots then
+                     lot_number := 1;
+                  else
+                     lot_number := lot_number + 1;
+                  end if;
                end;
             end if;
          end;
-
-         lot_counter := lot_counter + 1;
-         if lot_number = max_lots then
-            lot_number := 1;
-         else
-            lot_number := lot_number + 1;
-         end if;
       end loop;
       TIO.Close (File => archive);
    end grep_Makefile;
@@ -1194,7 +1194,6 @@ package body PortScan is
          --  We're going to get "." and "..".  It's faster to check them (always older)
          --  than convert to simple name and exclude them.
          if reference < AD.Modification_Time (inner_dirent) then
-            TIO.Put_Line (AD.Simple_Name (inner_dirent) & " is newer than reference");
             already_newer := True;
          end if;
       end loop;
