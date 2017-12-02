@@ -95,6 +95,13 @@ package JohnnyText is
       shuttle    : in Line_Markers)
       return String;
 
+   --  Head (keep all but last delimiter and field)
+   function head (US : Text;   delimiter : Text)   return Text;
+   function head (S  : String; delimiter : String) return String;
+
+   --  Tail (keep only last field)
+   function tail (US : Text;   delimiter : Text)   return Text;
+   function tail (S  : String; delimiter : String) return String;
 private
 
    single_LF : constant String (1 .. 1) := (1 => ASCII.LF);

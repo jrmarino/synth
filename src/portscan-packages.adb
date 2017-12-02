@@ -539,36 +539,12 @@ package body PortScan.Packages is
       command  : constant String := host_pkg8 & " query -F " & fullpath & " %do:%dn-%dv:";
       remocmd  : constant String := host_pkg8 & " rquery -r " &
                  JT.USS (external_repository) & " -U %do:%dn-%dv: " & pkg_base;
-      flcm     : constant String := host_pkg8 & " query -F " & fullpath & " %At:%Av";
-      remoflcm : constant String := host_pkg8 & " rquery -r " &
-                 JT.USS (external_repository) & " -U %At Av " & pkg_base;
-      result1  : JT.Text;
-      result2  : JT.Text;
-      markers  : JT.Line_Markers;
    begin
       if repository = "" then
-         result1 := generic_system_command (remocmd);
-         result2 := generic_system_command (remoflcm);
+         return generic_system_command (remocmd);
       else
-         result1 := generic_system_command (command);
-         result2 := generic_system_command (flcm);
+         return generic_system_command (command);
       end if;
-
-      declare
-         result2str : String := JT.USS (result2);
-      begin
-         JT.initialize_markers (result2str, markers);
-         if JT.next_line_with_content_present (result2str, "flavor:", markers) then
-            declare
-               line   : constant String := JT.extract_line (result2str, markers);
-               flavor : constant String := JT.specific_field (line, 2, ":");
-            begin
-               JT.SU.Append (result1, flavor);
-            end;
-         end if;
-      end;
-
-      return result1;
 
    exception
       when others => return JT.blank;
@@ -581,15 +557,6 @@ package body PortScan.Packages is
    function passed_dependency_check (query_result : JT.Text; id : port_id)
                                      return Boolean
    is
-      function build_origin (base_origin, flavor : String) return String;
-      function build_origin (base_origin, flavor : String) return String is
-      begin
-         if JT.IsBlank (flavor) then
-            return base_origin;
-         else
-            return base_origin & "@" & flavor;
-         end if;
-      end build_origin;
    begin
       declare
          content  : JT.Text := query_result;
@@ -609,22 +576,69 @@ package body PortScan.Packages is
             end if;
             declare
                line       : constant String := JT.USS (topline);
-               borigin    : constant String := JT.specific_field (line, 1, ":");
-               deppkg     : constant String := JT.specific_field (line, 2, ":") & ".txz";
-               flavor     : constant String := JT.specific_field (line, 3, ":");
-               origin     : constant String := build_origin (borigin, flavor);
+               origin     : constant String := JT.part_1 (line, ":");
+               deppkg     : constant String := JT.part_2 (line, ":") & ".txz";
                origintxt  : JT.Text := JT.SUS (origin);
 
                target_id  : port_index;
                target_pkg : JT.Text;
                available  : Boolean;
             begin
-               if ports_keys.Contains (origintxt) then
-                  target_id  := ports_keys.Element (origintxt);
+               --  The packages contain only the origin.  We have no idea about which
+               --  flavor is used if that origin features flavors.  We have to probe all
+               --  flavors and deduce the correct flavor (Definitely, FPC flavors are inferior
+               --  to Ravenports variants).
+               if so_porthash.Contains (origintxt) then
+
+                  declare
+                     procedure check_base_package (cursor : string_crate.Cursor);
+
+                     probe_id : port_index := so_porthash.Element (origintxt);
+                     base_pkg : String := JT.head (deppkg, "-");
+                     found_it : Boolean := False;
+
+                     procedure check_base_package (cursor : string_crate.Cursor)
+                     is
+                        flavor    : String := JT.USS (string_crate.Element (Position => cursor));
+                        neworigin : JT.Text := JT.SUS (origin & "@" & flavor);
+                        test_id   : port_index;
+                     begin
+                        if not found_it then
+                           if ports_keys.Contains (neworigin) then
+                              test_id := ports_keys.Element (neworigin);
+                              declare
+                                 test_pkg : String :=
+                                   JT.head (all_ports (test_id).package_name, "-");
+                              begin
+                                 if test_pkg = base_pkg then
+                                    found_it := True;
+                                    target_id := test_id;
+                                 end if;
+                              end;
+                           end if;
+                        end if;
+                     end check_base_package;
+                  begin
+                     if all_ports (probe_id).flavors.Is_Empty then
+                        target_id  := probe_id;
+                     else
+                        all_ports (probe_id).flavors.Iterate (check_base_package'Access);
+                        if not found_it then
+                           declare
+                              msg : String := origin & " (flavored) package unmatched";
+                           begin
+                              obsolete_notice (msg, debug_dep_check);
+                           end;
+                           return False;
+                        end if;
+                     end if;
+                  end;
+
                   target_pkg := all_ports (target_id).package_name;
                   available  := all_ports (target_id).remote_pkg or else
                     (all_ports (target_id).pkg_present and then
                          not all_ports (target_id).deletion_due);
+
                else
                   --  package has a dependency that has been removed from the ports tree
                   declare
