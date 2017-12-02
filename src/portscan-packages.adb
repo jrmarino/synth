@@ -608,7 +608,7 @@ package body PortScan.Packages is
                               test_id := ports_keys.Element (neworigin);
                               declare
                                  test_pkg : String :=
-                                   JT.head (all_ports (test_id).package_name, "-");
+                                   JT.head (JT.USS (all_ports (test_id).package_name), "-");
                               begin
                                  if test_pkg = base_pkg then
                                     found_it := True;
