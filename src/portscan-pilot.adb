@@ -1081,6 +1081,9 @@ package body PortScan.Pilot is
       query   : constant String := host_pkg8 & " query -a %o:%n";
       sorry   : constant String := "Unfortunately, the system upgrade failed.";
    begin
+      if not prescanned then
+         read_flavor_index;
+      end if;
       portlist.Clear;
       TIO.Put_Line ("Querying system about current package installations.");
       begin
