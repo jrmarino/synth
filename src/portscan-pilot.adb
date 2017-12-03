@@ -1840,7 +1840,6 @@ package body PortScan.Pilot is
             return False;
          end if;
          if tree_newer then
-            needs_gen := True;
             if Unix.env_variable_defined ("TERM") then
                if tree_directories_match (index_file, portsdir) then
                   TIO.Put_Line (stars);
@@ -1859,11 +1858,14 @@ package body PortScan.Pilot is
                               needs_gen := False;
                            end if;
                            exit;
-                        when others    => null;
+                        when others => null;
                      end case;
                   end loop;
+                  TIO.Put_Line (stars);
                end if;
             end if;
+         else
+            needs_gen := False;
          end if;
       end if;
 
