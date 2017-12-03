@@ -77,14 +77,12 @@ begin
          case mandate is
             when unset =>
                ACT.print_version;
-               TIO.Put_Line (comerr & "'" & first &
-                               "' is not a valid keyword.");
+               TIO.Put_Line (comerr & "'" & first & "' is not a valid keyword.");
                return;
             when help | configure | version | prep_system | up_system | purge |
                  everything | status_everything =>
                ACT.print_version;
-               TIO.Put_Line (comerr & "'" & first &
-                               "' keyword uses no arguments.");
+               TIO.Put_Line (comerr & "'" & first & "' keyword uses no arguments.");
                return;
             when others => null;
          end case;
@@ -168,8 +166,7 @@ begin
             when status =>
                if PIL.prerequisites_available and then
                  PIL.scan_stack_of_single_ports (testmode => False) and then
-                 PIL.sanity_check_then_prefail (delete_first => False,
-                                                dry_run => True)
+                 PIL.sanity_check_then_prefail (delete_first => False, dry_run => True)
                then
                   PIL.display_results_of_dry_run;
                end if;
@@ -188,8 +185,7 @@ begin
                   PIL.perform_bulk_run (testmode => False);
                   if PIL.verify_desire_to_rebuild_repository and then
                     PIL.write_pkg_repos_configuration_file and then
-                    PIL.rebuild_local_respository
-                      (remove_invalid_packages => False) and then
+                    PIL.rebuild_local_respository (remove_invalid_packages => False) and then
                     PIL.verify_desire_to_install_packages
                   then
                      PIL.upgrade_system_exactly;
@@ -197,15 +193,13 @@ begin
                end if;
             when force =>
                if PIL.prerequisites_available and then
-                 PIL.scan_stack_of_single_ports (testmode => False,
-                                                 always_build => True) and then
+                 PIL.scan_stack_of_single_ports (testmode => False, always_build => True) and then
                  PIL.sanity_check_then_prefail (delete_first => True)
                then
                   PIL.perform_bulk_run (testmode => False);
                   if PIL.verify_desire_to_rebuild_repository and then
                     PIL.write_pkg_repos_configuration_file and then
-                    PIL.rebuild_local_respository
-                      (remove_invalid_packages => False) and then
+                    PIL.rebuild_local_respository (remove_invalid_packages => False) and then
                     PIL.verify_desire_to_install_packages
                   then
                      PIL.upgrade_system_exactly;
@@ -218,16 +212,14 @@ begin
                then
                   PIL.perform_bulk_run (testmode => False);
                   if PIL.write_pkg_repos_configuration_file and then
-                    PIL.rebuild_local_respository
-                      (remove_invalid_packages => False)
+                    PIL.rebuild_local_respository (remove_invalid_packages => False)
                   then
                      PIL.upgrade_system_exactly;
                   end if;
                end if;
             when test =>
                if PIL.prerequisites_available and then
-                 PIL.scan_stack_of_single_ports (testmode => True,
-                                                 always_build => True) and then
+                 PIL.scan_stack_of_single_ports (testmode => True, always_build => True) and then
                  PIL.sanity_check_then_prefail (delete_first => True)
                then
                   if PIL.interact_with_single_builder then
@@ -339,8 +331,7 @@ begin
             when configure =>
                ACT.launch_configure_menu (PortScan.cores_available);
             when status =>
-               PIL.upgrade_system_everything (skip_installation => True,
-                                              dry_run           => True);
+               PIL.upgrade_system_everything (skip_installation => True, dry_run => True);
             when up_system =>
                if PIL.write_pkg_repos_configuration_file then
                   PIL.upgrade_system_everything;
@@ -349,8 +340,7 @@ begin
                PIL.upgrade_system_everything (skip_installation => True);
             when gen_repo =>
                if PIL.prerequisites_available and then
-                 PIL.rebuild_local_respository
-                   (remove_invalid_packages => True)
+                 PIL.rebuild_local_respository (remove_invalid_packages => True)
                then
                   if PIL.host_pkg8_conservative_upgrade_set then
                      TIO.Put_Line ("Note: This system's pkg(8) is configured " &
@@ -367,17 +357,14 @@ begin
                  PIL.sanity_check_then_prefail
                then
                   PIL.perform_bulk_run (testmode => False);
-                  if PIL.rebuild_local_respository
-                    (remove_invalid_packages => True)
-                  then
+                  if PIL.rebuild_local_respository (remove_invalid_packages => True) then
                      null;
                   end if;
                end if;
             when status_everything =>
                if PIL.prerequisites_available and then
                  PIL.fully_scan_ports_tree and then
-                 PIL.sanity_check_then_prefail (delete_first => False,
-                                                dry_run => True)
+                 PIL.sanity_check_then_prefail (delete_first => False, dry_run => True)
                then
                   PIL.display_results_of_dry_run;
                end if;
