@@ -1078,35 +1078,83 @@ package body PortScan.Pilot is
    is
       command : constant String := host_pkg8 &
                                    " upgrade --yes --repository Synth";
-      query   : constant String := host_pkg8 & " query -a %o";
+      query   : constant String := host_pkg8 & " query -a %o:%n";
       sorry   : constant String := "Unfortunately, the system upgrade failed.";
    begin
       portlist.Clear;
       TIO.Put_Line ("Querying system about current package installations.");
-      declare
-         comres  : JT.Text;
-         topline : JT.Text;
-         crlen1  : Natural;
-         crlen2  : Natural;
-         uniqid  : Natural := 0;
       begin
-         comres := CYC.generic_system_command (query);
-         crlen1 := JT.SU.Length (comres);
-         loop
-            JT.nextline (lineblock => comres, firstline => topline);
-            crlen2 := JT.SU.Length (comres);
-            exit when crlen1 = crlen2;
-            crlen1 := crlen2;
-            uniqid := uniqid + 1;
-            plinsert (JT.USS (topline), uniqid);
-         end loop;
+         declare
+            comres  : constant String := JT.USS (CYC.generic_system_command (query));
+            markers : JT.Line_Markers;
+            uniqid  : Natural := 0;
+         begin
+            JT.initialize_markers (comres, markers);
+            loop
+               exit when not JT.next_line_present (comres, markers);
+               declare
+                  procedure check_base_package (cursor : string_crate.Cursor);
+
+                  line      : constant String := JT.extract_line (comres, markers);
+                  origin    : constant String := JT.part_1 (line, ":");
+                  pkgbase   : constant String := JT.part_2 (line, ":");
+                  errprefix : constant String := "Installed package ignored, ";
+                  origintxt : JT.Text := JT.SUS (origin);
+                  target_id : port_id := port_match_failed;
+                  probe_id  : port_id;
+                  found_it  : Boolean;
+
+                  procedure check_base_package (cursor : string_crate.Cursor)
+                  is
+                     flavor    : String := JT.USS (string_crate.Element (Position => cursor));
+                     neworigin : JT.Text := JT.SUS (origin & "@" & flavor);
+                     test_id   : port_id;
+                  begin
+                     if not found_it then
+                        if ports_keys.Contains (neworigin) then
+                           test_id := ports_keys.Element (neworigin);
+                           declare
+                              pkgname  : String := JT.USS (all_ports (test_id).package_name);
+                              test_pkg : String := JT.head (pkgname, "-");
+                           begin
+                              if test_pkg = pkgbase then
+                                 found_it := True;
+                                 target_id := test_id;
+                              end if;
+                           end;
+                        end if;
+                     end if;
+                  end check_base_package;
+
+               begin
+                  if so_porthash.Contains (origintxt) then
+                     probe_id := so_porthash.Element (origintxt);
+                     found_it := False;
+                     if all_ports (probe_id).flavors.Is_Empty then
+                        target_id := probe_id;
+                     else
+                        all_ports (probe_id).flavors.Iterate (check_base_package'Access);
+                        if not found_it then
+                           TIO.Put_Line (errprefix & origin & " (flavored) package unmatched");
+                        end if;
+                     end if;
+
+                     if target_id /= port_match_failed then
+                        uniqid := uniqid + 1;
+                        plinsert (get_catport (all_ports (target_id)), uniqid);
+                     end if;
+                  else
+                     TIO.Put_Line (errprefix & "missing from ports: " & origin);
+                  end if;
+               end;
+            end loop;
+         end;
       exception
          when others =>
             TIO.Put_Line (sorry & " (system query)");
             return;
       end;
-      TIO.Put_Line ("Stand by, comparing installed packages against the " &
-                      "ports tree.");
+      TIO.Put_Line ("Stand by, comparing installed packages against the ports tree.");
       if prerequisites_available and then
         scan_stack_of_single_ports (testmode => False) and then
         sanity_check_then_prefail (delete_first => False, dry_run => dry_run)
@@ -1128,8 +1176,7 @@ package body PortScan.Pilot is
       end if;
       if rebuild_local_respository (remove_invalid_packages => True) then
          if not skip_installation then
-            if not Unix.external_command (command)
-            then
+            if not Unix.external_command (command) then
                TIO.Put_Line (sorry);
             end if;
          end if;
