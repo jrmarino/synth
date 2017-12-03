@@ -956,7 +956,10 @@ package body PortScan.Ops is
    ------------------------
    procedure run_package_hook (hook : hook_type; id : port_id)
    is
-      tail : String := " ORIGIN=" & port_name (id) & " PKGNAME=" & package_name (id) & " ";
+      pn   : constant String := port_name (id);
+      tail : String := " ORIGIN=" & JT.part_1 (pn, "@") &
+        " FLAVOR=" & JT.part_2 (pn, "@") &
+        " PKGNAME=" & package_name (id) & " ";
    begin
       case hook is
          when pkg_success => run_hook (hook, "RESULT=success" & tail);
