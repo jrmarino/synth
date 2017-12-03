@@ -1824,17 +1824,47 @@ package body PortScan.Pilot is
       index_file  : constant String := "/var/cache/synth/" &
                     JT.USS (PM.configuration.profile) & "-index";
       needs_gen   : Boolean := True;
+      tree_newer  : Boolean;
       valid_check : Boolean;
+      answer      : Character;
+      portsdir    : constant String := JT.USS (PM.configuration.dir_portsdir);
+      command     : constant String := "/usr/bin/touch " & index_file;
+      stars : String (1 .. 67) := (others => '*');
+      msg1  : String := " The ports tree has at least one file newer than the flavor index.";
+      msg2  : String := " However, port directories perfectly match.  Should the index be";
+      msg3  : String := " regenerated? (Y/N) ";
    begin
       if AD.Exists (index_file) then
-         needs_gen := index_out_of_date (index_file, valid_check);
+         tree_newer := index_out_of_date (index_file, valid_check);
          if not valid_check then
             return False;
+         end if;
+         if tree_newer then
+            needs_gen := True;
+            if Unix.env_variable_defined ("TERM") then
+               if tree_directories_match (index_file, portsdir) then
+                  TIO.Put_Line (stars);
+                  TIO.Put_Line (msg1);
+                  TIO.Put_Line (msg2);
+                  TIO.Put      (msg3);
+                  loop
+                     Ada.Text_IO.Get_Immediate (answer);
+                     case answer is
+                        when 'Y' | 'y' => TIO.Put_Line ("yes");
+                        when 'N' | 'n' => TIO.Put_Line ("no");
+                           if Unix.external_command (command) then
+                              needs_gen := False;
+                           end if;
+                        when others    => null;
+                     end case;
+                  end loop;
+               end if;
+            end if;
          end if;
       end if;
 
       if needs_gen then
-         return generate_ports_index (index_file, JT.USS (PM.configuration.dir_portsdir));
+         return generate_ports_index (index_file, portsdir);
       else
          return True;
       end if;
@@ -1871,5 +1901,60 @@ package body PortScan.Pilot is
          return False;
       end if;
    end index_out_of_date;
+
+
+   ------------------------------
+   --  tree_directories_match  --
+   ------------------------------
+   function tree_directories_match (index_file, portsdir : String) return Boolean
+   is
+      procedure flavor_line (cursor : string_crate.Cursor);
+      procedure print (cursor : portkey_crate.Cursor);
+
+      last_entry : JT.Text;
+      broken     : Boolean := False;
+
+      procedure flavor_line (cursor : string_crate.Cursor)
+      is
+         line    : constant String := JT.USS (string_crate.Element (Position => cursor));
+         catport : JT.Text := JT.SUS (JT.part_1 (line, "@"));
+      begin
+         if not broken then
+            if not JT.equivalent (last_entry, catport) then
+               last_entry := catport;
+               if ports_keys.Contains (catport) then
+                  ports_keys.Delete (catport);
+               else
+                  broken := True;
+               end if;
+            end if;
+         end if;
+      end flavor_line;
+
+      procedure print (cursor : portkey_crate.Cursor)
+      is
+         line : constant String := JT.USS (portkey_crate.Key (cursor));
+      begin
+         TIO.Put_Line ("new port: " & line);
+      end print;
+   begin
+      load_index_for_store_origins;
+      prescan_ports_tree (portsdir);
+
+      so_serial.Iterate (flavor_line'Access);
+      if not broken then
+         --  Every port on the flavor index is present in the ports tree
+         --  We still need to check that there are not ports in the tree not listed in index
+         if not ports_keys.Is_Empty then
+            broken := True;
+            --  diagnostic, delete later
+            ports_keys.Iterate (print'Access);
+         end if;
+      end if;
+
+      reset_ports_tree;
+      clear_store_origin_data;
+      return not broken;
+   end tree_directories_match;
 
 end PortScan.Pilot;

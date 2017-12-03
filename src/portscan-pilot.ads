@@ -229,4 +229,8 @@ private
    --  port directory
    function index_out_of_date (index_file : String; valid : out Boolean) return Boolean;
 
+   --  Returns True if directories in index file exactly match the actual tree (meaning no
+   --  ports added or subtracted wrt index file)
+   function tree_directories_match (index_file, portsdir : String) return Boolean;
+
 end PortScan.Pilot;
