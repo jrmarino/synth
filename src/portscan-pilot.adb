@@ -1915,7 +1915,6 @@ package body PortScan.Pilot is
    function tree_directories_match (index_file, portsdir : String) return Boolean
    is
       procedure flavor_line (cursor : string_crate.Cursor);
-      procedure print (cursor : portkey_crate.Cursor);
 
       last_entry : JT.Text;
       broken     : Boolean := False;
@@ -1936,13 +1935,6 @@ package body PortScan.Pilot is
             end if;
          end if;
       end flavor_line;
-
-      procedure print (cursor : portkey_crate.Cursor)
-      is
-         line : constant String := JT.USS (portkey_crate.Key (cursor));
-      begin
-         TIO.Put_Line ("new port: " & line);
-      end print;
    begin
       load_index_for_store_origins;
       prescan_ports_tree (portsdir);
@@ -1953,8 +1945,6 @@ package body PortScan.Pilot is
          --  We still need to check that there are not ports in the tree not listed in index
          if not ports_keys.Is_Empty then
             broken := True;
-            --  diagnostic, delete later
-            ports_keys.Iterate (print'Access);
          end if;
       end if;
 
