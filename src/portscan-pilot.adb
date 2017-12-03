@@ -1850,11 +1850,15 @@ package body PortScan.Pilot is
                   loop
                      Ada.Text_IO.Get_Immediate (answer);
                      case answer is
-                        when 'Y' | 'y' => TIO.Put_Line ("yes");
-                        when 'N' | 'n' => TIO.Put_Line ("no");
+                        when 'Y' | 'y' =>
+                           TIO.Put_Line ("yes");
+                           exit;
+                        when 'N' | 'n' =>
+                           TIO.Put_Line ("no");
                            if Unix.external_command (command) then
                               needs_gen := False;
                            end if;
+                           exit;
                         when others    => null;
                      end case;
                   end loop;
