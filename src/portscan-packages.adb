@@ -137,7 +137,7 @@ package body PortScan.Packages is
       listlog       : TIO.File_Type;
       goodlog       : Boolean;
       using_screen  : constant Boolean := Unix.screen_attached;
-      filename      : constant String := "/tmp/synth_prefetch_list.txt";
+      filename      : constant String := "/var/synth/synth_prefetch_list.txt";
       package_list  : JT.Text := JT.blank;
 
       procedure check_package (cursor : ranking_crate.Cursor)
@@ -274,8 +274,11 @@ package body PortScan.Packages is
       if dry_run then
          if not fetch_list.Is_Empty then
             begin
-               TIO.Create (File => listlog, Mode => TIO.Out_File,
-                           Name => filename);
+               --  Try to defend malicious symlink: https://en.wikipedia.org/wiki/Symlink_race
+               if AD.Exists (filename) then
+                  AD.Delete_File (filename);
+               end if;
+               TIO.Create (File => listlog, Mode => TIO.Out_File, Name => filename);
                goodlog := True;
             exception
                when others => goodlog := False;
@@ -1259,6 +1262,7 @@ package body PortScan.Packages is
       logpath : constant String := JT.USS (PM.configuration.dir_logs)
         & "/06_obsolete_packages.log";
    begin
+      --  Try to defend malicious symlink: https://en.wikipedia.org/wiki/Symlink_race
       if AD.Exists (logpath) then
          AD.Delete_File (logpath);
       end if;

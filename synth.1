@@ -1,4 +1,4 @@
-.Dd December 6, 2016
+.Dd December 4, 2017
 .Dt SYNTH 1
 .Os
 .Sh NAME
@@ -254,7 +254,7 @@ command with no arguments performs a dry-run of the
 command. It will not delete obsolete packages, nor rebuild the local
 repository. It will list all the ports that will be rebuild along with a
 total, and it also logs the same information to
-.Pa /tmp/synth_status_results.txt
+.Pa /var/synth/synth_status_results.txt
 since the full list is often longer than the terminal height.
 .Ss synth just-build [ file | port-origin ... ]
 The
@@ -513,12 +513,12 @@ default profile index normally located at
 .It synth_status_results.txt
 Whenever a status command is run, a list of ports that would build with the
 actual command is produced at
-.Pa /tmp/synth_status_results.txt
+.Pa /var/synth/synth_status_results.txt
 .It synth_prefetch_list.txt
 Whenever a status command is run, and the option to use suitable prebuilt
 packages has been selected, a list of packages that will be fetched as a
 result will be written to
-.Pa /tmp/synth_prefetch_list.txt
+.Pa /var/synth/synth_prefetch_list.txt
 .It index.html
 For every build run, Synth installs a web summary at the Report subdirectory
 of the build logs directory.  For the default profile, the file would be

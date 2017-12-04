@@ -1405,7 +1405,7 @@ package body PortScan.Pilot is
    is
       procedure print (cursor : ranking_crate.Cursor);
       listlog  : TIO.File_Type;
-      filename : constant String := "/tmp/synth_status_results.txt";
+      filename : constant String := "/var/synth/synth_status_results.txt";
       max_lots : constant scanners := get_max_lots;
       elap_raw : constant String := CYC.log_duration (start => scan_start,
                                                       stop  => scan_stop);

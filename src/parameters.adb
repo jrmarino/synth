@@ -840,6 +840,20 @@ package body Parameters is
          end if;
       end invalid_directory;
    begin
+      declare
+         synth_tmp : constant String := "/var/synth";
+      begin
+         if invalid_directory (JT.SUS (synth_tmp), "xxx") then
+            if AD.Exists (synth_tmp) then
+               AD.Delete_File (synth_tmp);
+            end if;
+            AD.Create_Path (New_Directory => synth_tmp);
+         end if;
+      exception
+         when others =>
+            TIO.Put_Line ("Failed to create " & synth_tmp);
+            return False;
+      end;
       if invalid_directory (configuration.dir_system, "[G] System root") then
          return False;
       elsif invalid_directory (configuration.dir_packages, "[B] Packages") then
