@@ -48,10 +48,12 @@ package body PortScan.Pilot is
          --  Check if this is a file
          declare
             Arg2 : constant String := trimmed_catport (CLI.Argument (2));
+            vfresult : Boolean;
          begin
             if AD.Exists (Arg2) then
+               vfresult := valid_file (Arg2);
                clear_store_origin_data;
-               return valid_file (Arg2);
+               return vfresult;
             end if;
             if input_origin_valid (candidate => Arg2) then
                if Arg2 /= pkgng then
