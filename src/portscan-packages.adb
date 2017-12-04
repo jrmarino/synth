@@ -1049,7 +1049,7 @@ package body PortScan.Packages is
                      full_origin : constant String := query_full_origin (pkgpath, origin);
                   begin
                      if current_package_name (full_origin, pkgname) then
-                        stored_origins (lot).Append (New_Item => JT.SUS (origin));
+                        stored_origins (lot).Append (New_Item => JT.SUS (full_origin));
                         remove := False;
                      end if;
                   end;
