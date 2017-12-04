@@ -1040,15 +1040,21 @@ package body PortScan.Packages is
             declare
                pkgname : constant String := JT.USS (string_crate.Element (csr));
                pkgpath : constant String := repository & "/" & pkgname;
-               origin  : constant String := query_origin (fullpath => pkgpath);
-               path1   : constant String :=
-                         JT.USS (PM.configuration.dir_portsdir) & "/" & origin;
+               origin  : constant String := query_origin (pkgpath);
+               path1   : constant String := JT.USS (PM.configuration.dir_portsdir) & "/" & origin;
+               remove  : Boolean := True;
             begin
-               if AD.Exists (path1) and then
-                 current_package_name (origin, pkgname)
-               then
-                  stored_origins (lot).Append (New_Item => JT.SUS (origin));
-               else
+               if AD.Exists (path1) then
+                  declare
+                     full_origin : constant String := query_full_origin (pkgpath, origin);
+                  begin
+                     if current_package_name (full_origin, pkgname) then
+                        stored_origins (lot).Append (New_Item => JT.SUS (origin));
+                        remove := False;
+                     end if;
+                  end;
+               end if;
+               if remove then
                   AD.Delete_File (pkgpath);
                   TIO.Put_Line ("Removed: " & pkgname);
                end if;
@@ -1223,6 +1229,35 @@ package body PortScan.Packages is
    exception
       when others => return "";
    end query_pkgbase;
+
+
+   -------------------------
+   --  query_full_origin  --
+   -------------------------
+   function query_full_origin (fullpath, origin : String) return String
+   is
+      command  : constant String := host_pkg8 & " query -F " & fullpath & " %At:%Av";
+      content  : JT.Text;
+   begin
+      content := generic_system_command (command);
+      declare
+         contents : constant String := JT.USS (content);
+         markers  : JT.Line_Markers;
+      begin
+         JT.initialize_markers (contents, markers);
+         if JT.next_line_with_content_present (contents, "flavor:", markers) then
+            declare
+               line : constant String := JT.extract_line (contents, markers);
+            begin
+               return origin & "@" & JT.part_2 (line, ":");
+            end;
+         else
+            return origin;
+         end if;
+      end;
+   exception
+      when others => return origin;
+   end query_full_origin;
 
 
    ----------------------------

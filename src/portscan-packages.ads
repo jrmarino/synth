@@ -52,6 +52,9 @@ package PortScan.Packages is
    --  Given the full path of a package, query it for the port origin
    function query_origin (fullpath : String) return String;
 
+   --  Given the full path of a package plus its port origin, return origin(@flavor)
+   function query_full_origin (fullpath, origin : String) return String;
+
    --  Given the full path of a package, query it for the package base name
    function query_pkgbase (fullpath : String) return String;
 

@@ -458,9 +458,24 @@ package body PortScan is
    --------------------
    function get_pkg_name (origin : String) return String
    is
-      fullport : constant String := dir_ports & "/" & origin;
-      ssroot   : constant String := chroot &
-                 JT.USS (PM.configuration.dir_buildbase) & ss_base;
+      function get_fullport return String;
+      function get_fullport return String is
+      begin
+         --  if format is cat/port@something then
+         --     return "cat/port FLAVOR=something"
+         --  else
+         --     return $catport
+
+         if JT.contains (origin, "@") then
+            return dir_ports & "/" & JT.part_1 (origin, "@") &
+              " FLAVOR=" & JT.part_2 (origin, "@");
+         else
+            return dir_ports & "/" & origin;
+         end if;
+      end get_fullport;
+
+      fullport : constant String := get_fullport;
+      ssroot   : constant String := chroot & JT.USS (PM.configuration.dir_buildbase) & ss_base;
       command  : constant String := ssroot & " " & chroot_make_program &
                  " .MAKE.EXPAND_VARIABLES=yes -C " & fullport & " -VPKGFILE:T";
       content  : JT.Text;
