@@ -49,8 +49,11 @@ package PortScan.Packages is
    --  Returns the value of the stored external repository
    function top_external_repository return String;
 
-   --  Given the path components for a package, query it for the port origin
+   --  Given the full path of a package, query it for the port origin
    function query_origin (fullpath : String) return String;
+
+   --  Given the full path of a package, query it for the package base name
+   function query_pkgbase (fullpath : String) return String;
 
 private
 

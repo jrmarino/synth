@@ -1611,11 +1611,9 @@ package body PortScan.Pilot is
          return " (rebuild " & version & ")";
       end if;
       declare
-         currlen : constant Natural := current'Length;
-         finish  : constant Natural := currlen - version'Length - 4;
-         pattern : constant String  := current (1 .. finish) & "*.txz";
-         origin  : constant String  := get_catport (all_ports (id));
-         upgrade : JT.Text          := JT.blank;
+         pkgbase : constant String := JT.head (current, "-");
+         pattern : constant String := pkgbase & "-*.txz";
+         upgrade : JT.Text;
 
          pkg_search : AD.Search_Type;
          dirent     : AD.Directory_Entry_Type;
@@ -1627,13 +1625,12 @@ package body PortScan.Pilot is
          while AD.More_Entries (Search => pkg_search) loop
             AD.Get_Next_Entry (Search => pkg_search, Directory_Entry => dirent);
             declare
-               sname      : String := AD.Simple_Name (dirent);
-               verend     : Natural := sname'Length - 4;
-               testorigin : String := PKG.query_origin (dir_pkg & "/" & sname);
+               sname    : String := AD.Simple_Name (dirent);
+               testbase : String := PKG.query_pkgbase (dir_pkg & "/" & sname);
+               testver  : String := JT.tail (JT.head (sname, "."), "-");
             begin
-               if testorigin = origin then
-                  upgrade := JT.SUS (" (" & sname (finish + 1 .. verend) &
-                                       " => " & version & ")");
+               if testbase = pkgbase then
+                  upgrade := JT.SUS (" (" & testver & " => " & version & ")");
                end if;
             end;
          end loop;

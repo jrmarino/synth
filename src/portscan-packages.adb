@@ -1205,6 +1205,23 @@ package body PortScan.Packages is
    end query_origin;
 
 
+   ---------------------
+   --  query_pkgbase  --
+   ---------------------
+   function query_pkgbase (fullpath : String) return String
+   is
+      command  : constant String := host_pkg8 & " query -F " & fullpath & " %n";
+      content  : JT.Text;
+      topline  : JT.Text;
+   begin
+      content := generic_system_command (command);
+      JT.nextline (lineblock => content, firstline => topline);
+      return JT.USS (topline);
+   exception
+      when others => return "";
+   end query_pkgbase;
+
+
    ----------------------------
    --  current_package_name  --
    ----------------------------
