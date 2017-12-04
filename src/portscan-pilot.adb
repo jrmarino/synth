@@ -1199,10 +1199,12 @@ package body PortScan.Pilot is
                                         " install --yes --repository Synth";
       caboose : JT.Text;
 
-      procedure build_train (plcursor : portkey_crate.Cursor) is
+      procedure build_train (plcursor : portkey_crate.Cursor)
+      is
+         pix : constant port_index := portkey_crate.Element (plcursor);
+         pkgfile : constant String := JT.USS (all_ports (pix).package_name);
       begin
-         JT.SU.Append (caboose, " ");
-         JT.SU.Append (caboose, portkey_crate.Key (plcursor));
+         JT.SU.Append (caboose, " " & JT.head (pkgfile, "."));
       end build_train;
    begin
       duplist.Iterate (Process => build_train'Access);
