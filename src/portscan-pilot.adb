@@ -1431,6 +1431,10 @@ package body PortScan.Pilot is
       end print;
    begin
       begin
+         --  Try to defend malicious symlink: https://en.wikipedia.org/wiki/Symlink_race
+         if AD.Exists (filename) then
+            AD.Delete_File (filename);
+         end if;
          TIO.Create (File => listlog, Mode => TIO.Out_File, Name => filename);
          goodlog := True;
       exception

@@ -890,6 +890,7 @@ package body Parameters is
          raise update_config
            with "The " & conf_location & " configuration file does not exist.";
       end if;
+      --  Try to defend malicious symlink: https://en.wikipedia.org/wiki/Symlink_race
       if AD.Exists (nextgen) then
          AD.Delete_File (nextgen);
       end if;

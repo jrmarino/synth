@@ -33,6 +33,7 @@ package body PortScan.Buildcycle is
       declare
          log_path : constant String := log_name (trackers (id).seq_id);
       begin
+         --  Try to defend malicious symlink: https://en.wikipedia.org/wiki/Symlink_race
          if AD.Exists (log_path) then
             AD.Delete_File (log_path);
          end if;
@@ -860,6 +861,10 @@ package body PortScan.Buildcycle is
       resfile  : TIO.File_Type;
    begin
       result := generic_system_command (command);
+      --  Try to defend malicious symlink: https://en.wikipedia.org/wiki/Symlink_race
+      if AD.Exists (filename) then
+         AD.Delete_File (filename);
+      end if;
       TIO.Create (File => resfile, Mode => TIO.Out_File, Name => filename);
       TIO.Put (resfile, JT.USS (result));
       TIO.Close (resfile);

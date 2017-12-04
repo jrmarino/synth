@@ -1091,6 +1091,10 @@ package body PortScan.Ops is
                  bld_counter (failure) - bld_counter (ignored) - bld_counter (skipped);
       slave    : DPY.builder_rec;
    begin
+      --  Try to defend malicious symlink: https://en.wikipedia.org/wiki/Symlink_race
+      if AD.Exists (filename) then
+         AD.Delete_File (filename);
+      end if;
       TIO.Create (File => jsonfile,
                   Mode => TIO.Out_File,
                   Name => filename);
