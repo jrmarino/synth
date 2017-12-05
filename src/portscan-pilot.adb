@@ -598,8 +598,7 @@ package body PortScan.Pilot is
       YN : Character;
    begin
       Unix.cone_of_silence (deploy => False);
-      TIO.Put ("Would you like to upgrade your system with the new " &
-               "packages now (Y/N)? ");
+      TIO.Put ("Would you like to upgrade your system with the new packages now (Y/N)? ");
       loop
          TIO.Get_Immediate (YN);
          case YN is
@@ -1201,7 +1200,8 @@ package body PortScan.Pilot is
 
       procedure build_train (plcursor : portkey_crate.Cursor)
       is
-         pix : constant port_index := portkey_crate.Element (plcursor);
+         full_origin : JT.Text renames portkey_crate.Key (plcursor);
+         pix : constant port_index := ports_keys.Element (full_origin);
          pkgfile : constant String := JT.USS (all_ports (pix).package_name);
       begin
          JT.SU.Append (caboose, " " & JT.head (pkgfile, "."));
