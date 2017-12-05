@@ -604,6 +604,7 @@ package body PortScan.Packages is
                      probe_id : port_index := so_porthash.Element (origintxt);
                      base_pkg : String := JT.head (deppkg, "-");
                      found_it : Boolean := False;
+                     maxprobe : port_index := port_index (so_serial.Length) - 1;
                   begin
                      loop
                         if all_ports (probe_id).scanned then
@@ -619,6 +620,7 @@ package body PortScan.Packages is
                            end;
                         end if;
                         probe_id := probe_id + 1;
+                        exit when probe_id > maxprobe;
                         exit when not JT.leads (so_serial.Element (probe_id), origin);
                      end loop;
                      if not found_it then

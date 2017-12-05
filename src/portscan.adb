@@ -1563,6 +1563,7 @@ package body PortScan is
         index_path & "/" & JT.USS (PM.configuration.profile) & "-index";
    begin
       so_porthash.Clear;
+      so_serial.Clear;
       TIO.Open (File => handle,
                 Mode => TIO.In_File,
                 Name => index_full);
@@ -1579,6 +1580,7 @@ package body PortScan is
                                New_Item => lot_counter,
                                Position => kc,
                                Inserted => success);
+            so_serial.Append (portkey);
             last_port := lot_counter;
             all_ports (last_port).sequence_id := last_port;
             all_ports (last_port).key_cursor := kc;
@@ -1616,7 +1618,7 @@ package body PortScan is
       handle     : TIO.File_Type;
       index_full : constant String :=
                    index_path & "/" & JT.USS (PM.configuration.profile) & "-index";
-      ndx        : port_id := 1;
+      ndx        : port_id := 0;
    begin
       TIO.Open (File => handle,
                 Mode => TIO.In_File,
