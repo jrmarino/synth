@@ -1096,40 +1096,53 @@ package body PortScan.Pilot is
                   line      : constant String := JT.extract_line (comres, markers);
                   origin    : constant String := JT.part_1 (line, ":");
                   pkgbase   : constant String := JT.part_2 (line, ":");
+                  flvquery  : constant String := host_pkg8 & " query %At:Av " & pkgbase;
                   errprefix : constant String := "Installed package ignored, ";
                   origintxt : JT.Text := JT.SUS (origin);
                   target_id : port_id := port_match_failed;
                   maxprobe  : port_index := port_index (so_serial.Length) - 1;
+                  found_it  : Boolean := False;
+                  flvresult : JT.Text;
                begin
+                  --  This approach isn't the greatest, but we're missing information.
+                  --  At this port, all_ports array is not populated, so we can't compare the
+                  --  package names to determine flavors.  So what we do is search so_serial
+                  --  for the origin.  If it exists, the port has no flavors and we take the
+                  --  target id.  Otherwise, we have to query the system for the installed
+                  --  flavor.  It it fail on pre-flavor installations, though.  Once all packages
+                  --  are completely replaced, this approach should work fine.
+
                   if so_porthash.Contains (origintxt) then
-                     declare
-                        probe_id : port_index := so_porthash.Element (origintxt);
-                        found_it : Boolean := False;
-                     begin
-                        loop
-                           if all_ports (probe_id).scanned then
+                     if so_serial.Contains (origintxt) then
+                        target_id := so_porthash.Element (origintxt);
+                        found_it := True;
+                     else
+                        flvresult := CYC.generic_system_command (flvquery);
+                        declare
+                           contents : constant String := JT.USS (flvresult);
+                           markers  : JT.Line_Markers;
+                        begin
+                           JT.initialize_markers (contents, markers);
+                           if JT.next_line_with_content_present (contents, "flavor:", markers) then
                               declare
-                                 pkg_file : String := JT.USS (all_ports (probe_id).package_name);
-                                 test_pkg : String := JT.head (pkg_file, "-");
+                                 line : constant String := JT.extract_line (contents, markers);
+                                 flvorigin : JT.Text;
                               begin
-                                 if test_pkg = pkgbase then
-                                    found_it  := True;
-                                    target_id := probe_id;
-                                    exit;
+                                 flvorigin := JT.SUS (origin & "@" & JT.part_2 (line, ":"));
+                                 if so_serial.Contains (flvorigin) then
+                                    target_id := so_porthash.Element (flvorigin);
+                                    found_it := True;
                                  end if;
                               end;
                            end if;
-                           probe_id := probe_id + 1;
-                           exit when probe_id > maxprobe;
-                           exit when not JT.leads (so_serial.Element (probe_id), origin);
-                        end loop;
-                        if found_it then
-                           uniqid := uniqid + 1;
-                           plinsert (get_catport (all_ports (target_id)), uniqid);
-                        else
-                           TIO.Put_Line (errprefix & origin & " package unmatched");
-                        end if;
-                     end;
+                        end;
+                     end if;
+                     if found_it then
+                        uniqid := uniqid + 1;
+                        plinsert (get_catport (all_ports (target_id)), uniqid);
+                     else
+                        TIO.Put_Line (errprefix & origin & " package unmatched");
+                     end if;
                   else
                      TIO.Put_Line (errprefix & "missing from ports: " & origin);
                   end if;
