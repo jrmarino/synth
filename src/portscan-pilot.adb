@@ -1093,56 +1093,43 @@ package body PortScan.Pilot is
             loop
                exit when not JT.next_line_present (comres, markers);
                declare
-                  procedure check_base_package (cursor : string_crate.Cursor);
-
                   line      : constant String := JT.extract_line (comres, markers);
                   origin    : constant String := JT.part_1 (line, ":");
                   pkgbase   : constant String := JT.part_2 (line, ":");
                   errprefix : constant String := "Installed package ignored, ";
                   origintxt : JT.Text := JT.SUS (origin);
                   target_id : port_id := port_match_failed;
-                  probe_id  : port_id;
-                  found_it  : Boolean;
-
-                  procedure check_base_package (cursor : string_crate.Cursor)
-                  is
-                     flavor    : String := JT.USS (string_crate.Element (Position => cursor));
-                     neworigin : JT.Text := JT.SUS (origin & "@" & flavor);
-                     test_id   : port_id;
-                  begin
-                     if not found_it then
-                        if ports_keys.Contains (neworigin) then
-                           test_id := ports_keys.Element (neworigin);
-                           declare
-                              pkgname  : String := JT.USS (all_ports (test_id).package_name);
-                              test_pkg : String := JT.head (pkgname, "-");
-                           begin
-                              if test_pkg = pkgbase then
-                                 found_it := True;
-                                 target_id := test_id;
-                              end if;
-                           end;
-                        end if;
-                     end if;
-                  end check_base_package;
-
+                  maxprobe  : port_index := port_index (so_serial.Length) - 1;
                begin
                   if so_porthash.Contains (origintxt) then
-                     probe_id := so_porthash.Element (origintxt);
-                     found_it := False;
-                     if all_ports (probe_id).flavors.Is_Empty then
-                        target_id := probe_id;
-                     else
-                        all_ports (probe_id).flavors.Iterate (check_base_package'Access);
-                        if not found_it then
-                           TIO.Put_Line (errprefix & origin & " (flavored) package unmatched");
+                     declare
+                        probe_id : port_index := so_porthash.Element (origintxt);
+                        found_it : Boolean := False;
+                     begin
+                        loop
+                           if all_ports (probe_id).scanned then
+                              declare
+                                 pkg_file : String := JT.USS (all_ports (probe_id).package_name);
+                                 test_pkg : String := JT.head (pkg_file, "-");
+                              begin
+                                 if test_pkg = pkgbase then
+                                    found_it  := True;
+                                    target_id := probe_id;
+                                    exit;
+                                 end if;
+                              end;
+                           end if;
+                           probe_id := probe_id + 1;
+                           exit when probe_id > maxprobe;
+                           exit when not JT.leads (so_serial.Element (probe_id), origin);
+                        end loop;
+                        if found_it then
+                           uniqid := uniqid + 1;
+                           plinsert (get_catport (all_ports (target_id)), uniqid);
+                        else
+                           TIO.Put_Line (errprefix & origin & " package unmatched");
                         end if;
-                     end if;
-
-                     if target_id /= port_match_failed then
-                        uniqid := uniqid + 1;
-                        plinsert (get_catport (all_ports (target_id)), uniqid);
-                     end if;
+                     end;
                   else
                      TIO.Put_Line (errprefix & "missing from ports: " & origin);
                   end if;
