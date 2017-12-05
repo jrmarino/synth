@@ -218,7 +218,6 @@ private
 
    so_porthash  : portkey_crate.Map;
    so_serial    : string_crate.Vector;
-   so_pkgname   : string_crate.Vector;
 
    procedure iterate_reverse_deps;
    procedure iterate_drill_down;

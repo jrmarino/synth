@@ -1107,22 +1107,25 @@ package body PortScan.Pilot is
                         found_it : Boolean := False;
                      begin
                         loop
-                           declare
-                              test_pkg : String := JT.USS (so_pkgname.Element (probe_id));
-                           begin
-                              if test_pkg = pkgbase then
-                                 found_it  := True;
-                                 target_id := probe_id;
-                                 exit;
-                              end if;
-                           end;
+                           if all_ports (probe_id).scanned then
+                              declare
+                                 pkg_file : String := JT.USS (all_ports (probe_id).package_name);
+                                 test_pkg : String := JT.head (pkg_file, "-");
+                              begin
+                                 if test_pkg = pkgbase then
+                                    found_it  := True;
+                                    target_id := probe_id;
+                                    exit;
+                                 end if;
+                              end;
+                           end if;
                            probe_id := probe_id + 1;
                            exit when probe_id > maxprobe;
                            exit when not JT.leads (so_serial.Element (probe_id), origin);
                         end loop;
                         if found_it then
                            uniqid := uniqid + 1;
-                           plinsert (JT.USS (so_serial (target_id)), uniqid);
+                           plinsert (get_catport (all_ports (target_id)), uniqid);
                         else
                            TIO.Put_Line (errprefix & origin & " package unmatched");
                         end if;
