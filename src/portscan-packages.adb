@@ -89,8 +89,7 @@ package body PortScan.Packages is
             return;
          end if;
       end;
-      all_ports (id).pkg_dep_query :=
-        result_of_dependency_query (repository, id);
+      all_ports (id).pkg_dep_query := result_of_dependency_query (repository, id);
    end initial_package_scan;
 
 
@@ -591,49 +590,40 @@ package body PortScan.Packages is
                --  flavor is used if that origin features flavors.  We have to probe all
                --  flavors and deduce the correct flavor (Definitely, FPC flavors are inferior
                --  to Ravenports variants).
+               --
+               --  The original implementation looked up the first listed flavor.  If it had
+               --  flavors defined, it would iterate through the list to match packages.  We
+               --  can't use this approach because the "rebuild-repository" routine only does
+               --  a partial scan, so the first flavor may not be populated.  Instead, we
+               --  linearly go through the serial list until we find a match (or first part
+               --  of origin doesn't match.
+
                if so_porthash.Contains (origintxt) then
 
                   declare
-                     procedure check_base_package (cursor : string_crate.Cursor);
-
                      probe_id : port_index := so_porthash.Element (origintxt);
                      base_pkg : String := JT.head (deppkg, "-");
                      found_it : Boolean := False;
-
-                     procedure check_base_package (cursor : string_crate.Cursor)
-                     is
-                        flavor    : String := JT.USS (string_crate.Element (Position => cursor));
-                        neworigin : JT.Text := JT.SUS (origin & "@" & flavor);
-                        test_id   : port_index;
-                     begin
-                        if not found_it then
-                           if ports_keys.Contains (neworigin) then
-                              test_id := ports_keys.Element (neworigin);
-                              declare
-                                 test_pkg : String :=
-                                   JT.head (JT.USS (all_ports (test_id).package_name), "-");
-                              begin
-                                 if test_pkg = base_pkg then
-                                    found_it := True;
-                                    target_id := test_id;
-                                 end if;
-                              end;
-                           end if;
-                        end if;
-                     end check_base_package;
                   begin
-                     if all_ports (probe_id).flavors.Is_Empty then
-                        target_id  := probe_id;
-                     else
-                        all_ports (probe_id).flavors.Iterate (check_base_package'Access);
-                        if not found_it then
+                     loop
+                        if all_ports (probe_id).scanned then
                            declare
-                              msg : String := origin & " (flavored) package unmatched";
+                              pkg_file : String := JT.USS (all_ports (probe_id).package_name);
+                              test_pkg : String := JT.head (pkg_file, "-");
                            begin
-                              obsolete_notice (msg, debug_dep_check);
+                              if test_pkg = base_pkg then
+                                 found_it  := True;
+                                 target_id := probe_id;
+                                 exit;
+                              end if;
                            end;
-                           return False;
                         end if;
+                        probe_id := probe_id + 1;
+                        exit when not JT.leads (so_serial.Element (probe_id), origin);
+                     end loop;
+                     if not found_it then
+                        obsolete_notice (origin & " package unmatched", debug_dep_check);
+                        return False;
                      end if;
                   end;
 

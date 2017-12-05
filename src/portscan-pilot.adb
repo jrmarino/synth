@@ -338,8 +338,7 @@ package body PortScan.Pilot is
                successful := False;
             else
                TIO.Put_Line
-                 ("Scan of " & origin & " failed" &
-                    PortScan.obvious_problem
+                 ("Scan of " & origin & " failed" & PortScan.obvious_problem
                     (JT.USS (PM.configuration.dir_portsdir), origin) &
                     ", it will not be considered.");
             end if;
@@ -699,9 +698,6 @@ package body PortScan.Pilot is
          TIO.Put (portlist.Length'Img & " ports");
       end if;
       TIO.Put_Line (" serially.");
-      for k in dim_all_ports'Range loop
-         all_ports (k).deletion_due := False;
-      end loop;
       PortScan.reset_ports_tree;
       if scan_stack_of_single_ports (testmode => False) then
          PKG.limited_sanity_check (repository      => repo,
