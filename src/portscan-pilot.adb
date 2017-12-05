@@ -1130,7 +1130,7 @@ package body PortScan.Pilot is
                               begin
                                  flvorigin := JT.SUS (origin & "@" & JT.part_2 (line, ":"));
                                  if so_serial.Contains (flvorigin) then
-                                    target_id := so_porthash.Element (flvorigin);
+                                    target_id := so_serial.Element (flvorigin);
                                     found_it := True;
                                  end if;
                               end;
