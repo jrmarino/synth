@@ -1469,6 +1469,7 @@ package body PortScan is
       handle       : TIO.File_Type;
       all_flavors  : string_crate.Vector;
       basecatport  : JT.Text;
+      basepkgname  : JT.Text;
       noprocs      : constant REP.slave_options := (others => False);
       using_screen : constant Boolean := Unix.screen_attached;
       error_prefix : constant String  := "Flavor index generation failed: ";
@@ -1481,6 +1482,7 @@ package body PortScan is
       begin
          JT.SU.Append (line, "@");
          JT.SU.Append (line, string_crate.Element (Position => cursor));
+         JT.SU.Append (line, " " & JT.USS (basepkgname));
          all_flavors.Append (line);
       end add_flavor;
 
@@ -1528,10 +1530,11 @@ package body PortScan is
       begin
          for port in port_index'First .. last_port loop
             basecatport := portkey_crate.Key (all_ports (port).key_cursor);
+            basepkgname := all_ports (port).package_name;
             if not all_ports (port).flavors.Is_Empty then
                all_ports (port).flavors.Iterate (add_flavor'Access);
             else
-               all_flavors.Append (basecatport);
+               all_flavors.Append (JT.SUS (JT.USS (basecatport) & " " & JT.USS (basepkgname)));
             end if;
          end loop;
 
@@ -1562,8 +1565,7 @@ package body PortScan is
       index_full : constant String :=
         index_path & "/" & JT.USS (PM.configuration.profile) & "-index";
    begin
-      so_porthash.Clear;
-      so_serial.Clear;
+      clear_store_origin_data;
       TIO.Open (File => handle,
                 Mode => TIO.In_File,
                 Name => index_full);
@@ -1571,7 +1573,8 @@ package body PortScan is
          declare
             line      : constant String := JT.trim (TIO.Get_Line (handle));
             baseport  : JT.Text := JT.SUS (JT.part_1 (line, "@"));
-            portkey   : JT.Text := JT.SUS (line);
+            portkey   : JT.Text := JT.SUS (JT.part_1 (line, " "));
+            pkgname   : JT.Text := JT.SUS (JT.part_2 (line, " "));
             blank_rec : port_record;
             kc        : portkey_crate.Cursor;
             success   : Boolean;
@@ -1581,6 +1584,7 @@ package body PortScan is
                                Position => kc,
                                Inserted => success);
             so_serial.Append (portkey);
+            so_pkgname.Append (pkgname);
             last_port := lot_counter;
             all_ports (last_port).sequence_id := last_port;
             all_ports (last_port).key_cursor := kc;
@@ -1625,9 +1629,12 @@ package body PortScan is
                 Name => index_full);
       while not TIO.End_Of_File (handle) loop
          declare
-            portkey : JT.Text := JT.SUS (JT.trim (TIO.Get_Line (handle)));
+            line    : constant String := JT.trim (TIO.Get_Line (handle));
+            portkey : JT.Text := JT.SUS (JT.part_1 (line, " "));
+            pkgname : JT.Text := JT.SUS (JT.part_2 (line, " "));
          begin
             so_serial.Append (portkey);
+            so_pkgname.Append (pkgname);
             so_porthash.Insert (Key => portkey, New_Item => ndx);
             ndx := ndx + 1;
          end;
@@ -1647,6 +1654,7 @@ package body PortScan is
    procedure clear_store_origin_data is
    begin
       so_serial.Clear;
+      so_pkgname.Clear;
       so_porthash.Clear;
    end clear_store_origin_data;
 
