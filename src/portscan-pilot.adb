@@ -1096,7 +1096,7 @@ package body PortScan.Pilot is
                   line      : constant String := JT.extract_line (comres, markers);
                   origin    : constant String := JT.part_1 (line, ":");
                   pkgbase   : constant String := JT.part_2 (line, ":");
-                  flvquery  : constant String := host_pkg8 & " query %At:Av " & pkgbase;
+                  flvquery  : constant String := host_pkg8 & " query %At:%Av " & pkgbase;
                   errprefix : constant String := "Installed package ignored, ";
                   origintxt : JT.Text := JT.SUS (origin);
                   target_id : port_id := port_match_failed;
