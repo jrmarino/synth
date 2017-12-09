@@ -458,6 +458,10 @@ Current drawbacks:
 
 ![Synth configuration summary](http://downloads.dragonlace.net/misc/synth-img/synth-config2.png)
 
+## Significant articles on the Internet
+
+#### kaba1ah.org : [Managing ports for multiple FreeBSD servers](http://www.kaba1ah.org/2017/07/31/managing-ports-for-multiple-freebsd-servers-2/)
+
 ## Testimonials
 
 ##### Chris_H - FreeBSD forums member - 25 January 2016
