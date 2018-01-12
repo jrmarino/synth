@@ -14,7 +14,7 @@ The version screen appears when Synth is executed with no command, an
 unknown command, or the "version" command.  It displays the current version,
 the copyright, and a summary of valid commands along with the usage.
 
-![synth version](http://downloads.dragonlace.net/misc/synth-img/version2.png)
+![synth version](www/synth_version.png)
 
 #### > synth help
 
