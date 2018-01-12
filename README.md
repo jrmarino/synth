@@ -137,7 +137,14 @@ what actually will be rebuilt.  The "synth status-everything" command returns
 the incremental list of ports that would be built if the entire ports tree is
 requested (this is obviously not a command for an average user).
 
-![synth status](http://downloads.dragonlace.net/misc/synth-img/status.png)
+    # synth status databases/postgresql96-server
+    These are the ports that would be built ([N]ew, [R]ebuild, [U]pgrade):
+      N => databases/postgresql96-client
+      N => devel/icu
+      N => databases/postgresql96-server
+    Total packages that would be built: 3
+    The complete build list can also be found at:
+    /var/synth/synth_status_results.txt
 
 #### > synth upgrade-system
 
