@@ -148,7 +148,7 @@ When that is finished, the local repository will be updated, and finally the
 system's pkg(8) program will be commanded to update the system using the local
 repository.
 
-![synth status](http://downloads.dragonlace.net/misc/synth-img/ncurses.png)
+![synth status](www/synth_ncurses.png)
 
 During the build process, the build status is shown and updated every second.
 The user can see the results of recent builds (up to 50, but limited to screen
