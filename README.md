@@ -14,7 +14,20 @@ The version screen appears when Synth is executed with no command, an
 unknown command, or the "version" command.  It displays the current version,
 the copyright, and a summary of valid commands along with the usage.
 
-![synth version](http://downloads.dragonlace.net/misc/synth-img/version2.png)
+
+    ====================================================================
+      Custom package repository builder for FreeBSD and DragonFly 2.02
+    ====================================================================
+                   Copyright (C) 2015-2017 John R. Marino
+    
+    
+    Usage: synth [zero-parameter-option]
+    -or-   synth [list-option] <list of port origins | filename>
+    
+    zero-parameter-option includes: help, configure, version, status,
+                          upgrade-system, prepare-system, status-everything
+                          everything, purge-distfiles, rebuild-repository
+    list-option includes: status, build, just-build, install, force, test
 
 #### > synth help
 
@@ -23,7 +36,31 @@ It provides a slightly longer explanation of each command Synth recognizes.
 For the most detailed explanation of the Synth commands, please refer the
 manual page, e.g. "man synth".
 
-![synth help](http://downloads.dragonlace.net/misc/synth-img/help2.png)
+    Summary of command line options - see synth.1 man page for more details
+    ===============================================================================
+    synth status              Dry-run: Shows what 'upgrade-system' would build
+    synth configure           Brings up interactive configuration menu
+    synth upgrade-system      Incremental rebuild of installed packages on system.
+                              Afterwards, the local repository is rebuilt and the
+                              system packages are automatically upgraded.
+    synth prepare-system      Like 'upgrade-system' but ends when repo is rebuilt
+    synth rebuild-repository  Rebuilds local Synth repository on command
+    synth purge-distfiles     Deletes obsolete source distribution files
+    synth status-everything   Dry-run: Shows what 'everything' would build
+    synth everything          Builds entire ports tree and rebuilds repository
+    synth version             Displays version, description and usage summary
+    synth help                Displays this screen
+    synth status [ports]      Dry-run: Shows what will be rebuilt with given list
+    synth build [ports]       Incrementally build ports based on given list, but
+                              asks before updating repository and system
+    synth just-build [ports]  Like 'build', but skips post-build questions
+    synth install [ports]     Like 'build', but upgrades system without asking
+    synth force [ports]       Like 'build', but deletes existing packages first
+    
+    synth test [ports]        Just builds with DEVELOPER=yes; pre-deletes pkgs
+    
+    [ports] is a space-delimited list of origins, e.g. editors/joe editors/emacs.
+    It may also be a path to a file containing one origin per line.
 
 There are two command forms: commands with no arguments (e.g. help, version)
 and that take a list of port origins (unlimited) or a single path to file
@@ -53,7 +90,27 @@ elsewhere and prefer to create a profile that uses them.  The configuration
 also covers items such as how many builders to spawn during building, whether
 tmpfs should be used, etc.
 
-![synth configure](http://downloads.dragonlace.net/misc/synth-img/configure3.png)
+    Synth configuration profile: LiveSystem
+    ===============================================================================
+       [A] Ports directory            /usr/ports
+       [B] Packages directory         /var/synth/live_packages
+       [C] Distfiles directory        /usr/ports/distfiles
+       [D] Port options directory     /var/db/ports
+       [E] Build logs directory       /var/log/synth
+       [F] Build base directory       /usr/obj/synth-live
+       [G] System root directory      /
+       [H] Compiler cache directory   disabled
+       [I] Num. concurrent builders   6
+       [J] Max. jobs per builder      4
+       [K] Use tmpfs for work area    true
+       [L] Use tmpfs for localbase    true
+       [M] Display using ncurses      true
+       [N] Fetch prebuilt packages    false
+    
+       [>]   Switch/create profiles
+       [RET] Exit
+    
+    Press key of selection:
 
 Just press the letter of the item that needs configuring.  All changes will be
 marked with an asterisk, and pressing the Enter key (carriage return) will
@@ -80,7 +137,14 @@ what actually will be rebuilt.  The "synth status-everything" command returns
 the incremental list of ports that would be built if the entire ports tree is
 requested (this is obviously not a command for an average user).
 
-![synth status](http://downloads.dragonlace.net/misc/synth-img/status.png)
+    # synth status databases/postgresql96-server
+    These are the ports that would be built ([N]ew, [R]ebuild, [U]pgrade):
+      N => databases/postgresql96-client
+      N => devel/icu
+      N => databases/postgresql96-server
+    Total packages that would be built: 3
+    The complete build list can also be found at:
+    /var/synth/synth_status_results.txt
 
 #### > synth upgrade-system
 
@@ -91,7 +155,7 @@ When that is finished, the local repository will be updated, and finally the
 system's pkg(8) program will be commanded to update the system using the local
 repository.
 
-![synth status](http://downloads.dragonlace.net/misc/synth-img/ncurses.png)
+![synth status](www/synth_ncurses.png)
 
 During the build process, the build status is shown and updated every second.
 The user can see the results of recent builds (up to 50, but limited to screen
