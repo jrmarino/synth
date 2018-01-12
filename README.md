@@ -14,7 +14,20 @@ The version screen appears when Synth is executed with no command, an
 unknown command, or the "version" command.  It displays the current version,
 the copyright, and a summary of valid commands along with the usage.
 
-![synth version](www/synth_version.png)
+
+    ====================================================================
+      Custom package repository builder for FreeBSD and DragonFly 2.02
+    ====================================================================
+                   Copyright (C) 2015-2017 John R. Marino
+    
+    
+    Usage: synth [zero-parameter-option]
+    -or-   synth [list-option] <list of port origins | filename>
+    
+    zero-parameter-option includes: help, configure, version, status,
+                          upgrade-system, prepare-system, status-everything
+                          everything, purge-distfiles, rebuild-repository
+    list-option includes: status, build, just-build, install, force, test
 
 #### > synth help
 
