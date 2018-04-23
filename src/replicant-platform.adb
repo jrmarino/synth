@@ -496,7 +496,7 @@ package body Replicant.Platform is
       uname   : constant String := "/usr/bin/uname -s";
       bsd_cmd : constant String := "/sbin/sysctl hw.ncpu";
       lin_cmd : constant String := "/usr/bin/nproc";
-      sol_cmd : constant String := "/usr/sbin/psrinfo -p";
+      sol_cmd : constant String := "/usr/sbin/psrinfo -pv";
       thissys : opsys;
       comres  : JT.Text;
       status  : Integer;
@@ -529,7 +529,11 @@ package body Replicant.Platform is
       --  DF/Free: expected output: "hw.ncpu: C" where C is integer
       --  NetBSD:  expected output: "hw.ncpu = C"
       --  Linux:   expected output: "C"
-      --  Solaris: expected output: "C"
+      --  Solaris: expected output:
+      --    The physical processor has 64 virtual processors (0-63)
+      --      UltraSPARC-T2+ (cpuid 0 clock 1165 MHz)
+      --    The physical processor has 64 virtual processors (64-127)
+      --      UltraSPARC-T2+ (cpuid 64 clock 1165 MHz)
       case thissys is
          when FreeFly =>
             start := 10;
@@ -543,6 +547,7 @@ package body Replicant.Platform is
          when Solaris =>
             start := 1;
             comres := Unix.piped_command (sol_cmd, status);
+            --  garbage (incomplete).  See src/parameters.adb#L686 off ravenadm for rest
          when Unsupported =>
             return 1;
       end case;
