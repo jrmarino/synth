@@ -1,12 +1,14 @@
 --  This file is covered by the Internet Software Consortium (ISC) License
 --  Reference: ../License.txt
 
+with Ada.Command_Line;
 with PortScan.Ops;
 with Signals;
 with Unix;
 
 package body PortScan.Packages is
 
+   package CLI renames Ada.Command_Line;
    package OPS renames PortScan.Ops;
    package SIG renames Signals;
 
@@ -889,6 +891,7 @@ package body PortScan.Packages is
    begin
       rank_queue.Iterate (Process => check_port'Access);
       if fail_count > 0 then
+         CLI.Set_Exit_Status (1);
          TIO.Put (LAT.LF & "A preliminary scan has revealed the cached " &
                  "options of");
          if fail_count = 1 then
