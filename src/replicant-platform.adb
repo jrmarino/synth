@@ -698,19 +698,37 @@ package body Replicant.Platform is
    procedure cache_port_variables (path_to_mm : String)
    is
       function create_OSRELEASE (OSRELEASE : String) return String;
+      procedure write_if_defined (varname, value : String);
       OSVER    : constant String := get_osversion_from_param_header;
       ARCH     : constant String := get_arch_from_bourne_shell;
       portsdir : constant String := JT.USS (PM.configuration.dir_portsdir);
       fullport : constant String := portsdir & "/ports-mgmt/pkg";
       command  : constant String :=
                  host_make & " __MAKE_CONF=/dev/null -C " & fullport &
-                 " -VHAVE_COMPAT_IA32_KERN -VCONFIGURE_MAX_CMD_LEN";
+        " -VHAVE_COMPAT_IA32_KERN" &
+        " -VCONFIGURE_MAX_CMD_LEN" &
+        " -V_PERL5_FROM_BIN" &
+        " -V_CCVERSION_921dbbb2" &
+        " -V_CXXINTERNAL_acaad9ca" &
+        " -V_OBJC_CCVERSION_921dbbb2" &
+        " -VCC_OUTPUT_921dbbb2_58173849" &  --  c89
+        " -VCC_OUTPUT_921dbbb2_9bdba57c" &  --  c99
+        " -VCC_OUTPUT_921dbbb2_6a4fe7f5" &  --  c11
+        " -VCC_OUTPUT_921dbbb2_6bcac02b" &  --  gnu89
+        " -VCC_OUTPUT_921dbbb2_67d20829" &  --  gnu99
+        " -VCC_OUTPUT_921dbbb2_bfa62e83" &  --  gnu11
+        " -VCC_OUTPUT_921dbbb2_f0b4d593" &  --  c++98
+        " -VCC_OUTPUT_921dbbb2_308abb44" &  --  c++0x
+        " -VCC_OUTPUT_921dbbb2_f00456e5" &  --  c++11
+        " -VCC_OUTPUT_921dbbb2_65ad290d" &  --  c++14
+        " -VCC_OUTPUT_921dbbb2_b2657cc3" &  --  gnu++98
+        " -VCC_OUTPUT_921dbbb2_380987f7";   --  gnu++11
       content  : JT.Text;
       topline  : JT.Text;
       status   : Integer;
       vconf    : TIO.File_Type;
 
-      type result_range is range 1 .. 2;
+      type result_range is range 1 .. 18;
 
       function create_OSRELEASE (OSRELEASE : String) return String
       is
@@ -777,6 +795,13 @@ package body Replicant.Platform is
          end case;
       end create_OSRELEASE;
 
+      procedure write_if_defined (varname, value : String) is
+      begin
+         if value /= "" then
+            TIO.Put_Line (vconf, varname & "=" & value);
+         end if;
+      end write_if_defined;
+
       release : constant String := create_OSRELEASE (OSVER);
 
    begin
@@ -797,8 +822,24 @@ package body Replicant.Platform is
                      value : constant String := JT.USS (topline);
                   begin
                      case k is
-                     when 1 => TIO.Put_Line (vconf, "HAVE_COMPAT_IA32_KERN=" & value);
-                     when 2 => TIO.Put_Line (vconf, "CONFIGURE_MAX_CMD_LEN=" & value);
+                        when  1 => TIO.Put_Line (vconf, "HAVE_COMPAT_IA32_KERN=" & value);
+                        when  2 => TIO.Put_Line (vconf, "CONFIGURE_MAX_CMD_LEN=" & value);
+                        when  3 => TIO.Put_Line (vconf, "_PERL5_FROM_BIN=" & value);
+                        when  4 => write_if_defined ("_CCVERSION_921dbbb2", value);
+                        when  5 => write_if_defined ("_CXXINTERNAL_acaad9ca", value);
+                        when  6 => write_if_defined ("_OBJC_CCVERSION_921dbbb2", value);
+                        when  7 => write_if_defined ("CC_OUTPUT_921dbbb2_58173849", value);
+                        when  8 => write_if_defined ("CC_OUTPUT_921dbbb2_9bdba57c", value);
+                        when  9 => write_if_defined ("CC_OUTPUT_921dbbb2_6a4fe7f5", value);
+                        when 10 => write_if_defined ("CC_OUTPUT_921dbbb2_6bcac02b", value);
+                        when 11 => write_if_defined ("CC_OUTPUT_921dbbb2_67d20829", value);
+                        when 12 => write_if_defined ("CC_OUTPUT_921dbbb2_bfa62e83", value);
+                        when 13 => write_if_defined ("CC_OUTPUT_921dbbb2_f0b4d593", value);
+                        when 14 => write_if_defined ("CC_OUTPUT_921dbbb2_308abb44", value);
+                        when 15 => write_if_defined ("CC_OUTPUT_921dbbb2_f00456e5", value);
+                        when 16 => write_if_defined ("CC_OUTPUT_921dbbb2_65ad290d", value);
+                        when 17 => write_if_defined ("CC_OUTPUT_921dbbb2_b2657cc3", value);
+                        when 18 => write_if_defined ("CC_OUTPUT_921dbbb2_380987f7", value);
                      end case;
                   end;
                end loop;
@@ -814,11 +855,15 @@ package body Replicant.Platform is
                   TIO.Put_Line (vconf, "OPSYS=DragonFly");
                   TIO.Put_Line (vconf, "DFLYVERSION=" & OSVER);
                   TIO.Put_Line (vconf, "OSVERSION=9999999");
+                  TIO.Put_Line (vconf, "_ALTCCVERSION_921dbbb2=none");
+                  TIO.Put_Line (vconf, "_OBJC_ALTCCVERSION_921dbbb2=none");
                when netbsd | linux | solaris => null;
                when unknown => null;
             end case;
             TIO.Put_Line (vconf, "OSREL=" & release (1 .. release'Last - 6));
             TIO.Put_Line (vconf, "_OSRELEASE=" & release);
+            TIO.Put_Line (vconf, "PYTHONBASE=/usr/local");
+            TIO.Put_Line (vconf, "_PKG_CHECKED=1");
 
          when pkgsrc =>
             TIO.Put_Line (vconf, "OS_VERSION= " & release);
