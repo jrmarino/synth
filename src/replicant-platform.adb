@@ -704,7 +704,9 @@ package body Replicant.Platform is
       portsdir : constant String := JT.USS (PM.configuration.dir_portsdir);
       fullport : constant String := portsdir & "/ports-mgmt/pkg";
       command  : constant String :=
-                 host_make & " __MAKE_CONF=/dev/null -C " & fullport &
+        host_make & " __MAKE_CONF=/dev/null -C " & fullport &
+        " USES=" & LAT.Quotation & "python compiler:features objc" & LAT.Quotation &
+        " GNU_CONFIGURE=1 USE_JAVA=1 USE_LINUX=1" &
         " -VHAVE_COMPAT_IA32_KERN" &
         " -VCONFIGURE_MAX_CMD_LEN" &
         " -V_PERL5_FROM_BIN" &
@@ -844,6 +846,8 @@ package body Replicant.Platform is
                   end;
                end loop;
             end if;
+            TIO.Put_Line (vconf, "_ALTCCVERSION_921dbbb2=none");
+            TIO.Put_Line (vconf, "_OBJC_ALTCCVERSION_921dbbb2=none");
             TIO.Put_Line (vconf, "_SMP_CPUS=" & JT.int2str (Integer (smp_cores)));
             TIO.Put_Line (vconf, "UID=0");
             TIO.Put_Line (vconf, "ARCH=" & ARCH);
@@ -855,8 +859,6 @@ package body Replicant.Platform is
                   TIO.Put_Line (vconf, "OPSYS=DragonFly");
                   TIO.Put_Line (vconf, "DFLYVERSION=" & OSVER);
                   TIO.Put_Line (vconf, "OSVERSION=9999999");
-                  TIO.Put_Line (vconf, "_ALTCCVERSION_921dbbb2=none");
-                  TIO.Put_Line (vconf, "_OBJC_ALTCCVERSION_921dbbb2=none");
                when netbsd | linux | solaris => null;
                when unknown => null;
             end case;
