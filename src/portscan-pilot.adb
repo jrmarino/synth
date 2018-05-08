@@ -646,6 +646,7 @@ package body PortScan.Pilot is
          else
             TIO.Put_Line ("Failed to scan ports tree " & bailing);
          end if;
+         CLI.Set_Exit_Status (1);
          return False;
       end if;
    end fully_scan_ports_tree;
