@@ -289,8 +289,8 @@ package body PortScan is
          begin
             aborted := True;
             TIO.Put_Line (LAT.LF & "culprit: " & culprit);
-            TIO.Put_Line ("Scan aborted " & issue_msg & ".");
-            TIO.Put_Line (exmsg);
+            TIO.Put_Line ("  Scan aborted " & issue_msg & ".");
+            TIO.Put_Line ("  " & exmsg);
          end abort_now;
       begin
          make_queue (lot).Iterate (populate'Access);
