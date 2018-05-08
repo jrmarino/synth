@@ -256,6 +256,8 @@ package body PortScan is
       task body scan
       is
          procedure populate (cursor : subqueue.Cursor);
+         procedure abort_now (culprit, issue_msg, exmsg : String);
+
          procedure populate (cursor : subqueue.Cursor)
          is
             target_port : port_index := subqueue.Element (cursor);
@@ -265,32 +267,34 @@ package body PortScan is
                mq_progress (lot) := mq_progress (lot) + 1;
             end if;
          exception
+            when issue : nonexistent_port =>
+               abort_now (culprit   => get_catport (all_ports (target_port)),
+                          issue_msg => "because dependency could not be located",
+                          exmsg     => EX.Exception_Message (issue));
+            when issue : bmake_execution =>
+               abort_now (culprit   => get_catport (all_ports (target_port)),
+                          issue_msg => "because 'make' encounted an error in the Makefile",
+                          exmsg     => EX.Exception_Message (issue));
+            when issue : make_garbage =>
+               abort_now (culprit   => get_catport (all_ports (target_port)),
+                          issue_msg => "because dependency is malformed",
+                          exmsg     => EX.Exception_Message (issue));
             when issue : others =>
-               TIO.Put_Line (LAT.LF & "culprit: " & get_catport (all_ports (target_port)));
-               EX.Reraise_Occurrence (issue);
+               abort_now (culprit   => get_catport (all_ports (target_port)),
+                          issue_msg => "for an unknown reason",
+                          exmsg     => EX.Exception_Message (issue));
          end populate;
+
+         procedure abort_now (culprit, issue_msg, exmsg : String) is
+         begin
+            aborted := True;
+            TIO.Put_Line (LAT.LF & "culprit: " & culprit);
+            TIO.Put_Line ("Scan aborted " & issue_msg & ".");
+            TIO.Put_Line (exmsg);
+         end abort_now;
       begin
          make_queue (lot).Iterate (populate'Access);
          finished (lot) := True;
-      exception
-         when issue : nonexistent_port =>
-            aborted := True;
-            TIO.Put_Line ("Scan aborted because dependency could " &
-                            "not be located.");
-            TIO.Put_Line (EX.Exception_Message (issue));
-         when issue : bmake_execution =>
-            aborted := True;
-            TIO.Put_Line ("Scan aborted because 'make' encounted " &
-                            "an error in the Makefile.");
-            TIO.Put_Line (EX.Exception_Message (issue));
-         when issue : make_garbage =>
-            aborted := True;
-            TIO.Put_Line ("Scan aborted because dependency is malformed.");
-            TIO.Put_Line (EX.Exception_Message (issue));
-         when issue : others =>
-            aborted := True;
-            TIO.Put_Line ("Scan aborted for an unknown reason.");
-            TIO.Put_Line (EX.Exception_Message (issue));
       end scan;
 
       scan_01 : scan (lot => 1);
