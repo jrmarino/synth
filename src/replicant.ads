@@ -206,6 +206,10 @@ private
    --  copy host's conf defaults
    procedure copy_rc_default (path_to_etc : String);
 
+   procedure copy_etc_rcsubr (path_to_etc : String);
+
+   procedure copy_ldconfig (path_to_etc : String);
+
    --  create minimal /etc/services
    procedure create_etc_services (path_to_etc : String);
 
