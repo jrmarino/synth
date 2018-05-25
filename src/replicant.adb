@@ -838,6 +838,39 @@ package body Replicant is
    end copy_rc_default;
 
 
+   -------------------
+   --  copy_etc_rc  --
+   -------------------
+   procedure copy_etc_rcsubr (path_to_etc : String)
+   is
+      rcsubr     : constant String := "/rc.subr";
+      etc_rcsubr : constant String := "/etc" & rcsubr;
+   begin
+      if not AD.Exists (etc_rcsubr) then
+         return;
+      end if;
+      AD.Copy_File (Source_Name => etc_rcsubr,
+                    Target_Name => path_to_etc & rcsubr);
+   end copy_etc_rcsubr;
+
+
+   ---------------------
+   --  copy_ldconfig  --
+   ---------------------
+   procedure copy_ldconfig (path_to_etc : String)
+   is
+      ldconfig     : constant String := "/rc.d/ldconfig";
+      etc_ldconfig : constant String := "/etc" & ldconfig;
+   begin
+      if not AD.Exists (etc_ldconfig) then
+         return;
+      end if;
+      AD.Copy_File (Source_Name => etc_ldconfig,
+                    Target_Name => path_to_etc & ldconfig,
+		    Form => "mode=copy,preserve=all_attributes");
+   end copy_ldconfig;
+
+
    ---------------------------
    --  create_etc_services  --
    ---------------------------
@@ -1202,6 +1235,8 @@ package body Replicant is
       create_etc_services (location (slave_base, etc));
       create_etc_shells   (location (slave_base, etc));
       create_etc_fstab    (location (slave_base, etc));
+      copy_etc_rcsubr     (location (slave_base, etc));
+      copy_ldconfig       (location (slave_base, etc));
 
       execute_ldconfig (id);
 
