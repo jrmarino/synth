@@ -122,6 +122,7 @@ private
    root_var         : constant String := "/var";
    root_home        : constant String := "/home";
    root_boot        : constant String := "/boot";
+   root_boot_fw     : constant String := "/boot/firmware";
    root_kmodules    : constant String := "/boot/modules";
    root_lmodules    : constant String := "/boot/modules.local";
    root_root        : constant String := "/root";
