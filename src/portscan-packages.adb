@@ -891,7 +891,7 @@ package body PortScan.Packages is
    begin
       rank_queue.Iterate (Process => check_port'Access);
       if fail_count > 0 then
-         CLI.Set_Exit_Status (1);
+         CLI.Set_Exit_Status (CLI.Failure);
          TIO.Put (LAT.LF & "A preliminary scan has revealed the cached " &
                  "options of");
          if fail_count = 1 then
