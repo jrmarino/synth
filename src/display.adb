@@ -285,7 +285,7 @@ package body Display is
       if data.load >= 100.0 then
          L1F4 := pad (JT.int2str (Integer (data.load)));
       else
-         L1F4 := fmtpc (data.load, False);
+         L1F4 := fmtload (data.load);
       end if;
 
       colorado (L1F1, c_standard,  7, 0);
@@ -708,5 +708,45 @@ package body Display is
       end if;
       return result;
    end fmtpc;
+
+
+   ------------------------------------------------------------------------
+   --  fmtload
+   ------------------------------------------------------------------------
+   function fmtload (f : Float) return fivelong
+   is
+      type loadtype is delta 0.01 digits 4;
+      result : fivelong := (others => ' ');
+   begin
+      if f < 100.0 then
+         return fmtpc (f, False);
+      elsif f < 1000.0 then
+         declare
+            type loadtype is delta 0.1 digits 4;
+            raw1 : constant loadtype := loadtype (f);
+         begin
+            return JT.trim (raw1'Img);
+         end;
+      elsif f < 10000.0 then
+         declare
+            raw1 : constant Integer := Integer (f);
+         begin
+            --  preceded by space, 1000.0 .. 9999.99, should be 5 chars
+            return raw1'Image;
+         end;
+      elsif f < 100000.0 then
+         declare
+            raw1 : constant Integer := Integer (f);
+         begin
+            --  100000.0 .. 99999.9
+            return JT.trim (raw1'Img);
+         end;
+      else
+         return "100k+";
+      end if;
+   exception
+      when others =>
+         return "ERROR";
+   end fmtload;
 
 end Display;

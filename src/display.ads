@@ -85,6 +85,9 @@ package Display is
    --  Expose helper function that formats float values for www report
    function fmtpc (f : Float; percent : Boolean) return fivelong;
 
+   --  Expose helper function that formats load values for www report
+   function fmtload (f : Float) return fivelong;
+
 private
 
    type palette_rec is

@@ -1125,7 +1125,7 @@ package body PortScan.Ops is
            "  ," & nv ("pkghour",  hourly_build_rate)     & ASCII.LF &
            "  ," & nv ("impulse",  impulse_rate)          & ASCII.LF &
            "  ," & nv ("swapinfo", DPY.fmtpc (get_swap_status, True)) & ASCII.LF &
-           "  ," & nv ("load",     DPY.fmtpc (REP.Platform.get_instant_load, False)) & ASCII.LF &
+           "  ," & nv ("load",     DPY.fmtload (REP.Platform.get_instant_load)) & ASCII.LF &
            " }" & ASCII.LF &
            " ," & ASCII.Quotation & "builders" & ASCII.Quotation & ASCII.Colon & "[" & ASCII.LF);
 
