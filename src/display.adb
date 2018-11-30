@@ -732,7 +732,7 @@ package body Display is
             raw1 : constant Integer := Integer (f);
          begin
             --  preceded by space, 1000.0 .. 9999.99, should be 5 chars
-            return raw1'Image;
+            return raw1'Img;
          end;
       elsif f < 100000.0 then
          declare
