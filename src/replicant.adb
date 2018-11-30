@@ -867,7 +867,7 @@ package body Replicant is
       end if;
       AD.Copy_File (Source_Name => etc_ldconfig,
                     Target_Name => path_to_etc & ldconfig,
-		    Form => "mode=copy,preserve=all_attributes");
+                    Form => "mode=copy,preserve=all_attributes");
    end copy_ldconfig;
 
 
@@ -1299,7 +1299,7 @@ package body Replicant is
             end if;
             if AD.Exists (location (dir_system, boot)) then
                unmount (slave_base & root_kmodules);
-	       unmount (slave_base & root_boot_fw);
+               unmount (slave_base & root_boot_fw);
                unmount (location (slave_base, boot));
             end if;
             if AD.Exists (location (dir_system, usr_games)) then

@@ -1232,14 +1232,17 @@ package body PortScan.Buildcycle is
    ------------------------------
    function timeout_multiplier_x10 return Positive
    is
-      average5 : constant Float := REP.Platform.get_5_minute_load;
-      avefloat : constant Float := average5 / Float (number_cores);
    begin
-      if avefloat <= 1.0 then
-         return 10;
-      else
-         return Integer (avefloat * 10.0);
-      end if;
+      declare
+         average5 : constant Float := REP.Platform.get_5_minute_load;
+         avefloat : constant Float := average5 / Float (number_cores);
+      begin
+         if avefloat <= 1.0 then
+            return 10;
+         else
+            return Integer (avefloat * 10.0);
+         end if;
+      end;
    exception
       when others => return 10;
    end timeout_multiplier_x10;
