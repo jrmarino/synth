@@ -102,6 +102,9 @@ package JohnnyText is
    --  Tail (keep only last field)
    function tail (US : Text;   delimiter : Text)   return Text;
    function tail (S  : String; delimiter : String) return String;
+
+   --  Replaces 2 or more consecutive spaces with a single space
+   function strip_excessive_spaces (S : String) return String;
 private
 
    single_LF : constant String (1 .. 1) := (1 => ASCII.LF);

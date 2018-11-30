@@ -526,4 +526,33 @@ package body JohnnyText is
       end loop;
    end tail;
 
+
+   --------------------------------------------------------------------------------------------
+   --  strip_excessive_spaces
+   --------------------------------------------------------------------------------------------
+   function strip_excessive_spaces (S : String) return String
+   is
+      result             : String (1 .. S'Length);
+      previous_was_space : Boolean := False;
+      front_marker       : Natural := 0;
+      keep_it            : Boolean;
+   begin
+      for x in S'Range loop
+         keep_it := True;
+         if S (x) = LAT.Space then
+            if previous_was_space then
+               keep_it := False;
+            end if;
+            previous_was_space := True;
+         else
+            previous_was_space := False;
+         end if;
+         if keep_it then
+            front_marker := front_marker + 1;
+            result (front_marker) := S (x);
+         end if;
+      end loop;
+      return result (1 .. front_marker);
+   end strip_excessive_spaces;
+
 end JohnnyText;

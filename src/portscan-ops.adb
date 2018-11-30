@@ -755,55 +755,62 @@ package body PortScan.Ops is
    -----------------------
    function get_swap_status return Float
    is
+      type memtype is mod 2**64;
       command : String := REP.Platform.swapinfo_command;
+      status  : Integer;
       comres  : JT.Text;
-      topline : JT.Text;
-      crlen1  : Natural;
-      crlen2  : Natural;
 
-      blocks_total : Natural := 0;
-      blocks_used  : Natural := 0;
+      blocks_total : memtype := 0;
+      blocks_used  : memtype := 0;
    begin
-      comres := CYC.generic_system_command (command);
+      comres := Unix.piped_command (command, status);
+      if status /= 0 then
+         return 200.0;  --  [ERROR] Signal to set swap display to "N/A"
+      end if;
       --  Throw first line away, e.g "Device 1K-blocks Used  Avail ..."
       --  Distinguishes platforms though:
       --     Net/Free/Dragon start with "Device"
       --     Linux starts with "NAME"
       --     Solaris starts with "swapfile"
-      --  columns differ by NFD/Linux/Solaris, the parsing of the
-      --  last two not yet supported
-      JT.nextline (lineblock => comres, firstline => topline);
-      crlen1 := JT.SU.Length (comres);
-      loop
-         JT.nextline (lineblock => comres, firstline => topline);
-         crlen2 := JT.SU.Length (comres);
-         exit when crlen1 = crlen2;
-         crlen1 := crlen2;
-         declare
-            subs         : GSS.Slice_Set;
-            opts_found   : GSS.Slice_Number;
-            use type GSS.Slice_Number;
-         begin
-            GSS.Create (S          => subs,
-                        From       => JT.USS (topline),
-                        Separators => " ",
-                        Mode       => GSS.Multiple);
-            opts_found := GSS.Slice_Count (S => subs);
-            if opts_found >= 3 then
-               blocks_total := blocks_total +
-                               Natural'Value (GSS.Slice (subs, 2));
-               blocks_used  := blocks_used +
-                               Natural'Value (GSS.Slice (subs, 3));
-            end if;
-         end;
-      end loop;
+      --  On FreeBSD (DragonFly too?), when multiple swap used, ignore line starting "Total"
+      declare
+         command_result : String := JT.USS (comres);
+         markers        : JT.Line_Markers;
+         line_present   : Boolean;
+      begin
+         JT.initialize_markers (command_result, markers);
+         --  Throw first line away (valid for all platforms
+         line_present := JT.next_line_present (command_result, markers);
+         if line_present then
+            declare
+               line : String := JT.extract_line (command_result, markers);
+            begin
+               null;
+            end;
+         else
+            return 200.0;  --  [ERROR] Signal to set swap display to "N/A"
+         end if;
+         loop
+            exit when not JT.next_line_present (command_result, markers);
+            declare
+               line : constant String :=
+                 JT.strip_excessive_spaces (JT.extract_line (command_result, markers));
+            begin
+               if JT.specific_field (line, 1) /= "Total" then
+                  blocks_total := blocks_total + memtype'Value (JT.specific_field (line, 2));
+                  blocks_used  := blocks_used  + memtype'Value (JT.specific_field (line, 3));
+               end if;
+            exception
+               when Constraint_Error =>
+                  return  200.0;  --  [ERROR] Signal to set swap display to "N/A"
+            end;
+         end loop;
+      end;
       if blocks_total = 0 then
          return 200.0;  --  Signal to set swap display to "N/A"
       else
          return 100.0 * Float (blocks_used) / Float (blocks_total);
       end if;
-   exception
-      when others => return 0.0;
    end get_swap_status;
 
 

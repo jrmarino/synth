@@ -351,7 +351,7 @@ package body Replicant.Platform is
          when linux =>
             return "/usr/sbin/swapon --bytes --show=NAME,SIZE,USED,PRIO";
          when solaris =>
-            return "/usr/sbin/swap -lk";
+            return "/usr/sbin/swap -l";
          when unknown =>
             return "";
       end case;
