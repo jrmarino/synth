@@ -241,6 +241,9 @@ private
    procedure mount_procfs (path_to_proc : String);
    procedure unmount_procfs (path_to_proc : String);
 
+   --  Change mount mode to read-only
+   procedure set_mount_as_read_only (mount_point : String);
+
    --  Used to generic mtree exclusion files
    procedure write_common_mtree_exclude_base (mtreefile : TIO.File_Type);
    procedure write_preinstall_section (mtreefile : TIO.File_Type);

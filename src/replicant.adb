@@ -234,6 +234,21 @@ package body Replicant is
    end mount_linprocfs;
 
 
+   ------------------------------
+   --  set_mount_as_read_only  --
+   ------------------------------
+   procedure set_mount_as_read_only (mount_point : String)
+   is
+      --  synth only supports BSD these days
+      command : constant String := "/sbin/umount -u -o ro " & mount_point;
+   begin
+      execute (command);
+   exception
+      when others =>
+         TIO.Put_Line (abnormal_log, "Failed to set mount to read-only mode: " & mount_point);
+   end set_mount_as_read_only;
+
+
    ---------------
    --  unmount  --
    ---------------
@@ -254,7 +269,10 @@ package body Replicant is
          when unknown   => null;
       end case;
    exception
-      when others => null;  -- silently fail
+      when others =>
+         TIO.Put_Line (abnormal_log, "Failed to umount " & device_or_node);
+         TIO.Put_Line (abnormal_log, "Resetting " & device_or_node & " to read-only mode");
+         set_mount_as_read_only (device_or_node);
    end unmount;
 
 
