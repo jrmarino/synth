@@ -204,7 +204,7 @@ package body Replicant.Platform is
          elsif arch = "Intel 80386" then
             return "i386";
          elsif arch = "ARM aarch64" then
-            return "arm64";
+            return "aarch64";
          elsif arch = "ARM        " then
             return "armv6";
          else
