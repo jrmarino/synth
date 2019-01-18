@@ -150,6 +150,7 @@ private
    pkgng   : constant String := "ports-mgmt/pkg";
    pidfile : constant String := "/var/run/synth.pid";
    brkname : constant String := "ENTERAFTER";
+   dumterm : constant String := "dumb";
    logname : constant dim_logname := ("00_last_results.log",
                                       "01_success_list.log",
                                       "02_failure_list.log",

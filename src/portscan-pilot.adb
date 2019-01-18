@@ -1863,6 +1863,7 @@ package body PortScan.Pilot is
    begin
       if not defined then
          TIO.Put_Line ("Please define TERM in environment first and retry.");
+         TIO.Put_Line ("If synth is being called in a cron job, define TERM=" & dumterm & ".");
       end if;
       return defined;
    end TERM_defined_in_environment;
@@ -1892,7 +1893,8 @@ package body PortScan.Pilot is
             return False;
          end if;
          if tree_newer then
-            if Unix.env_variable_defined ("TERM") then
+            --  TERM guaranteed to already be defined (see TERM_defined_in_environment)
+            if Unix.env_variable_value ("TERM") /= dumterm then
                if tree_directories_match (index_file, portsdir) then
                   TIO.Put_Line (stars);
                   TIO.Put_Line (msg1);
