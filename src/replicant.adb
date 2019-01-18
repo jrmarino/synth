@@ -424,50 +424,21 @@ package body Replicant is
    ---------------------
    procedure folder_access (path : String; operation : folder_operation)
    is
-      cmd_freebsd   : constant String := "/bin/chflags";
-      cmd_dragonfly : constant String := "/usr/bin/chflags";
-      cmd_linux     : constant String := "/usr/bin/chattr";
-      cmd_solaris   : constant String := "/usr/bin/chmod";
-      flag_lock     : constant String := " schg ";
-      flag_unlock   : constant String := " noschg ";
-      chattr_lock   : constant String := " +i ";
-      chattr_unlock : constant String := " -i ";
-      sol_lock      : constant String := " S+ci ";
-      sol_unlock    : constant String := " S-ci ";
-      command       : JT.Text;
+      cmd_fallback  : constant String := "/bin/chmod";
+      fback_lock    : constant String := " 555 ";
+      fback_unlock  : constant String := " 755 ";
+
+      command       : JT.Text := JT.SUS (cmd_fallback);
    begin
       if not AD.Exists (path) then
-         --  e.g. <slave>/var/empty does not exist on NetBSD
          return;
       end if;
-      case platform_type is
-         when freebsd   => command := JT.SUS (cmd_freebsd);
-         when dragonfly |
-              netbsd    => command := JT.SUS (cmd_dragonfly);
-         when linux     => command := JT.SUS (cmd_linux);
-         when solaris   => command := JT.SUS (cmd_solaris);
-         when unknown   =>
-            raise scenario_unexpected with
-              "Executing chflags on unknown operating system";
+
+      case operation is
+         when lock   => JT.SU.Append (command, fback_lock & path);
+         when unlock => JT.SU.Append (command, fback_unlock & path);
       end case;
-      case platform_type is
-         when freebsd | dragonfly | netbsd =>
-            case operation is
-               when lock   => JT.SU.Append (command, flag_lock & path);
-               when unlock => JT.SU.Append (command, flag_unlock & path);
-            end case;
-         when linux =>
-            case operation is
-               when lock   => JT.SU.Append (command, chattr_lock & path);
-               when unlock => JT.SU.Append (command, chattr_unlock & path);
-            end case;
-         when solaris =>
-            case operation is
-               when lock   => JT.SU.Append (command, sol_lock & path);
-               when unlock => JT.SU.Append (command, sol_unlock & path);
-            end case;
-         when unknown => null;
-      end case;
+
       execute (JT.USS (command));
    end folder_access;
 
@@ -1346,10 +1317,6 @@ package body Replicant is
       for mnt in subfolder'Range loop
          unmount (location (slave_base, mnt));
       end loop;
-
-      folder_access (location (slave_base, home), unlock);
-      folder_access (location (slave_base, root), unlock);
-      folder_access (location (slave_base, var) & "/empty", unlock);
 
       unmount (slave_base);
       annihilate_directory_tree (slave_base);
