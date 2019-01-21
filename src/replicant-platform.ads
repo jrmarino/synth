@@ -61,4 +61,8 @@ private
    --  equivalent to chmod 755 <fullpath>
    procedure set_file_as_executable (fullpath : String);
 
+   --  Call when arch narrowed down to ARM (not aarch64) architecture
+   --  Returns true if ARMv7 detected, otherwise returns false
+   function ARM_version_7 return Boolean;
+
 end Replicant.Platform;
