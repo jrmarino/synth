@@ -76,7 +76,8 @@ package body Replicant.Platform is
    function ARM_version_7 return Boolean
    is
       --  Don't worry about other platforms, consider synth *BSD now
-      command : constant String := "/usr/bin/readelf -A /bin/sh";
+      command : constant String := "/usr/bin/readelf -A " &
+                                   JT.USS (PM.configuration.dir_system) & "/bin/sh";
       comres  : JT.Text;
    begin
       comres := internal_system_command (command);
