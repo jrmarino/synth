@@ -90,7 +90,7 @@ package body Replicant.Platform is
             declare
                line : constant String := JT.extract_line (contents, markers);
             begin
-               return JT.trim (JT.part_2 (line, ":")) = "v7";
+               return JT.trim (JT.part_2 (line, ":")) = "ARM v7";
             end;
          else
             TIO.Put_Line ("ARM_version_7 error: expected Tag_CPU_arch not found");
