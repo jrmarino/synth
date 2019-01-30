@@ -330,6 +330,39 @@ package body PortScan is
       scan_31 : scan (lot => 31);
       scan_32 : scan (lot => 32);
 
+      --  Expansion of cpu_range from 32 to 64 means 64 possible scanners
+      scan_33 : scan (lot => 33);
+      scan_34 : scan (lot => 34);
+      scan_35 : scan (lot => 35);
+      scan_36 : scan (lot => 36);
+      scan_37 : scan (lot => 37);
+      scan_38 : scan (lot => 38);
+      scan_39 : scan (lot => 39);
+      scan_40 : scan (lot => 40);
+      scan_41 : scan (lot => 41);
+      scan_42 : scan (lot => 42);
+      scan_43 : scan (lot => 43);
+      scan_44 : scan (lot => 44);
+      scan_45 : scan (lot => 45);
+      scan_46 : scan (lot => 46);
+      scan_47 : scan (lot => 47);
+      scan_48 : scan (lot => 48);
+      scan_49 : scan (lot => 49);
+      scan_50 : scan (lot => 50);
+      scan_51 : scan (lot => 51);
+      scan_52 : scan (lot => 52);
+      scan_53 : scan (lot => 53);
+      scan_54 : scan (lot => 54);
+      scan_55 : scan (lot => 55);
+      scan_56 : scan (lot => 56);
+      scan_57 : scan (lot => 57);
+      scan_58 : scan (lot => 58);
+      scan_59 : scan (lot => 59);
+      scan_60 : scan (lot => 60);
+      scan_61 : scan (lot => 61);
+      scan_62 : scan (lot => 62);
+      scan_63 : scan (lot => 63);
+      scan_64 : scan (lot => 64);
    begin
       TIO.Put_Line ("Scanning entire ports tree.");
       while combined_wait loop

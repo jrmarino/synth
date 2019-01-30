@@ -18,7 +18,7 @@ package Definitions is
    chroot_make_program : constant String := chroot_make;
    jobs_per_cpu        : constant := 2;
 
-   type cpu_range is range 1 .. 32;
+   type cpu_range is range 1 .. 64;
    type scanners  is range cpu_range'First .. cpu_range'Last;
    type builders  is range cpu_range'First .. cpu_range'Last * jobs_per_cpu;
    type package_system is (ports_collection, pkgsrc);
