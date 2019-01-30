@@ -86,7 +86,7 @@ package body Replicant.Platform is
          markers  : JT.Line_Markers;
       begin
          JT.initialize_markers (contents, markers);
-         if JT.next_line_with_content_present (contents, "Tag_CPU_arch:", markers) then
+         if JT.next_line_with_content_present (contents, "  Tag_CPU_arch:", markers) then
             declare
                line : constant String := JT.extract_line (contents, markers);
             begin
