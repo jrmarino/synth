@@ -149,7 +149,7 @@ requested (this is obviously not a command for an average user).
 #### > synth upgrade-system
 
 This is a popular command.  It would be used after bringing the ports tree up
-to date. Executing "synth update" will perform the same analysis as
+to date. Executing "synth upgrade-system" will perform the same analysis as
 "synth status", but then starting building all the required ports concurrently.
 When that is finished, the local repository will be updated, and finally the
 system's pkg(8) program will be commanded to update the system using the local
