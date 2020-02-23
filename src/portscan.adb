@@ -823,8 +823,7 @@ package body PortScan is
          all_ports (target).use_procfs := True;
       end if;
       if catport = "emulators/linux_base-c6" or else
-        catport = "emulators/linux_base-f10" or else
-        catport = "sysutils/htop"
+        catport = "emulators/linux_base-f10"
       then
          all_ports (target).use_linprocfs := True;
       end if;
@@ -898,9 +897,6 @@ package body PortScan is
       all_ports (target).scanned := True;
       if catport = "x11/gnustep-gui" then
          all_ports (target).use_procfs := True;
-      end if;
-      if catport = "sysutils/htop" then
-         all_ports (target).use_linprocfs := True;
       end if;
    exception
       when issue : others =>
