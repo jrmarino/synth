@@ -1102,7 +1102,8 @@ package body Replicant is
                     mode => readwrite);
 
       if PM.configuration.tmpfs_workdir then
-         mount_tmpfs (location (slave_base, wrkdirs), 16 * 1024);  -- editors/openoffice-4 (#110)
+         --  The mount cap of 16Gb was removed; rust was the latest port to bust it
+         mount_tmpfs (location (slave_base, wrkdirs));
       else
          forge_directory (slave_work);
          mount_nullfs (slave_work, location (slave_base, wrkdirs), readwrite);
