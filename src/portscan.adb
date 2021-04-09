@@ -540,7 +540,7 @@ package body PortScan is
    is
       subs       : GSS.Slice_Set;
       deps_found : GSS.Slice_Number;
-      trimline   : constant JT.Text := JT.trim (line);
+      trimline   : constant JT.Text := JT.trimtab (line);
       zero_deps  : constant GSS.Slice_Number := GSS.Slice_Number (0);
       dirlen     : constant Natural := dir_ports'Length;
       bracketed  : Natural := 0;
@@ -700,7 +700,7 @@ package body PortScan is
    is
       subs       : GSS.Slice_Set;
       flav_found : GSS.Slice_Number;
-      trimline   : constant JT.Text := JT.trim (line);
+      trimline   : constant JT.Text := JT.trimtab (line);
       zero_flav  : constant GSS.Slice_Number := GSS.Slice_Number (0);
 
       use type GSS.Slice_Number;
@@ -710,7 +710,7 @@ package body PortScan is
       end if;
       GSS.Create (S          => subs,
                   From       => JT.USS (trimline),
-                  Separators => " ",
+                  Separators => " " & LAT.HT,
                   Mode       => GSS.Multiple);
       flav_found :=  GSS.Slice_Count (S => subs);
       if flav_found = zero_flav then

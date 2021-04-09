@@ -83,6 +83,22 @@ package body JohnnyText is
       return AS.Fixed.Trim (S, AS.Both);
    end trim;
 
+   -----------------
+   --  trimtab #1 --
+   -----------------
+   function trimtab (US : Text) return Text is
+   begin
+      return SU.Trim (US, space_and_HT, space_and_HT);
+   end trimtab;
+
+   -----------------
+   --  trimtab #2 --
+   -----------------
+   function trimtab (S : String) return String is
+   begin
+      return AS.Fixed.Trim (S, space_and_HT, space_and_HT);
+   end trimtab;
+
    ---------------
    --  int2str  --
    ---------------

@@ -3,11 +3,13 @@
 
 with Ada.Strings.Unbounded;
 with Ada.Strings;
+with Ada.Strings.Maps;
 
 package JohnnyText is
 
-   package AS  renames Ada.Strings;
-   package SU  renames Ada.Strings.Unbounded;
+   package AS renames Ada.Strings;
+   package SU renames Ada.Strings.Unbounded;
+   package SM renames Ada.Strings.Maps;
    subtype Text is SU.Unbounded_String;
    type Line_Markers is private;
 
@@ -26,8 +28,10 @@ package JohnnyText is
    function equivalent (A : Text; B : String) return Boolean;
 
    --  Trim both sides
-   function trim (US : Text) return Text;
-   function trim (S : String) return String;
+   function trim    (US : Text)  return Text;
+   function trim    (S : String) return String;
+   function trimtab (US : Text)  return Text;
+   function trimtab (S : String) return String;
 
    --  unpadded numeric image
    function int2str  (A : Integer) return String;
@@ -108,6 +112,7 @@ package JohnnyText is
 private
 
    single_LF : constant String (1 .. 1) := (1 => ASCII.LF);
+   space_and_HT : constant SM.Character_Set := SM.To_Set (" " & ASCII.HT);
 
    type Line_Markers is
       record
