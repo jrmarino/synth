@@ -1019,6 +1019,8 @@ package body Replicant.Platform is
                         when others => return OSVER (OSVER'First .. final);
                      end case;
                   end loop;
+                  --  All characters from 5th position to end of OSVER are digits
+                  return OSVER;
                end;
             end if;
          end;
