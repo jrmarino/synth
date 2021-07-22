@@ -24,7 +24,7 @@ package body PortScan.Packages is
       AD.Start_Search (Search    => pkg_search,
                        Directory => repository,
                        Filter    => (AD.Ordinary_File => True, others => False),
-                       Pattern   => "*.txz");
+                       Pattern   => "*.pkg");
       while AD.More_Entries (Search => pkg_search) loop
          AD.Get_Next_Entry (Search => pkg_search,
                             Directory_Entry => dirent);
@@ -367,7 +367,7 @@ package body PortScan.Packages is
       AD.Start_Search (Search    => pkg_search,
                        Directory => repository,
                        Filter    => (AD.Ordinary_File => True, others => False),
-                       Pattern   => "*.txz");
+                       Pattern   => "*.pkg");
       while AD.More_Entries (Search => pkg_search) loop
          AD.Get_Next_Entry (Search => pkg_search,
                             Directory_Entry => dirent);
@@ -581,7 +581,7 @@ package body PortScan.Packages is
             declare
                line       : constant String := JT.USS (topline);
                origin     : constant String := JT.part_1 (line, ":");
-               deppkg     : constant String := JT.part_2 (line, ":") & ".txz";
+               deppkg     : constant String := JT.part_2 (line, ":") & ".pkg";
                origintxt  : JT.Text := JT.SUS (origin);
 
                target_id  : port_index;
