@@ -620,7 +620,7 @@ package body Replicant.Platform is
       taropt1 : constant String := "*/pkg-static";
       taropt2 : constant String := "*/pkg-static */pkgng_admin";
       command : constant String := chroot & smount &
-        " /usr/bin/tar -x --xz -f /packages/Latest/pkg.pkg -C / ";
+        " /usr/bin/tar -x -f /packages/Latest/pkg.pkg -C / ";
       install_make : constant String := chroot & smount &
         " /usr/pkg/sbin/pkg-static add -A /packages/Latest/bmake.pkg";
    begin
