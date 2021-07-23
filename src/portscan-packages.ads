@@ -23,7 +23,7 @@ package PortScan.Packages is
    procedure remove_queue_packages (repository : String);
 
    --  This procedure empties the given repository without discrimination.
-   --  (Well, it's limited to "*.txz" matches, but normally that's everything)
+   --  (Well, it's limited to "*.pkg" matches, but normally that's everything)
    --  (currently unused)
    procedure wipe_out_repository (repository : String);
 
@@ -99,7 +99,7 @@ private
    --  used by passed_abi_check()
    procedure establish_package_architecture;
 
-   --  Scan directory that contains the packages (*.txz) and stores the
+   --  Scan directory that contains the packages (*.pkg) and stores the
    --  file names in the container.  Returns False if no packages are found.
    function scan_repository (repository : String) return Boolean;
 
@@ -139,7 +139,7 @@ private
    procedure parallel_preliminary_package_scan (repository : String;
                                                 show_progress : Boolean);
 
-   --  given a port_id, return the package name (no .txz extension!)
+   --  given a port_id, return the package name (no .pkg extension!)
    function id2pkgname (id : port_id) return String;
 
    --  Turn on option and dependency debug checks programmatically

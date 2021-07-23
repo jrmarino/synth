@@ -659,9 +659,9 @@ package body PortScan.Pilot is
    is
       repo : constant String := JT.USS (PM.configuration.dir_repository);
       main : constant String := JT.USS (PM.configuration.dir_packages);
-      xz_meta    : constant String := main & "/meta.txz";
-      xz_digest  : constant String := main & "/digests.txz";
-      xz_pkgsite : constant String := main & "/packagesite.txz";
+      packed_meta    : constant String := main & "/meta.pkg";
+      packed_digest  : constant String := main & "/digests.pkg";
+      packed_pkgsite : constant String := main & "/packagesite.pkg";
       bs_error   : constant String := "Rebuild Repository: Failed to bootstrap builder";
       build_res  : Boolean;
    begin
@@ -712,14 +712,14 @@ package body PortScan.Pilot is
          return False;
       end if;
 
-      if AD.Exists (xz_meta) then
-         AD.Delete_File (xz_meta);
+      if AD.Exists (packed_meta) then
+         AD.Delete_File (packed_meta);
       end if;
-      if AD.Exists (xz_digest) then
-         AD.Delete_File (xz_digest);
+      if AD.Exists (packed_digest) then
+         AD.Delete_File (packed_digest);
       end if;
-      if AD.Exists (xz_pkgsite) then
-         AD.Delete_File (xz_pkgsite);
+      if AD.Exists (packed_pkgsite) then
+         AD.Delete_File (packed_pkgsite);
       end if;
       TIO.Put_Line ("Packages validated, rebuilding local repository.");
       REP.initialize (testmode => False, num_cores => PortScan.cores_available);
@@ -1613,7 +1613,7 @@ package body PortScan.Pilot is
       end if;
       declare
          pkgbase : constant String := JT.head (current, "-");
-         pattern : constant String := pkgbase & "-*.txz";
+         pattern : constant String := pkgbase & "-*.pkg";
          upgrade : JT.Text;
 
          pkg_search : AD.Search_Type;
