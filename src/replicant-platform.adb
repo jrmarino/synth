@@ -260,13 +260,10 @@ package body Replicant.Platform is
 
       function even (fileinfo : String) return String
       is
-         --  DF  4.5-DEVELOPMENT: ... DragonFly 4.0.501
-         --  DF 4.10-RELEASE    : ... DragonFly 4.0.1000
-         --  DF 4.11-DEVELOPMENT: ... DragonFly 4.0.1102
-         --
-         --  Alternative future format (file version 2.0)
+         --  file version 2.0 and later format:
          --  DFV 400702: ... DragonFly 4.7.2
-         --  DFV 401117: ..  DragonFly 4.11.17
+         --  DFV 401117: ... DragonFly 4.11.17
+         --  DFV 600000: ... DragonFly 6.0.0
          rest  : constant String := JT.part_2 (fileinfo, "DragonFly ");
          major : constant String := JT.part_1 (rest, ".");
          rest2 : constant String := JT.part_2 (rest, ".");
@@ -276,23 +273,11 @@ package body Replicant.Platform is
          minor : String (1 .. 2) := "00";
          point : Character;
       begin
-         if part2 = "0" then
-            --  version format in October 2016
-            declare
-               mvers : String (1 .. 4) := "0000";
-               lenp3 : constant Natural := part3'Length;
-            begin
-               mvers (mvers'Last - lenp3 + 1 .. mvers'Last) := part3;
-               minor := mvers (1 .. 2);
-            end;
-         else
-            --  Alternative future format (file version 2.0)
-            declare
-               lenp2 : constant Natural := part2'Length;
-            begin
-               minor (minor'Last - lenp2 + 1 .. minor'Last) := part2;
-            end;
-         end if;
+         declare
+            lenp2 : constant Natural := part2'Length;
+         begin
+            minor (minor'Last - lenp2 + 1 .. minor'Last) := part2;
+         end;
 
          point := minor (2);
          case point is
