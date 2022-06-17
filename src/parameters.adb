@@ -50,7 +50,7 @@ package body Parameters is
          end;
       end if;
 
-      internal_config.Init (File_Name => conf_location,
+      internal_config.Init (Config_File_Name => conf_location,
                             Case_Sensitive => True,
                             On_Type_Mismatch => Config.Be_Quiet);
 
