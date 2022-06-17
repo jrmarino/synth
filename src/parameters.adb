@@ -51,6 +51,7 @@ package body Parameters is
       end if;
 
       internal_config.Init (File_Name => conf_location,
+                            Case_Sensitive => True,
                             On_Type_Mismatch => Config.Be_Quiet);
 
       if section_exists (master_section, global_01) then
