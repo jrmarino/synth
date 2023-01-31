@@ -511,9 +511,10 @@ package body PortScan is
          end if;
       end get_fullport;
 
+      scanenv  : constant String := scan_environment;
       fullport : constant String := get_fullport;
       ssroot   : constant String := chroot & JT.USS (PM.configuration.dir_buildbase) & ss_base;
-      command  : constant String := ssroot & " " & chroot_make_program &
+      command  : constant String := scanenv & ssroot & " " & chroot_make_program &
                  " .MAKE.EXPAND_VARIABLES=yes -C " & fullport & " -VPKGFILE:T";
       content  : JT.Text;
       topline  : JT.Text;
@@ -766,10 +767,11 @@ package body PortScan is
          end if;
       end get_fullport;
 
+      scanenv  : constant String := scan_environment;
       fullport : constant String := get_fullport;
       ssroot   : constant String := chroot & JT.USS (PM.configuration.dir_buildbase) & ss_base;
       command  : constant String :=
-                 ssroot & " " & chroot_make_program & " -C " & fullport &
+                 scanenv & ssroot & " " & chroot_make_program & " -C " & fullport &
                  " -VPKGVERSION -VPKGFILE:T -VMAKE_JOBS_NUMBER -VIGNORE" &
                  " -VFETCH_DEPENDS -VEXTRACT_DEPENDS -VPATCH_DEPENDS" &
                  " -VBUILD_DEPENDS -VLIB_DEPENDS -VRUN_DEPENDS" &
@@ -841,10 +843,11 @@ package body PortScan is
    is
       catport  : String := get_catport (all_ports (target));
       fullport : constant String := dir_ports & "/" & catport;
+      scanenv  : constant String := scan_environment;
       ssroot   : constant String := chroot &
                  JT.USS (PM.configuration.dir_buildbase) & ss_base;
       command  : constant String :=
-                 ssroot & " " & chroot_make_program & " -C " & fullport &
+                 scanenv & ssroot & " " & chroot_make_program & " -C " & fullport &
                  " .MAKE.EXPAND_VARIABLES=yes " &
                  " -VPKGVERSION -VPKGFILE:T -V_MAKE_JOBS:C/^-j//" &
                  " -V_CBBH_MSGS -VTOOL_DEPENDS -VBUILD_DEPENDS -VDEPENDS" &
@@ -1732,5 +1735,20 @@ package body PortScan is
       TIO.Put_Line ("Error: port origin '" & candidate & "' is not recognized.");
       so_serial.Iterate (suggest'Access);
    end suggest_flavor_for_bad_origin;
+
+
+   --------------------------------------
+   --  scan_environment   --
+   --------------------------------------
+   function scan_environment return String
+   is
+      PATH : constant String := "PATH=/sbin:/bin:/usr/sbin:/usr/bin ";
+      TERM : constant String := "TERM=dumb ";
+      USER : constant String := "USER=root ";
+      HOME : constant String := "HOME=/root ";
+      LANG : constant String := "LANG=C ";
+   begin
+      return " /usr/bin/env -i " & PATH & TERM & USER & HOME & LANG;
+   end scan_environment;
 
 end PortScan;

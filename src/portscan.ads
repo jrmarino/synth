@@ -246,6 +246,7 @@ private
                                  show_progress : Boolean);
 
    --  some helper routines
+   function scan_environment return String;
    function find_colon (Source : String) return Natural;
    function scrub_phase (Source : String) return JT.Text;
    function get_catport (PR : port_record) return String;
