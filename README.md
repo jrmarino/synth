@@ -267,7 +267,9 @@ Right now Synth can only be executed by the root user
 There is a text mode for the building phase.  It shows much less information
 than the curses-based screen, but if curses is acting up, the text mode gets
 the job done just fine.  Also, when cron launches Synth, it is required that
-it be using a profile that has disabled the curses display.
+it be using a profile that has disabled the curses display.  Alternatively,
+curses will be disabled if **TERM=dumb** is set in the environment, which is
+a suitable approach for cron jobs.
 
 #### Web interface
 
