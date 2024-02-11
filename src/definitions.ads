@@ -7,7 +7,7 @@ package Definitions is
 
    synth_version_major : constant String := "2";
    synth_version_minor : constant String := "13";
-   copyright_years     : constant String := "2015-2023";
+   copyright_years     : constant String := "2015-2024";
    host_localbase      : constant String := "/usr/local";
    host_make           : constant String := "/usr/bin/make";
    host_pkg8           : constant String := host_localbase & "/sbin/pkg";
