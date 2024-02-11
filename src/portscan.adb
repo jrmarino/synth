@@ -773,8 +773,8 @@ package body PortScan is
       command  : constant String :=
                  scanenv & ssroot & " " & chroot_make_program & " -C " & fullport &
                  " -VPKGVERSION -VPKGFILE:T -VMAKE_JOBS_NUMBER -VIGNORE" &
-                 " -VFETCH_DEPENDS -VEXTRACT_DEPENDS -VPATCH_DEPENDS" &
-                 " -VBUILD_DEPENDS -VLIB_DEPENDS -VRUN_DEPENDS" &
+                 " -VFETCH_DEPENDS_ALL -VEXTRACT_DEPENDS_ALL -VPATCH_DEPENDS_ALL" &
+                 " -VBUILD_DEPENDS_ALL -VLIB_DEPENDS_ALL -VRUN_DEPENDS_ALL" &
                  " -VSELECTED_OPTIONS -VDESELECTED_OPTIONS -VUSE_LINUX" &
                  " -VFLAVORS";
       content  : JT.Text;
