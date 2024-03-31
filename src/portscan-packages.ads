@@ -49,8 +49,8 @@ package PortScan.Packages is
    --  Returns the value of the stored external repository
    function top_external_repository return String;
 
-   --  Given the full path of a package, query it for the port origin
-   function query_origin (fullpath : String) return String;
+   --  Given the full path of a package, query it for the port origin and version
+   function query_origin_version (fullpath : String) return String;
 
    --  Given the full path of a package plus its port origin, return origin(@flavor)
    function query_full_origin (fullpath, origin : String) return String;
@@ -145,9 +145,9 @@ private
    --  Turn on option and dependency debug checks programmatically
    procedure activate_debugging_code;
 
-   --  Given an origin (already validated) and the name of the package in
-   --  focus, return True if "make -V PKGFILE:T" matches the filename
-   function current_package_name (origin, file_name : String) return Boolean;
+   --  Given an origin (stripped of flavor, already validated) and the version extracted
+   --  from the package, return True if it makes the version in the port Makefile
+   function package_version_matches (origin, version : String) return Boolean;
 
    --  Dedicated progress meter for prescanning packages
    function package_scan_progress return String;

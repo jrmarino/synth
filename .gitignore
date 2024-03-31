@@ -9,3 +9,7 @@ external
 
 clear-mount.sh
 Makefile
+
+# windows dev
+ifm/*
+adacurses/*

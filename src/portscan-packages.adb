@@ -1070,7 +1070,9 @@ package body PortScan.Packages is
             declare
                pkgname : constant String := JT.USS (string_crate.Element (csr));
                pkgpath : constant String := repository & "/" & pkgname;
-               origin  : constant String := query_origin (pkgpath);
+               oriver  : constant String := query_origin_version (pkgpath);
+               origin  : constant String := JT.part_1 (oriver, ":");
+               version : constant String := JT.part_2 (oriver, ":");
                path1   : constant String := JT.USS (PM.configuration.dir_portsdir) & "/" & origin;
                remove  : Boolean := True;
             begin
@@ -1078,7 +1080,7 @@ package body PortScan.Packages is
                   declare
                      full_origin : constant String := query_full_origin (pkgpath, origin);
                   begin
-                     if current_package_name (full_origin, pkgname) then
+                     if package_version_matches (origin, version) then
                         stored_origins (lot).Append (New_Item => JT.SUS (full_origin));
                         remove := False;
                      end if;
@@ -1261,12 +1263,12 @@ package body PortScan.Packages is
    end activate_debugging_code;
 
 
-   --------------------
-   --  query_origin  --
-   --------------------
-   function query_origin (fullpath : String) return String
+   ----------------------------
+   --  query_origin_version  --
+   ----------------------------
+   function query_origin_version (fullpath : String) return String
    is
-      command  : constant String := host_pkg8 & " query -F " & fullpath & " %o";
+      command  : constant String := host_pkg8 & " query -F " & fullpath & " %o:%v";
       content  : JT.Text;
       topline  : JT.Text;
    begin
@@ -1274,8 +1276,8 @@ package body PortScan.Packages is
       JT.nextline (lineblock => content, firstline => topline);
       return JT.USS (topline);
    exception
-      when others => return "";
-   end query_origin;
+      when others => return ":";
+   end query_origin_version;
 
 
    ---------------------
@@ -1324,15 +1326,32 @@ package body PortScan.Packages is
    end query_full_origin;
 
 
-   ----------------------------
-   --  current_package_name  --
-   ----------------------------
-   function current_package_name (origin, file_name : String) return Boolean
+   -------------------------------
+   --  package_version_matches  --
+   -------------------------------
+   function package_version_matches (origin, version : String) return Boolean
    is
-      cpn : constant String := get_pkg_name (origin);
+      scanenv  : constant String := scan_environment;
+      fullport : constant String := dir_ports & "/" & origin;
+      ssroot   : constant String := chroot & JT.USS (PM.configuration.dir_buildbase) & ss_base;
+      command  : constant String := scanenv & ssroot & " " & chroot_make_program &
+                 " .MAKE.EXPAND_VARIABLES=yes -C " & fullport & " -VPKGVERSION";
+      content  : JT.Text;
+      topline  : JT.Text;
+      status   : Integer;
    begin
-      return cpn = file_name;
-   end current_package_name;
+      content := Unix.piped_command (command, status);
+      if status /= 0 then
+         raise bmake_execution with origin &
+           " (return code =" & status'Img & ")";
+      end if;
+      JT.nextline (lineblock => content, firstline => topline);
+      declare
+         makefile_version : constant String := JT.USS (topline);
+      begin
+         return version = makefile_version;
+      end;
+   end package_version_matches;
 
 
    -----------------------------
