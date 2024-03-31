@@ -773,15 +773,15 @@ package body PortScan is
       command  : constant String :=
                  scanenv & ssroot & " " & chroot_make_program & " -C " & fullport &
                  " -VPKGVERSION -VPKGFILE:T -VMAKE_JOBS_NUMBER -VIGNORE" &
-                 " -VFETCH_DEPENDS_ALL -VEXTRACT_DEPENDS_ALL -VPATCH_DEPENDS_ALL" &
-                 " -VBUILD_DEPENDS_ALL -VLIB_DEPENDS_ALL -VRUN_DEPENDS_ALL" &
+                 " -VFETCH_DEPENDS -VEXTRACT_DEPENDS -VPATCH_DEPENDS" &
+                 " -VBUILD_DEPENDS -VLIB_DEPENDS -VRUN_DEPENDS" &
                  " -VSELECTED_OPTIONS -VDESELECTED_OPTIONS -VUSE_LINUX" &
-                 " -VFLAVORS";
+                 " -VFLAVORS -VLIB_DEPENDS_ALL";
       content  : JT.Text;
       topline  : JT.Text;
       status   : Integer;
 
-      type result_range is range 1 .. 14;
+      type result_range is range 1 .. 15;
 
    begin
       content := Unix.piped_command (command, status);
@@ -818,6 +818,7 @@ package body PortScan is
                   all_ports (target).use_linprocfs := True;
                end if;
             when 14 => populate_flavors (target, topline);
+            when 15 => populate_set_depends (target, catport, topline, build);
          end case;
       end loop;
       all_ports (target).scanned := True;
