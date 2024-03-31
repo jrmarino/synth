@@ -825,8 +825,7 @@ package body PortScan is
       if catport = "x11-toolkits/gnustep-gui" then
          all_ports (target).use_procfs := True;
       end if;
-      if catport = "emulators/linux_base-c6" or else
-        catport = "emulators/linux_base-f10"
+      if catport = "emulators/linux_base-c7"
       then
          all_ports (target).use_linprocfs := True;
       end if;
