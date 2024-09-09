@@ -50,7 +50,7 @@ package body Parameters is
          end;
       end if;
 
-      internal_config.Init (File_Name => conf_location,
+      internal_config.Init (Config_File_Name => conf_location,
                             On_Type_Mismatch => Config.Be_Quiet);
 
       if section_exists (master_section, global_01) then
