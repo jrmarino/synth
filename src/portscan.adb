@@ -3,6 +3,7 @@
 
 with Ada.Strings.Hash;
 with Ada.Calendar.Formatting;
+with Ada.Calendar.Time_Zones;
 with GNAT.Regpat;
 with GNAT.String_Split;
 with Signals;
@@ -11,6 +12,7 @@ with Unix;
 package body PortScan is
 
    package ACF renames Ada.Calendar.Formatting;
+   package CTZ renames Ada.Calendar.Time_Zones;
    package RGX renames GNAT.Regpat;
    package GSS renames GNAT.String_Split;
    package SIG renames Signals;
@@ -1450,7 +1452,7 @@ package body PortScan is
    function timestamp (hack : CAL.Time; www_format : Boolean := False) return String
    is
       function MON   (num : CAL.Month_Number) return String;
-      function WKDAY (day : ACF.Day_Name) return String;
+      function WKDAY (T : CAL.Time) return String;
 
       function MON (num : CAL.Month_Number) return String is
       begin
@@ -1469,7 +1471,13 @@ package body PortScan is
             when 12 => return "DEC";
          end case;
       end MON;
-      function WKDAY (day : ACF.Day_Name) return String is
+
+      function WKDAY (T : CAL.Time) return String
+      is
+         zoffset  : constant CTZ.Time_Offset := CTZ.UTC_Time_Offset (T);
+         zoffset2 : constant Duration := Duration (zoffset) * 60;
+         new_time : constant CAL.Time := CAL."-" (T, zoffset2);
+         day      : constant ACF.Day_Name := ACF.Day_Of_Week (new_time);
       begin
          case day is
             when ACF.Monday    => return "Monday";
@@ -1483,13 +1491,13 @@ package body PortScan is
       end WKDAY;
    begin
       if www_format then
-         return CAL.Day (hack)'Img & " " & MON (CAL.Month (hack)) & CAL.Year (hack)'Img & ", " &
+         return ACF.Day (hack)'Img & " " & MON (ACF.Month (hack)) & ACF.Year (hack)'Img & "," &
            ACF.Image (hack)(11 .. 19) & " UTC";
       end if;
 
-      return WKDAY (ACF.Day_Of_Week (hack)) & "," & CAL.Day (hack)'Img & " " &
-        MON (CAL.Month (hack)) & CAL.Year (hack)'Img & " at" &
-        ACF.Image (hack)(11 .. 19) & " UTC";
+      return WKDAY (hack) & "," & ACF.Day (hack)'Img & " " & MON (ACF.Month (hack)) &
+        ACF.Year (hack)'Img & " at" & ACF.Image (hack)(11 .. 19) & " UTC";
+
    end timestamp;
 
 
