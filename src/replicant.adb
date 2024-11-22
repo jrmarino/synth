@@ -1169,8 +1169,8 @@ package body Replicant is
                if AD.Exists (bootdir) then
                   mount_nullfs (target      => bootdir,
                                 mount_point => location (slave_base, boot));
-                  mount_tmpfs (slave_base & root_boot_fw, 100);
-                  mount_tmpfs (slave_base & root_kmodules, 100);
+                  mount_tmpfs (slave_base & root_boot_fw, 1000);
+                  mount_tmpfs (slave_base & root_kmodules, 1000);
                end if;
             end;
             declare
