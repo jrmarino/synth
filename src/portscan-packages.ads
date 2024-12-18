@@ -147,7 +147,7 @@ private
 
    --  Given an origin (stripped of flavor, already validated) and the version extracted
    --  from the package, return True if it makes the version in the port Makefile
-   function package_version_matches (origin, version : String) return Boolean;
+   function package_version_matches (origin : String; has_flavor : Boolean; flavor, version : String) return Boolean;
 
    --  Dedicated progress meter for prescanning packages
    function package_scan_progress return String;

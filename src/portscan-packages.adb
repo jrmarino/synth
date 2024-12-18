@@ -1079,8 +1079,10 @@ package body PortScan.Packages is
                if AD.Exists (path1) then
                   declare
                      full_origin : constant String := query_full_origin (pkgpath, origin);
+                     has_flavor  : constant Boolean := JT.contains (full_origin, "@");
+                     flavor      : constant String := JT.part_2 (full_origin, "@");
                   begin
-                     if package_version_matches (origin, version) then
+                     if package_version_matches (origin, has_flavor, flavor, version) then
                         stored_origins (lot).Append (New_Item => JT.SUS (full_origin));
                         remove := False;
                      end if;
@@ -1329,18 +1331,24 @@ package body PortScan.Packages is
    -------------------------------
    --  package_version_matches  --
    -------------------------------
-   function package_version_matches (origin, version : String) return Boolean
+   function package_version_matches (origin : String; has_flavor : Boolean; flavor, version : String) return Boolean
    is
       scanenv  : constant String := scan_environment;
       fullport : constant String := dir_ports & "/" & origin;
       ssroot   : constant String := chroot & JT.USS (PM.configuration.dir_buildbase) & ss_base;
-      command  : constant String := scanenv & ssroot & " " & chroot_make_program &
+      basecmd  : constant String := scanenv & ssroot & " " & chroot_make_program &
                  " .MAKE.EXPAND_VARIABLES=yes -C " & fullport & " -VPKGVERSION";
+      command  : JT.Text;
       content  : JT.Text;
       topline  : JT.Text;
       status   : Integer;
    begin
-      content := Unix.piped_command (command, status);
+      if has_flavor then
+         command := JT.SUS (basecmd & " FLAVOR=" & JT.replace_char (flavor, LAT.Low_Line, "-"));
+      else
+         command := JT.SUS (basecmd);
+      end if;
+      content := Unix.piped_command (JT.USS (command), status);
       if status /= 0 then
          raise bmake_execution with origin &
            " (return code =" & status'Img & ")";
