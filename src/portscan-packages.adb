@@ -1340,7 +1340,16 @@ package body PortScan.Packages is
       topline  : JT.Text;
       status   : Integer;
    begin
-      content := Unix.piped_command (command, status);
+      if JT.contains (origin, "@") then
+         declare
+            flavor : constant String := " FLAVOR=" &
+              JT.replace_char (JT.part_2 (origin, "@"), LAT.Low_Line, "-");
+         begin
+            content := Unix.piped_command (command & flavor, status);
+         end;
+      else
+         content := Unix.piped_command (command, status);
+      end if;
       if status /= 0 then
          raise bmake_execution with origin &
            " (return code =" & status'Img & ")";
