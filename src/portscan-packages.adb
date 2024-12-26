@@ -1080,7 +1080,7 @@ package body PortScan.Packages is
                   declare
                      full_origin : constant String := query_full_origin (pkgpath, origin);
                   begin
-                     if package_version_matches (origin, version) then
+                     if package_version_matches (full_origin, version) then
                         stored_origins (lot).Append (New_Item => JT.SUS (full_origin));
                         remove := False;
                      end if;
