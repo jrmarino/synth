@@ -1332,7 +1332,7 @@ package body PortScan.Packages is
    function package_version_matches (origin, version : String) return Boolean
    is
       scanenv  : constant String := scan_environment;
-      fullport : constant String := dir_ports & "/" & origin;
+      fullport : constant String := dir_ports & "/" & JT.part_1 (origin, "@");
       ssroot   : constant String := chroot & JT.USS (PM.configuration.dir_buildbase) & ss_base;
       command  : constant String := scanenv & ssroot & " " & chroot_make_program &
                  " .MAKE.EXPAND_VARIABLES=yes -C " & fullport & " -VPKGVERSION";
