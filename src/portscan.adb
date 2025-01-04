@@ -1375,6 +1375,9 @@ package body PortScan is
                return " (directory empty)";
             end if;
             if AD.Exists (fullpath & "/Makefile") then
+               if JT.contains (catport, "@") then
+                  return (" (flavor undefined?)");
+               end if;
                return "";
             else
                return " (Makefile missing)";
