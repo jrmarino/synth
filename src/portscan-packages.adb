@@ -1073,18 +1073,16 @@ package body PortScan.Packages is
                oriver  : constant String := query_origin_version (pkgpath);
                origin  : constant String := JT.part_1 (oriver, ":");
                version : constant String := JT.part_2 (oriver, ":");
-               path1   : constant String := JT.USS (PM.configuration.dir_portsdir) & "/" & origin;
                remove  : Boolean := True;
+               full_origin : constant String := query_full_origin (pkgpath, origin);
             begin
-               if AD.Exists (path1) then
-                  declare
-                     full_origin : constant String := query_full_origin (pkgpath, origin);
-                  begin
-                     if package_version_matches (full_origin, version) then
-                        stored_origins (lot).Append (New_Item => JT.SUS (full_origin));
-                        remove := False;
-                     end if;
-                  end;
+               --  Previously: AD.Exists(<portsdir>/origin)
+               --  Now, verify origin(@flavor) exists in index (see issue #224)
+               if input_origin_valid (full_origin) then
+                  if package_version_matches (full_origin, version) then
+                     stored_origins (lot).Append (New_Item => JT.SUS (full_origin));
+                     remove := False;
+                  end if;
                end if;
                if remove then
                   AD.Delete_File (pkgpath);
