@@ -343,6 +343,7 @@ package body PortScan.Packages is
          end if;
       end insert;
    begin
+      load_index_for_store_origins;
       if not scan_repository (repository) then
          return;
       end if;

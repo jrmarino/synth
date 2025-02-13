@@ -1667,6 +1667,7 @@ package body PortScan is
                    index_path & "/" & JT.USS (PM.configuration.profile) & "-index";
       ndx        : port_id := 0;
    begin
+      clear_store_origin_data;
       TIO.Open (File => handle,
                 Mode => TIO.In_File,
                 Name => index_full);
