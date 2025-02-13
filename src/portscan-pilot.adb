@@ -671,6 +671,11 @@ package body PortScan.Pilot is
       end if;
 
       if remove_invalid_packages then
+
+         if not prescanned then
+            read_flavor_index;
+         end if;
+
          REP.initialize (testmode => False,
                          num_cores => PortScan.cores_available);
          REP.launch_slave (id => PortScan.scan_slave, opts => noprocs);
