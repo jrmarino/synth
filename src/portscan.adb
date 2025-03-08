@@ -4,6 +4,7 @@
 with Ada.Strings.Hash;
 with Ada.Calendar.Formatting;
 with Ada.Calendar.Time_Zones;
+with Ada.Exceptions;
 with GNAT.Regpat;
 with GNAT.String_Split;
 with Signals;
@@ -13,6 +14,7 @@ package body PortScan is
 
    package ACF renames Ada.Calendar.Formatting;
    package CTZ renames Ada.Calendar.Time_Zones;
+   package EXC renames Ada.Exceptions;
    package RGX renames GNAT.Regpat;
    package GSS renames GNAT.String_Split;
    package SIG renames Signals;
@@ -29,7 +31,9 @@ package body PortScan is
       --  tree must be already mounted in the scan slave.
       --  However, prescan works on the real ports tree, not the mount.
       if not prescanned then
-         read_flavor_index;
+         if not read_flavor_index then
+            return False;
+         end if;
       end if;
       scan_start := CAL.Clock;
       parallel_deep_scan (success => good_scan, show_progress => using_screen);
@@ -122,7 +126,9 @@ package body PortScan is
          return False;
       end if;
       if not prescanned then
-         read_flavor_index;
+         if not read_flavor_index then
+            return False;
+         end if;
       end if;
       if ports_keys.Contains (Key => uscatport) then
          target := ports_keys.Element (Key => uscatport);
@@ -1604,12 +1610,12 @@ package body PortScan is
    --------------------------
    --  read_flavor_index   --
    --------------------------
-   procedure read_flavor_index
+   function read_flavor_index return Boolean
    is
       handle     : TIO.File_Type;
       max_lots   : constant scanners := get_max_lots;
       index_full : constant String :=
-        index_path & "/" & JT.USS (PM.configuration.profile) & "-index";
+                   index_path & "/" & JT.USS (PM.configuration.profile) & "-index";
    begin
       so_porthash.Clear;
       so_serial.Clear;
@@ -1651,11 +1657,15 @@ package body PortScan is
       end loop;
       TIO.Close (handle);
       prescanned := True;
+      return True;
    exception
-      when others =>
+      when yikes : others =>
          if TIO.Is_Open (handle) then
             TIO.Close (handle);
          end if;
+         TIO.Put_Line ("Issue found with flavor index: " & EXC.Exception_Message (yikes));
+         TIO.Put_Line ("Delete " & index_full & " to force index regeneration.");
+         return False;
    end read_flavor_index;
 
 

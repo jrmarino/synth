@@ -237,11 +237,11 @@ private
                          original_target : port_index);
 
    --  subroutines for populate_port_data
+   function read_flavor_index return Boolean;
    procedure prescan_ports_tree (portsdir : String);
    procedure grep_Makefile (portsdir, category : String);
    procedure walk_all_subdirectories (portsdir, category : String);
    procedure wipe_make_queue;
-   procedure read_flavor_index;
    procedure parallel_deep_scan (success : out Boolean;
                                  show_progress : Boolean);
 

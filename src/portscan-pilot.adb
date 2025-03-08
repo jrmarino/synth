@@ -866,6 +866,7 @@ package body PortScan.Pilot is
       procedure kill (plcursor : portkey_crate.Cursor);
       procedure walk (name : String);
       function display_kmg (number : disktype) return String;
+      abort_msg    : constant String := "Distfile purge operation aborted.";
       abort_purge  : Boolean := False;
       bytes_purged : disktype := 0;
       distfiles    : portkey_crate.Map;
@@ -992,13 +993,16 @@ package body PortScan.Pilot is
       end kill;
 
    begin
-      read_flavor_index;
       TIO.Put ("Scanning the distinfo file of every port in the tree ... ");
+      if not read_flavor_index then
+         TIO.Put_Line (abort_msg);
+         return;
+      end if;
       ports_keys.Iterate (Process => scan'Access);
       TIO.Put_Line ("done");
       walk (name => JT.USS (PM.configuration.dir_distfiles));
       if abort_purge then
-         TIO.Put_Line ("Distfile purge operation aborted.");
+         TIO.Put_Line (abort_msg);
       else
          rmfiles.Iterate (kill'Access);
          TIO.Put_Line ("Recovered" & display_kmg (bytes_purged));
@@ -1080,7 +1084,10 @@ package body PortScan.Pilot is
       sorry   : constant String := "Unfortunately, the system upgrade failed.";
    begin
       if not prescanned then
-         read_flavor_index;
+         if not read_flavor_index then
+            TIO.Put_Line (sorry & " (flavor index scan)");
+            return;
+         end if;
       end if;
       portlist.Clear;
       TIO.Put_Line ("Querying system about current package installations.");
