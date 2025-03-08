@@ -1170,21 +1170,23 @@ package body PortScan is
                   portkey : constant JT.Text := JT.SUS (category & '/' &
                     line (matches (1).First .. matches (1).Last));
                begin
-                  ports_keys.Insert (Key      => portkey,
-                                     New_Item => lot_counter,
-                                     Position => kc,
-                                     Inserted => success);
+                  if not ports_keys.Contains (portkey) then
+                     ports_keys.Insert (Key      => portkey,
+                                        New_Item => lot_counter,
+                                        Position => kc,
+                                        Inserted => success);
 
-                  last_port := lot_counter;
-                  all_ports (lot_counter).sequence_id := lot_counter;
-                  all_ports (lot_counter).key_cursor := kc;
-                  make_queue (lot_number).Append (lot_counter);
+                     last_port := lot_counter;
+                     all_ports (lot_counter).sequence_id := lot_counter;
+                     all_ports (lot_counter).key_cursor := kc;
+                     make_queue (lot_number).Append (lot_counter);
 
-                  lot_counter := lot_counter + 1;
-                  if lot_number = max_lots then
-                     lot_number := 1;
-                  else
-                     lot_number := lot_number + 1;
+                     lot_counter := lot_counter + 1;
+                     if lot_number = max_lots then
+                        lot_number := 1;
+                     else
+                        lot_number := lot_number + 1;
+                     end if;
                   end if;
                end;
             end if;
