@@ -40,6 +40,7 @@ package body Replicant is
          when etc_default => return mount_base & root_etc_default;
          when etc_mtree   => return mount_base & root_etc_mtree;
          when etc_rcd     => return mount_base & root_etc_rcd;
+         when etc_ssl     => return mount_base & root_etc_ssl;
          when tmp         => return mount_base & root_tmp;
          when var         => return mount_base & root_var;
          when home        => return mount_base & root_home;
@@ -957,6 +958,23 @@ package body Replicant is
    end create_etc_shells;
 
 
+   --------------------------------
+   --  create_certificate_store  --
+   --------------------------------
+   procedure create_cert_store (path_to_etc : String)
+   is
+      whitecerts : constant String := "/ssl/certs";
+      blackcerts : constant String := "/ssl/blacklisted";
+   begin
+      case platform_type is
+         when freebsd =>
+            hard_copy_directory ("/etc" & whitecerts, path_to_etc & whitecerts);
+            hard_copy_directory ("/etc" & blackcerts, path_to_etc & blackcerts);
+         when others => null;
+      end case;
+   end create_cert_store;
+
+
    ------------------------
    --  execute_ldconfig  --
    ------------------------
@@ -1008,6 +1026,40 @@ package body Replicant is
    exception
       when others => return False;
    end copy_directory_contents;
+
+
+   ---------------------------
+   --  hard_copy_directory  --
+   ---------------------------
+   procedure hard_copy_directory (src_directory : String; tgt_directory : String)
+   is
+      function is_directory (candidate : String) return Boolean;
+
+      host_cp : constant String := "/bin/cp";
+      command : constant String := host_cp & " -a " & src_directory & " " & tgt_directory;
+      tparent : constant String := JT.head (tgt_directory, "/");
+
+      function is_directory (candidate : String) return Boolean is
+      begin
+         if Ada.Directories.Exists (candidate) then
+            case Ada.Directories.Kind (candidate) is
+               when Ada.Directories.Directory => return True;
+               when others => null;
+            end case;
+         end if;
+         if abn_log_ready then
+            TIO.Put_Line (abnormal_log, "hard_copy_directory() not a directory:" & candidate);
+         end if;
+         return False;
+      end is_directory;
+   begin
+      if not is_directory (src_directory) or else
+        not is_directory (tparent)
+      then
+         return;
+      end if;
+      silent_exec (command);
+   end hard_copy_directory;
 
 
    ------------------------
@@ -1226,6 +1278,7 @@ package body Replicant is
       create_etc_services (location (slave_base, etc));
       create_etc_shells   (location (slave_base, etc));
       create_etc_fstab    (location (slave_base, etc));
+      create_cert_store   (location (slave_base, etc));
       copy_etc_rcsubr     (location (slave_base, etc));
       copy_ldconfig       (location (slave_base, etc));
 

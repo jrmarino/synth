@@ -91,7 +91,7 @@ private
                    usr_sbin,
                    usr_share,
                    usr_lib32, xports, options, packages, distfiles,
-                   dev, etc, etc_default, etc_mtree, etc_rcd, home, linux,
+                   dev, etc, etc_default, etc_mtree, etc_rcd, etc_ssl, home, linux,
                    proc, root, tmp, var, wrkdirs, usr_local, usr_src, ccache,
                    boot, usr_x11r7, usr_games);
    subtype subfolder is folder range bin .. usr_share;
@@ -117,6 +117,7 @@ private
    root_etc_default : constant String := "/etc/defaults";
    root_etc_mtree   : constant String := "/etc/mtree";
    root_etc_rcd     : constant String := "/etc/rc.d";
+   root_etc_ssl     : constant String := "/etc/ssl";
    root_lib         : constant String := "/lib";
    root_tmp         : constant String := "/tmp";
    root_var         : constant String := "/var";
@@ -220,6 +221,9 @@ private
    --  create /etc/shells, required by install scripts of some packages
    procedure create_etc_shells (path_to_etc : String);
 
+   --  create certificate store in /etc/ssl (FreeBSD only)
+   procedure create_cert_store (path_to_etc : String);
+
    --  mount the devices
    procedure mount_devices (path_to_dev : String);
    procedure unmount_devices (path_to_dev : String);
@@ -258,5 +262,10 @@ private
    function copy_directory_contents (src_directory : String;
                                      tgt_directory : String;
                                      pattern       : String) return Boolean;
+
+   --  Generic utility to use host's cp program with -a to the destination directory
+   --  Nothing will happen if source or target parent directories do not exist
+   procedure hard_copy_directory (src_directory : String;
+                                  tgt_directory : String);
 
 end Replicant;
