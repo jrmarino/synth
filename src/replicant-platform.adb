@@ -1,6 +1,8 @@
 --  This file is covered by the Internet Software Consortium (ISC) License
 --  Reference: ../License.txt
 
+with System.Multiprocessors;
+
 package body Replicant.Platform is
 
    ------------------
@@ -499,86 +501,9 @@ package body Replicant.Platform is
    -----------------------
    --  get_number_cpus  --
    -----------------------
-   function get_number_cpus return Positive
-   is
-      --  Chicken/Egg issue.
-      --  Platform type is not available.  This function is called before
-      --  The profile loading which requires the number of cpus as an argument.
-      --  Therefore, we need two commands, the first being getting the OPSYS
-      --  through the uname -s command.
-
-      type opsys is (FreeFly, NetBSD, Linux, Solaris, Unsupported);
-      uname   : constant String := "/usr/bin/uname -s";
-      bsd_cmd : constant String := "/sbin/sysctl hw.ncpu";
-      lin_cmd : constant String := "/usr/bin/nproc";
-      sol_cmd : constant String := "/usr/sbin/psrinfo -pv";
-      thissys : opsys;
-      comres  : JT.Text;
-      status  : Integer;
-      start   : Positive;
+   function get_number_cpus return Positive is
    begin
-      comres := Unix.piped_command (uname, status);
-      if status /= 0 then
-         return 1;
-      end if;
-
-      declare
-         resstr    : String := JT.USS (comres);
-         opsys_str : String := resstr (resstr'First .. resstr'Last - 1);
-      begin
-         if opsys_str = "FreeBSD" then
-            thissys := FreeFly;
-         elsif opsys_str = "DragonFly" then
-            thissys := FreeFly;
-         elsif opsys_str = "NetBSD" then
-               thissys := NetBSD;
-         elsif opsys_str = "Linux" then
-            thissys := Linux;
-         elsif opsys_str = "SunOS" then
-            thissys := Solaris;
-         else
-            thissys := Unsupported;
-         end if;
-      end;
-
-      --  DF/Free: expected output: "hw.ncpu: C" where C is integer
-      --  NetBSD:  expected output: "hw.ncpu = C"
-      --  Linux:   expected output: "C"
-      --  Solaris: expected output:
-      --    The physical processor has 64 virtual processors (0-63)
-      --      UltraSPARC-T2+ (cpuid 0 clock 1165 MHz)
-      --    The physical processor has 64 virtual processors (64-127)
-      --      UltraSPARC-T2+ (cpuid 64 clock 1165 MHz)
-      case thissys is
-         when FreeFly =>
-            start := 10;
-            comres := Unix.piped_command (bsd_cmd, status);
-         when NetBSD =>
-            start := 11;
-            comres := Unix.piped_command (bsd_cmd, status);
-         when Linux   =>
-            start := 1;
-            comres := Unix.piped_command (lin_cmd, status);
-         when Solaris =>
-            start := 1;
-            comres := Unix.piped_command (sol_cmd, status);
-            --  garbage (incomplete).  See src/parameters.adb#L686 off ravenadm for rest
-         when Unsupported =>
-            return 1;
-      end case;
-
-      if status /= 0 then
-         return 1;
-      end if;
-      declare
-         resstr : String := JT.USS (comres);
-         ncpu   : String := resstr (start .. resstr'Last - 1);
-         number : Positive := Integer'Value (ncpu);
-      begin
-         return number;
-      exception
-         when others => return 1;
-      end;
+      return Positive (System.Multiprocessors.Number_Of_CPUs);
    end get_number_cpus;
 
 
