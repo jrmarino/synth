@@ -43,9 +43,12 @@ package PortScan is
    --  Starting with a single port, recurse to determine a limited but complete
    --  dependency tree.  Repeated calls will augment already existing data.
    --  Return True on success
-   function scan_single_port (catport : String; always_build : Boolean;
-                              fatal : out Boolean)
-                              return Boolean;
+   function scan_single_port
+     (catport      : String;
+      always_build : Boolean;
+      cache_var    : String;
+      fatal        : out Boolean)
+      return Boolean;
 
    --  This procedure causes the reverse dependencies to be calculated, and
    --  then the extended (recursive) reverse dependencies.  The former is
@@ -230,9 +233,9 @@ private
                                    on      : Boolean);
    procedure populate_flavors     (target  : port_index;
                                    line    : JT.Text);
-   procedure populate_port_data   (target : port_index);
-   procedure populate_port_data_fpc (target : port_index);
-   procedure populate_port_data_nps (target : port_index);
+   procedure populate_port_data     (target : port_index; cached_var : String);
+   procedure populate_port_data_fpc (target : port_index; cached_var : String);
+   procedure populate_port_data_nps (target : port_index; cached_var : String);
    procedure drill_down (next_target     : port_index;
                          original_target : port_index);
 
@@ -242,8 +245,10 @@ private
    procedure grep_Makefile (portsdir, category : String);
    procedure walk_all_subdirectories (portsdir, category : String);
    procedure wipe_make_queue;
-   procedure parallel_deep_scan (success : out Boolean;
-                                 show_progress : Boolean);
+   procedure parallel_deep_scan
+     (success       : out Boolean;
+      show_progress : Boolean;
+      cache_var     : String);
 
    --  some helper routines
    function scan_environment return String;
@@ -253,6 +258,7 @@ private
    function scan_progress return String;
    function get_max_lots return scanners;
    function get_pkg_name (origin : String) return String;
+   function set_port_cache_variables return String;
    function timestamp (hack : CAL.Time; www_format : Boolean := False) return String;
    function clean_up_pkgsrc_ignore_reason (dirty_string : String) return JT.Text;
    function subdirectory_is_older (portsdir, category : String;

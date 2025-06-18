@@ -36,7 +36,9 @@ package body PortScan is
          end if;
       end if;
       scan_start := CAL.Clock;
-      parallel_deep_scan (success => good_scan, show_progress => using_screen);
+      parallel_deep_scan (success       => good_scan,
+                          show_progress => using_screen,
+                          cache_var     => set_port_cache_variables);
       scan_stop := CAL.Clock;
 
       return good_scan;
@@ -46,8 +48,10 @@ package body PortScan is
    ------------------------
    --  scan_single_port  --
    ------------------------
-   function scan_single_port (catport : String; always_build : Boolean;
-                              fatal : out Boolean)
+   function scan_single_port (catport      : String;
+                              always_build : Boolean;
+                              cache_var    : String;
+                              fatal        : out Boolean)
                               return Boolean
    is
       xports : constant String := JT.USS (PM.configuration.dir_buildbase) &
@@ -69,7 +73,7 @@ package body PortScan is
                raise circular_logic;
             end if;
             if not all_ports (new_target).scanned then
-               populate_port_data (new_target);
+               populate_port_data (new_target, cache_var);
                all_ports (new_target).scan_locked := True;
                all_ports (new_target).blocked_by.Iterate (dig'Access);
                all_ports (new_target).scan_locked := False;
@@ -140,7 +144,7 @@ package body PortScan is
             --  This can happen when a dependency is also on the build list.
             return True;
          else
-            populate_port_data (target);
+            populate_port_data (target, cache_var);
             all_ports (target).never_remote := always_build;
          end if;
       exception
@@ -254,7 +258,9 @@ package body PortScan is
    --------------------------
    --  parallel_deep_scan  --
    --------------------------
-   procedure parallel_deep_scan (success : out Boolean; show_progress : Boolean)
+   procedure parallel_deep_scan (success       : out Boolean;
+                                 show_progress : Boolean;
+                                 cache_var     : String)
    is
       finished : array (scanners) of Boolean := (others => False);
       combined_wait : Boolean := True;
@@ -271,7 +277,7 @@ package body PortScan is
             target_port : port_index := subqueue.Element (cursor);
          begin
             if not aborted then
-               populate_port_data (target_port);
+               populate_port_data (target_port, cache_var);
                mq_progress (lot) := mq_progress (lot) + 1;
             end if;
          exception
@@ -740,13 +746,13 @@ package body PortScan is
    --------------------------
    --  populate_port_data  --
    --------------------------
-   procedure populate_port_data (target : port_index) is
+   procedure populate_port_data (target : port_index; cached_var : String) is
    begin
       case software_framework is
          when ports_collection =>
-            populate_port_data_fpc (target);
+            populate_port_data_fpc (target, cached_var);
          when pkgsrc =>
-            populate_port_data_nps (target);
+            populate_port_data_nps (target, cached_var);
       end case;
    end populate_port_data;
 
@@ -754,7 +760,7 @@ package body PortScan is
    ------------------------------
    --  populate_port_data_fpc  --
    ------------------------------
-   procedure populate_port_data_fpc (target : port_index)
+   procedure populate_port_data_fpc (target : port_index; cached_var : String)
    is
       function get_fullport return String;
 
@@ -780,6 +786,7 @@ package body PortScan is
       ssroot   : constant String := chroot & JT.USS (PM.configuration.dir_buildbase) & ss_base;
       command  : constant String :=
                  scanenv & ssroot & " " & chroot_make_program & " -C " & fullport &
+                 " " & cached_var &
                  " -VPKGVERSION -VPKGFILE:T -VMAKE_JOBS_NUMBER -VIGNORE" &
                  " -VFETCH_DEPENDS -VEXTRACT_DEPENDS -VPATCH_DEPENDS" &
                  " -VBUILD_DEPENDS -VLIB_DEPENDS -VRUN_DEPENDS" &
@@ -847,7 +854,7 @@ package body PortScan is
    ------------------------------
    --  populate_port_data_nps  --
    ------------------------------
-   procedure populate_port_data_nps (target : port_index)
+   procedure populate_port_data_nps (target : port_index; cached_var : String)
    is
       catport  : String := get_catport (all_ports (target));
       fullport : constant String := dir_ports & "/" & catport;
@@ -856,7 +863,8 @@ package body PortScan is
                  JT.USS (PM.configuration.dir_buildbase) & ss_base;
       command  : constant String :=
                  scanenv & ssroot & " " & chroot_make_program & " -C " & fullport &
-                 " .MAKE.EXPAND_VARIABLES=yes " &
+                 " " & cached_var &
+                 " .MAKE.EXPAND_VARIABLES=yes" &
                  " -VPKGVERSION -VPKGFILE:T -V_MAKE_JOBS:C/^-j//" &
                  " -V_CBBH_MSGS -VTOOL_DEPENDS -VBUILD_DEPENDS -VDEPENDS" &
                  " -VPKG_OPTIONS -VPKG_DISABLED_OPTIONS" &
@@ -913,6 +921,66 @@ package body PortScan is
       when issue : others =>
          EX.Reraise_Occurrence (issue);
    end populate_port_data_nps;
+
+
+   --------------------------------
+   --  set_port_cache_variables  --
+   -----------------------------
+   function set_port_cache_variables return String
+   is
+      function get_command return String;
+      function variable_names return String;
+
+      scanenv  : constant String := scan_environment;
+      ssroot   : constant String := chroot & JT.USS (PM.configuration.dir_buildbase) & ss_base;
+      content  : JT.Text;
+      status   : Integer;
+
+      function variable_names return String is
+      begin
+         case software_framework is
+            when ports_collection =>
+               return "ARCH|OPSYS|_OSRELEASE|OSREL|OSVERSION|_PKG_CHECKED"
+                 & "|HAVE_COMPAT_IA32_KERN|_SMP_CPUS|CONFIGURE_MAX_CMD_LEN";
+            when pkgsrc =>
+               --  pkgsrc hasn't been supported in 10 years.
+               --  leave this as a placeholder in case somebody wants to revive it
+               return "OPSYS";
+         end case;
+      end variable_names;
+
+      function get_command return String
+      is
+         varlist : constant String := variable_names;
+         num_fields : constant Natural := JT.count_char (varlist, '|') + 1;
+         command : JT.Text := JT.SUS (scanenv & ssroot & " " & chroot_make_program &
+                                        " -C " & dir_ports);
+      begin
+         for findex in 1 .. num_fields loop
+            JT.SU.Append (command, " -V" & JT.specific_field (varlist, findex, "|"));
+         end loop;
+         return JT.USS (command);
+      end get_command;
+   begin
+      content := Unix.piped_command (get_command, status);
+      if status /= 0 then
+         raise bmake_execution with "variable export" &
+           " (return code =" & status'Img & ")";
+      end if;
+      declare
+         varlist : constant String := variable_names;
+         num_fields : constant Natural := JT.count_char (varlist, '|') + 1;
+         topline  : JT.Text;
+         varcache : JT.Text;
+      begin
+         for findex in 1 .. num_fields loop
+            JT.nextline (lineblock => content, firstline => topline);
+            JT.SU.Append (varcache, JT.specific_field (varlist, findex, "|") & "=" &
+                            JT.USS (topline) & " ");
+         end loop;
+         return JT.USS (varcache);
+      end;
+   end set_port_cache_variables;
 
 
    -----------------
@@ -1565,7 +1633,9 @@ package body PortScan is
 
             fullpop := False;
             scan_start := CAL.Clock;
-            parallel_deep_scan (success => good_scan, show_progress => using_screen);
+            parallel_deep_scan (success       => good_scan,
+                                show_progress => using_screen,
+                                cache_var     => set_port_cache_variables);
             scan_stop := CAL.Clock;
             fullpop := True;
 
