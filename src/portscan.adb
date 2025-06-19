@@ -62,6 +62,7 @@ package body PortScan is
       aborted   : Boolean := False;
       indy500   : Boolean := False;
       uscatport : JT.Text := JT.SUS (catport);
+      filename  : constant String := "/tmp/synth.scanner.09.out";
 
       procedure dig (cursor : block_crate.Cursor)
       is
@@ -73,7 +74,7 @@ package body PortScan is
                raise circular_logic;
             end if;
             if not all_ports (new_target).scanned then
-               populate_port_data (new_target, cache_var);
+               populate_port_data (new_target, cache_var, filename);
                all_ports (new_target).scan_locked := True;
                all_ports (new_target).blocked_by.Iterate (dig'Access);
                all_ports (new_target).scan_locked := False;
@@ -144,7 +145,7 @@ package body PortScan is
             --  This can happen when a dependency is also on the build list.
             return True;
          else
-            populate_port_data (target, cache_var);
+            populate_port_data (target, cache_var, filename);
             all_ports (target).never_remote := always_build;
          end if;
       exception
@@ -272,12 +273,15 @@ package body PortScan is
          procedure populate (cursor : subqueue.Cursor);
          procedure abort_now (culprit, issue_msg, exmsg : String);
 
+         temporary_output : constant String :=
+           "/tmp/synth.scanner." & JT.zeropad (2, Natural (lot)) & ".out";
+
          procedure populate (cursor : subqueue.Cursor)
          is
             target_port : port_index := subqueue.Element (cursor);
          begin
             if not aborted then
-               populate_port_data (target_port, cache_var);
+               populate_port_data (target_port, cache_var, temporary_output);
                mq_progress (lot) := mq_progress (lot) + 1;
             end if;
          exception
@@ -308,6 +312,11 @@ package body PortScan is
          end abort_now;
       begin
          make_queue (lot).Iterate (populate'Access);
+         begin
+            Ada.Directories.Delete_File (temporary_output);
+         exception
+            when others => null;
+         end;
          finished (lot) := True;
       end scan;
 
@@ -746,13 +755,13 @@ package body PortScan is
    --------------------------
    --  populate_port_data  --
    --------------------------
-   procedure populate_port_data (target : port_index; cached_var : String) is
+   procedure populate_port_data (target : port_index; cached_var, filename : String) is
    begin
       case software_framework is
          when ports_collection =>
-            populate_port_data_fpc (target, cached_var);
+            populate_port_data_fpc (target, cached_var, filename);
          when pkgsrc =>
-            populate_port_data_nps (target, cached_var);
+            populate_port_data_nps (target, cached_var, filename);
       end case;
    end populate_port_data;
 
@@ -760,7 +769,7 @@ package body PortScan is
    ------------------------------
    --  populate_port_data_fpc  --
    ------------------------------
-   procedure populate_port_data_fpc (target : port_index; cached_var : String)
+   procedure populate_port_data_fpc (target : port_index; cached_var, filename : String)
    is
       function get_fullport return String;
 
@@ -781,61 +790,67 @@ package body PortScan is
          end if;
       end get_fullport;
 
-      scanenv  : constant String := scan_environment;
       fullport : constant String := get_fullport;
       ssroot   : constant String := chroot & JT.USS (PM.configuration.dir_buildbase) & ss_base;
       command  : constant String :=
-                 scanenv & ssroot & " " & chroot_make_program & " -C " & fullport &
+                 ssroot & " " & chroot_make_program & " -C " & fullport &
                  " " & cached_var &
                  " -VPKGVERSION -VPKGFILE:T -VMAKE_JOBS_NUMBER -VIGNORE" &
                  " -VFETCH_DEPENDS -VEXTRACT_DEPENDS -VPATCH_DEPENDS" &
                  " -VBUILD_DEPENDS -VLIB_DEPENDS -VRUN_DEPENDS" &
                  " -VSELECTED_OPTIONS -VDESELECTED_OPTIONS -VUSE_LINUX" &
                  " -VFLAVORS -VLIB_DEPENDS_ALL";
-      content  : JT.Text;
-      topline  : JT.Text;
-      status   : Integer;
+      handle   : TIO.File_Type;
 
       type result_range is range 1 .. 15;
-
    begin
-      content := Unix.piped_command (command, status);
-      if status /= 0 then
-         raise bmake_execution with catport &
-           " (return code =" & status'Img & ")";
+      if not Unix.external_command (command, filename) then
+         raise bmake_execution with catport & " (check " & filename & ")";
       end if;
 
-      for k in result_range loop
-         JT.nextline (lineblock => content, firstline => topline);
-         case k is
-            when 1 => all_ports (target).port_version := topline;
-            when 2 => all_ports (target).package_name := topline;
-            when 3 =>
-               begin
-                  all_ports (target).jobs :=
-                    builders (Integer'Value (JT.USS (topline)));
-               exception
-                  when others =>
-                     all_ports (target).jobs := PM.configuration.num_builders;
-               end;
-            when 4 => all_ports (target).ignore_reason := topline;
-                      all_ports (target).ignored := not JT.IsBlank (topline);
-            when 5 => populate_set_depends (target, catport, topline, fetch);
-            when 6 => populate_set_depends (target, catport, topline, extract);
-            when 7 => populate_set_depends (target, catport, topline, patch);
-            when 8 => populate_set_depends (target, catport, topline, build);
-            when 9 => populate_set_depends (target, catport, topline, library);
-            when 10 => populate_set_depends (target, catport, topline, runtime);
-            when 11 => populate_set_options (target, topline, True);
-            when 12 => populate_set_options (target, topline, False);
-            when 13 =>
-               if not JT.IsBlank (JT.trim (topline)) then
-                  all_ports (target).use_linprocfs := True;
-               end if;
-            when 14 => populate_flavors (target, topline);
-            when 15 => populate_set_depends (target, catport, topline, build);
-         end case;
-      end loop;
+      begin
+         TIO.Open (handle, TIO.In_File, filename);
+         for k in result_range loop
+            exit when TIO.End_Of_File (handle);
+            declare
+               line : constant String := TIO.Get_Line (handle);
+            begin
+               case k is
+                  when 1 => all_ports (target).port_version := JT.SUS (line);
+                  when 2 => all_ports (target).package_name := JT.SUS (line);
+                  when 3 =>
+                     begin
+                        all_ports (target).jobs := builders (Integer'Value (line));
+                     exception
+                        when others =>
+                           all_ports (target).jobs := PM.configuration.num_builders;
+                     end;
+                  when 4 => all_ports (target).ignore_reason := JT.SUS (line);
+                     all_ports (target).ignored := not JT.IsBlank (line);
+                  when 5 => populate_set_depends (target, catport, JT.SUS (line), fetch);
+                  when 6 => populate_set_depends (target, catport, JT.SUS (line), extract);
+                  when 7 => populate_set_depends (target, catport, JT.SUS (line), patch);
+                  when 8 => populate_set_depends (target, catport, JT.SUS (line), build);
+                  when 9 => populate_set_depends (target, catport, JT.SUS (line), library);
+                  when 10 => populate_set_depends (target, catport, JT.SUS (line), runtime);
+                  when 11 => populate_set_options (target, JT.SUS (line), True);
+                  when 12 => populate_set_options (target, JT.SUS (line), False);
+                  when 15 => populate_set_depends (target, catport,  JT.SUS (line), build);
+                  when 14 => populate_flavors (target,  JT.SUS (line));
+                  when 13 =>
+                     if not JT.IsBlank (JT.trim (line)) then
+                        all_ports (target).use_linprocfs := True;
+                     end if;
+               end case;
+            end;
+         end loop;
+         TIO.Close (handle);
+      exception
+         when others =>
+            if TIO.Is_Open (handle) then
+               TIO.Close (handle);
+            end if;
+      end;
       all_ports (target).scanned := True;
       if catport = "x11-toolkits/gnustep-gui" then
          all_ports (target).use_procfs := True;
@@ -854,65 +869,69 @@ package body PortScan is
    ------------------------------
    --  populate_port_data_nps  --
    ------------------------------
-   procedure populate_port_data_nps (target : port_index; cached_var : String)
+   procedure populate_port_data_nps (target : port_index; cached_var, filename : String)
    is
       catport  : String := get_catport (all_ports (target));
       fullport : constant String := dir_ports & "/" & catport;
-      scanenv  : constant String := scan_environment;
-      ssroot   : constant String := chroot &
-                 JT.USS (PM.configuration.dir_buildbase) & ss_base;
+      ssroot   : constant String := chroot & JT.USS (PM.configuration.dir_buildbase) & ss_base;
       command  : constant String :=
-                 scanenv & ssroot & " " & chroot_make_program & " -C " & fullport &
+                 ssroot & " " & chroot_make_program & " -C " & fullport &
                  " " & cached_var &
                  " .MAKE.EXPAND_VARIABLES=yes" &
                  " -VPKGVERSION -VPKGFILE:T -V_MAKE_JOBS:C/^-j//" &
                  " -V_CBBH_MSGS -VTOOL_DEPENDS -VBUILD_DEPENDS -VDEPENDS" &
                  " -VPKG_OPTIONS -VPKG_DISABLED_OPTIONS" &
                  " -VEMUL_PLATFORMS";
-      content  : JT.Text;
-      topline  : JT.Text;
-      status   : Integer;
+      handle   : TIO.File_Type;
 
       type result_range is range 1 .. 10;
    begin
-      content := Unix.piped_command (command, status);
-      if status /= 0 then
-         raise bmake_execution with catport &
-           " (return code =" & status'Img & ")";
+      if not Unix.external_command (command, filename) then
+         raise bmake_execution with catport & " (check " & filename & ")";
       end if;
-      for k in result_range loop
-         JT.nextline (lineblock => content, firstline => topline);
-         case k is
-            when 1 => all_ports (target).port_version := topline;
-            when 2 => all_ports (target).package_name := topline;
-            when 3 =>
-               if JT.IsBlank (topline) then
-                  all_ports (target).jobs := PM.configuration.num_builders;
-               else
-                  begin
-                     all_ports (target).jobs :=
-                       builders (Integer'Value (JT.USS (topline)));
-                  exception
-                     when others =>
-                        all_ports (target).jobs :=
-                          PM.configuration.num_builders;
-                  end;
-               end if;
-            when 4 =>
-               all_ports (target).ignore_reason :=
-                 clean_up_pkgsrc_ignore_reason (JT.USS (topline));
-               all_ports (target).ignored := not JT.IsBlank (topline);
-            when 5 => populate_set_depends (target, catport, topline, build);
-            when 6 => populate_set_depends (target, catport, topline, build);
-            when 7 => populate_set_depends (target, catport, topline, runtime);
-            when 8 => populate_set_options (target, topline, True);
-            when 9 => populate_set_options (target, topline, False);
-            when 10 =>
-               if JT.contains (topline, "linux") then
-                  all_ports (target).use_linprocfs := True;
-               end if;
-         end case;
-      end loop;
+      begin
+         TIO.Open (handle, TIO.In_File, filename);
+         for k in result_range loop
+            exit when TIO.End_Of_File (handle);
+            declare
+               line : constant String := TIO.Get_Line (handle);
+            begin
+               case k is
+                  when 1 => all_ports (target).port_version := JT.SUS (line);
+                  when 2 => all_ports (target).package_name := JT.SUS (line);
+                  when 3 =>
+                     if JT.IsBlank (line) then
+                        all_ports (target).jobs := PM.configuration.num_builders;
+                     else
+                        begin
+                           all_ports (target).jobs := builders (Integer'Value (line));
+                        exception
+                           when others =>
+                              all_ports (target).jobs := PM.configuration.num_builders;
+                        end;
+                     end if;
+                  when 4 =>
+                     all_ports (target).ignore_reason := clean_up_pkgsrc_ignore_reason (line);
+                     all_ports (target).ignored := not JT.IsBlank (line);
+                  when 5 => populate_set_depends (target, catport, JT.SUS (line), build);
+                  when 6 => populate_set_depends (target, catport, JT.SUS (line), build);
+                  when 7 => populate_set_depends (target, catport, JT.SUS (line), runtime);
+                  when 8 => populate_set_options (target, JT.SUS (line), True);
+                  when 9 => populate_set_options (target, JT.SUS (line), False);
+                  when 10 =>
+                     if JT.contains (line, "linux") then
+                        all_ports (target).use_linprocfs := True;
+                     end if;
+               end case;
+            end;
+         end loop;
+         TIO.Close (handle);
+      exception
+         when others =>
+            if TIO.Is_Open (handle) then
+               TIO.Close (handle);
+            end if;
+      end;
       all_ports (target).scanned := True;
       if catport = "x11/gnustep-gui" then
          all_ports (target).use_procfs := True;
@@ -1206,7 +1225,7 @@ package body PortScan is
    --------------------------
    function get_max_lots return scanners
    is
-      first_try : constant Positive := Positive (number_cores) * 3;
+      first_try : constant Positive := Positive (number_cores) * 2;
    begin
       if first_try > Positive (scanners'Last) then
          return scanners'Last;

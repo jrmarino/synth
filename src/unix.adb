@@ -109,6 +109,29 @@ package body Unix is
    end external_command;
 
 
+   ------------------------
+   --  external_command  --
+   ------------------------
+   function external_command (command     : String;
+                              output_file : String) return Boolean
+   is
+      Args        : OSL.Argument_List_Access;
+      Exit_Status : Integer;
+      success     : Boolean;
+   begin
+      Args := OSL.Argument_String_To_List (command);
+      OSL.Spawn
+        (Program_Name => Args (Args'First).all,
+         Args         => Args (Args'First + 1 .. Args'Last),
+         Output_File  => output_file,
+         Success      => success,
+         Return_Code  => Exit_Status,
+         Err_To_Out   => True);
+      OSL.Free (Args);
+      return Exit_Status = 0;
+   end external_command;
+
+
    -------------------
    --  fork_failed  --
    -------------------

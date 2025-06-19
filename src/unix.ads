@@ -28,6 +28,11 @@ package Unix is
    --  Returns "True" on success
    function external_command (command : String) return Boolean;
 
+   --  Spawn command, writing stdout+stderr to the output file
+   --  Returns "True" on success
+   function external_command (command     : String;
+                              output_file : String) return Boolean;
+
    --  wrapper for nonblocking spawn
    function launch_process (command : String) return pid_t;
 

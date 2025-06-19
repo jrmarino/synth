@@ -233,9 +233,9 @@ private
                                    on      : Boolean);
    procedure populate_flavors     (target  : port_index;
                                    line    : JT.Text);
-   procedure populate_port_data     (target : port_index; cached_var : String);
-   procedure populate_port_data_fpc (target : port_index; cached_var : String);
-   procedure populate_port_data_nps (target : port_index; cached_var : String);
+   procedure populate_port_data     (target : port_index; cached_var, filename : String);
+   procedure populate_port_data_fpc (target : port_index; cached_var, filename : String);
+   procedure populate_port_data_nps (target : port_index; cached_var, filename : String);
    procedure drill_down (next_target     : port_index;
                          original_target : port_index);
 
