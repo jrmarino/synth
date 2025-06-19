@@ -119,11 +119,10 @@ package body Unix is
       argvector : aliased struct_argv;
       cprogram  : ICS.chars_ptr;
       num_args  : IC.int;
-      pid_res   : IC.int;
+      retcode   : IC.int;
       cfd       : IC.int;
       close_res : IC.int;
       log_fd    : File_Descriptor;
-      status    : process_exit;
 
       use type IC.int;
       pragma Unreferenced (close_res);
@@ -133,7 +132,7 @@ package body Unix is
       log_fd := start_new_log (output_file);
       cfd := IC.int (log_fd);
 
-      pid_res := synexec (cfd, cprogram, num_args, argvector'Unchecked_Access);
+      retcode := synexec (cfd, cprogram, num_args, argvector'Unchecked_Access);
 
       close_res := C_Close (cfd);
       if num_args > 0 then
@@ -143,20 +142,7 @@ package body Unix is
       end if;
       ICS.Free (cprogram);
 
-      if pid_res < 0 then
-         return False;  --  fork failed?  6 possible errors, check code
-      end if;
-
-      loop
-         delay 0.05;
-         status := process_status (pid_t (pid_res));
-         if status = exited_normally then
-            return True;
-         end if;
-         if status = exited_with_error then
-            return False;
-         end if;
-      end loop;
+      return retcode = 0;
    end external_command;
 
 

@@ -66,19 +66,17 @@ start_new_log_file (const char *path)
  * argument argc    : number of arguments to pass to program
  * argument argv    : vector of arguments to pass to program
  *
- * return code  pid : success   (positive number)
+ * return code    x : return code of command (or 1 on waitpid failure)
  *               -1 : negative file descriptor
  *               -2 : file descriptor below standard error
- *               -3 : first fork failed
- *               -4 : second fork failed
- *               -5 : setsid failed
- *               -6 : execv failed
+ *               -3 : fork failed
+ *               -4 : setsid failed
+ *               -5 : execv failed
  */
 int
 synexec (int fd, char *prog, int argc, char *argv[])
 {
   pid_t fork1_pid;
-  pid_t fork2_pid;
   pid_t child_pid;
   pid_t wait_result;
   int grand_status = 0;
@@ -108,46 +106,30 @@ synexec (int fd, char *prog, int argc, char *argv[])
       child_pid = getpid();
       if (setsid() < 0)
         {
-          _exit (-5);
+          _exit (-4);
         }
       signal(SIGINT, SIG_IGN);
 
-      fork2_pid = fork();
-      if (fork2_pid < 0)
-        {
-          _exit (-4);
-        }
+      dup2 (fd, STDOUT_FILENO);
+      dup2 (fd, STDERR_FILENO);
 
+      execv (prog, argv);
 
-      /****************************
-       *  Second fork successful  *
-       ****************************/
-      if (fork2_pid == 0)
-        {
-          /* grandchild */
-
-          dup2 (fd, STDOUT_FILENO);
-          dup2 (fd, STDERR_FILENO);
-
-          execv (prog, argv);
-
-          /* execv doesn't normally return, so command failed to execute */
-          diagnostic_message(fd, prog, argc, argv);
-          _exit (-6);
-        }
-
-      /* parent of grandchild (a.k.a child) */
-      wait_result = waitpid (fork2_pid, &grand_status, 0);
-      if (wait_result < 0)
-        {
-          grand_status = W_EXITCODE(1, 0);
-        };
-
-      _exit (WEXITSTATUS (grand_status));
+      /* execv doesn't normally return, so command failed to execute */
+      diagnostic_message (fd, prog, argc, argv);
+      _exit (-5);
     }
 
-  /* Parent of fork #1 */
-  return fork1_pid;
+
+  /***********************
+   *  Parent of fork #1  *
+   ***********************/
+  wait_result = waitpid (fork1_pid, &grand_status, 0);
+  if (wait_result < 0)
+    {
+      grand_status = W_EXITCODE (1, 0);
+    };
+  return WEXITSTATUS (grand_status);
 }
 
 
