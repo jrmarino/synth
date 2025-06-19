@@ -17,6 +17,7 @@ package Unix is
 
    type Int32 is private;
    subtype pid_t is Int32;
+   type File_Descriptor is new Integer;
 
    --  check if process identified by pid has exited or keeps going
    function process_status (pid : pid_t) return process_exit;
@@ -30,7 +31,8 @@ package Unix is
 
    --  Spawn command, writing stdout+stderr to the output file
    --  Returns "True" on success
-   function external_command (command     : String;
+   function external_command (program     : String;
+                              arguments   : String;
                               output_file : String) return Boolean;
 
    --  wrapper for nonblocking spawn
@@ -110,5 +112,43 @@ private
 
    --  internal pipe read command
    function pipe_read (OpenFile : CSM.FILEs) return JT.Text;
+
+
+   --------------------------
+   --  SYNEXEC COMPONENTS  --
+   --------------------------
+
+   MAX_ARGS : constant IC.int := 255;
+
+   type CSVector is array (0 .. MAX_ARGS) of aliased ICS.chars_ptr;
+   type struct_argv is
+      record
+         args : CSVector;
+      end record;
+   type struct_argv_access is access all struct_argv;
+   pragma Convention (C, struct_argv_access);
+
+   --  Creates new builder log
+   function start_new_log (filename : String) return File_Descriptor;
+   function C_Start_Log (path : ICS.chars_ptr) return IC.int;
+   pragma Import (C, C_Start_Log, "start_new_log_file");
+
+   --  libc file close function
+   function C_Close (fd : IC.int) return IC.int;
+   pragma Import (C, C_Close, "close");
+
+   --  Given a string, fill out the arguments array.  Must be freed separately later.
+   procedure set_argument_vector
+     (Arg_String : String;
+      argvector  : in out struct_argv;
+      num_args   : out IC.int);
+
+   --  Core of synexec external command execution
+   function synexec
+     (fd      : IC.int;
+      prog    : ICS.chars_ptr;
+      argc    : IC.int;
+      argv    : struct_argv_access) return IC.int;
+   pragma Import (C, synexec, "synexec");
 
 end Unix;

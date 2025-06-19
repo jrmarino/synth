@@ -796,9 +796,9 @@ package body PortScan is
       end get_fullport;
 
       fullport : constant String := get_fullport;
-      ssroot   : constant String := chroot & JT.USS (PM.configuration.dir_buildbase) & ss_base;
-      command  : constant String :=
-                 ssroot & " " & chroot_make_program & " -C " & fullport &
+      command  : constant String := JT.trim (chroot);
+      cmd_args : constant String := JT.USS (PM.configuration.dir_buildbase) & ss_base &
+                 " " & chroot_make_program & " -C " & fullport &
                  " " & cached_var &
                  " -VPKGVERSION -VPKGFILE:T -VMAKE_JOBS_NUMBER -VIGNORE" &
                  " -VFETCH_DEPENDS -VEXTRACT_DEPENDS -VPATCH_DEPENDS" &
@@ -809,7 +809,7 @@ package body PortScan is
 
       type result_range is range 1 .. 15;
    begin
-      if not Unix.external_command (command, filename) then
+      if not Unix.external_command (command, cmd_args, filename) then
          raise bmake_execution with catport & " (check " & filename & ")";
       end if;
 
@@ -878,9 +878,9 @@ package body PortScan is
    is
       catport  : String := get_catport (all_ports (target));
       fullport : constant String := dir_ports & "/" & catport;
-      ssroot   : constant String := chroot & JT.USS (PM.configuration.dir_buildbase) & ss_base;
-      command  : constant String :=
-                 ssroot & " " & chroot_make_program & " -C " & fullport &
+      command  : constant String := JT.trim (chroot);
+      cmd_args  : constant String := JT.USS (PM.configuration.dir_buildbase) & ss_base &
+                 " " & chroot_make_program & " -C " & fullport &
                  " " & cached_var &
                  " .MAKE.EXPAND_VARIABLES=yes" &
                  " -VPKGVERSION -VPKGFILE:T -V_MAKE_JOBS:C/^-j//" &
@@ -891,7 +891,7 @@ package body PortScan is
 
       type result_range is range 1 .. 10;
    begin
-      if not Unix.external_command (command, filename) then
+      if not Unix.external_command (command, cmd_args, filename) then
          raise bmake_execution with catport & " (check " & filename & ")";
       end if;
       begin
