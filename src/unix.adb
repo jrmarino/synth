@@ -109,6 +109,43 @@ package body Unix is
    end external_command;
 
 
+   ------------------------
+   --  external_command  --
+   ------------------------
+   function external_command (program     : String;
+                              arguments   : String;
+                              output_file : String) return Boolean
+   is
+      argvector : aliased struct_argv;
+      cprogram  : ICS.chars_ptr;
+      num_args  : IC.int;
+      retcode   : IC.int;
+      cfd       : IC.int;
+      close_res : IC.int;
+      log_fd    : File_Descriptor;
+
+      use type IC.int;
+      pragma Unreferenced (close_res);
+   begin
+      cprogram := ICS.New_String (program);
+      set_argument_vector (program & " " & arguments, argvector, num_args);
+      log_fd := start_new_log (output_file);
+      cfd := IC.int (log_fd);
+
+      retcode := synexec (cfd, cprogram, num_args, argvector'Unchecked_Access);
+
+      close_res := C_Close (cfd);
+      if num_args > 0 then
+         for x in 0 .. num_args - 1 loop
+            ICS.Free (argvector.args (x));
+         end loop;
+      end if;
+      ICS.Free (cprogram);
+
+      return retcode = 0;
+   end external_command;
+
+
    -------------------
    --  fork_failed  --
    -------------------
@@ -256,5 +293,105 @@ package body Unix is
    exception
       when others => return "";
    end true_path;
+
+
+   ---------------------
+   --  start_new_log  --
+   ---------------------
+   function start_new_log (filename : String) return File_Descriptor
+   is
+      path : IC.Strings.chars_ptr;
+      cfd : IC.int;
+   begin
+      path := IC.Strings.New_String (filename);
+      cfd := C_Start_Log (path);
+      IC.Strings.Free (path);
+      return File_Descriptor (cfd);
+   end start_new_log;
+
+
+   ---------------------------
+   --  set_argument_vector  --
+   ---------------------------
+   procedure set_argument_vector
+     (Arg_String : String;
+      argvector  : in out struct_argv;
+      num_args   : out IC.int)
+   is
+      Idx : Integer;
+
+      use type IC.int;
+   begin
+      num_args := 0;
+      Idx := Arg_String'First;
+
+      loop
+         declare
+            Quoted   : Boolean := False;
+            Backqd   : Boolean := False;
+            Old_Idx  : Integer;
+
+         begin
+            Old_Idx := Idx;
+
+            loop
+               --  A vanilla space is the end of an argument
+
+               if not Backqd and then not Quoted
+                 and then Arg_String (Idx) = ' '
+               then
+                  exit;
+
+               --  Start of a quoted string
+
+               elsif not Backqd and then not Quoted
+                 and then Arg_String (Idx) = '"'
+               then
+                  Quoted := True;
+
+               --  End of a quoted string and end of an argument
+
+               elsif not Backqd and then Quoted
+                 and then Arg_String (Idx) = '"'
+               then
+                  Idx := Idx + 1;
+                  exit;
+
+               --  Following character is backquoted
+
+               elsif Arg_String (Idx) = '\' then
+                  Backqd := True;
+
+               --  Turn off backquoting after advancing one character
+
+               elsif Backqd then
+                  Backqd := False;
+
+               end if;
+
+               Idx := Idx + 1;
+               exit when Idx > Arg_String'Last;
+            end loop;
+
+            --  Found an argument
+
+            argvector.args (num_args) := ICS.New_String (Arg_String (Old_Idx .. Idx - 1));
+            num_args := num_args + 1;
+            exit when num_args = MAX_ARGS;
+
+            --  Skip extraneous spaces
+
+            while Idx <= Arg_String'Last and then Arg_String (Idx) = ' '
+            loop
+               Idx := Idx + 1;
+            end loop;
+         end;
+
+         exit when Idx > Arg_String'Last;
+      end loop;
+
+      argvector.args (num_args) := ICS.Null_Ptr;
+
+   end set_argument_vector;
 
 end Unix;

@@ -114,9 +114,10 @@ package body PortScan.Pilot is
       OPS.initialize_hooks;
       REP.initialize (testmode => False, num_cores => PortScan.cores_available);
       REP.launch_slave (id => PortScan.scan_slave, opts => noprocs);
-      good_scan := PortScan.scan_single_port (catport => pkgng,
+      good_scan := PortScan.scan_single_port (catport      => pkgng,
                                               always_build => False,
-                                              fatal => stop_now);
+                                              cache_var    => "",    --  don't precache single scan
+                                              fatal        => stop_now);
 
       if good_scan then
          PortScan.set_build_priority;
@@ -185,9 +186,10 @@ package body PortScan.Pilot is
          good_scan : Boolean;
          stop_now  : Boolean;
       begin
-         good_scan := PortScan.scan_single_port (catport => the_catport,
+         good_scan := PortScan.scan_single_port (catport      => the_catport,
                                                  always_build => False,
-                                                 fatal => stop_now);
+                                                 cache_var    => "",  --  don't precache single scan
+                                                 fatal        => stop_now);
          if good_scan then
             PortScan.set_build_priority;
          else
@@ -313,38 +315,8 @@ package body PortScan.Pilot is
                                         always_build : Boolean := False)
                                         return Boolean
    is
-      procedure scan (plcursor : portkey_crate.Cursor);
       successful : Boolean := True;
       just_stop_now : Boolean;
-
-      procedure scan (plcursor : portkey_crate.Cursor)
-      is
-         origin : constant String := JT.USS (portkey_crate.Key (plcursor));
-      begin
-         if not successful then
-            return;
-         end if;
-         if origin = pkgng then
-            --  we've already built pkg(8) if we get here, just skip it
-            return;
-         end if;
-         if SIG.graceful_shutdown_requested then
-            successful := False;
-            return;
-         end if;
-         if not PortScan.scan_single_port (origin, always_build, just_stop_now)
-         then
-            if just_stop_now then
-               successful := False;
-            else
-               TIO.Put_Line
-                 ("Scan of " & origin & " failed" & PortScan.obvious_problem
-                    (JT.USS (PM.configuration.dir_portsdir), origin) &
-                    ", it will not be considered.");
-            end if;
-         end if;
-      end scan;
-
    begin
       REP.initialize (testmode, PortScan.cores_available);
       REP.launch_slave (id => PortScan.scan_slave, opts => noprocs);
@@ -356,7 +328,40 @@ package body PortScan.Pilot is
          successful := False;
          goto clean_exit;
       end if;
-      portlist.Iterate (Process => scan'Access);
+      declare
+         procedure scan (plcursor : portkey_crate.Cursor);
+         cache_var : constant String := set_port_cache_variables;
+
+         procedure scan (plcursor : portkey_crate.Cursor)
+         is
+            origin : constant String := JT.USS (portkey_crate.Key (plcursor));
+         begin
+            if not successful then
+               return;
+            end if;
+            if origin = pkgng then
+               --  we've already built pkg(8) if we get here, just skip it
+               return;
+            end if;
+            if SIG.graceful_shutdown_requested then
+               successful := False;
+               return;
+            end if;
+            if not PortScan.scan_single_port (origin, always_build, cache_var, just_stop_now)
+            then
+               if just_stop_now then
+                  successful := False;
+               else
+                  TIO.Put_Line
+                    ("Scan of " & origin & " failed" & PortScan.obvious_problem
+                       (JT.USS (PM.configuration.dir_portsdir), origin) &
+                       ", it will not be considered.");
+               end if;
+            end if;
+         end scan;
+      begin
+         portlist.Iterate (Process => scan'Access);
+      end;
       if successful then
          PortScan.set_build_priority;
          if PKG.queue_is_empty then

@@ -10,6 +10,8 @@
  *    2 when process exited with error
  */
 
+#ifndef _WIN32
+
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <termios.h>
@@ -104,7 +106,7 @@ __ignore_background_tty_writes ()
    prev_val = signal(SIGTTOU, SIG_IGN);
 
    /* return 1 on failure, 0 on success */
-   return (prev_val == SIG_ERR); 
+   return (prev_val == SIG_ERR);
 }
 
 /*
@@ -117,5 +119,7 @@ __ignore_background_tty_reads ()
    prev_val = signal(SIGTTIN, SIG_IGN);
 
    /* return 1 on failure, 0 on success */
-   return (prev_val == SIG_ERR); 
+   return (prev_val == SIG_ERR);
 }
+
+#endif
