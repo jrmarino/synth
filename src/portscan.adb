@@ -392,11 +392,11 @@ package body PortScan is
       scan_63 : scan (lot => 63);
       scan_64 : scan (lot => 64);
    begin
-      TIO.Put_Line (TIO.Standard_Output, "Scanning entire ports tree.");
+      TIO.Put_Line ("Scanning entire ports tree.");
       while combined_wait loop
          delay 1.0;
          if show_progress then
-            TIO.Put (TIO.Standard_Output, scan_progress);
+            TIO.Put (scan_progress);
          end if;
          combined_wait := False;
          for j in scanners'Range loop
@@ -411,7 +411,7 @@ package body PortScan is
       end loop;
       success := not aborted;
       if show_progress then
-         TIO.Put (TIO.Standard_Output, scan_progress);
+         TIO.Put (scan_progress);
       end if;
    end parallel_deep_scan;
 
@@ -1230,7 +1230,7 @@ package body PortScan is
    --------------------------
    function get_max_lots return scanners
    is
-      first_try : constant Positive := Positive (number_cores) * 2;
+      first_try : constant Positive := Positive (number_cores) * 3;
    begin
       if first_try > Positive (scanners'Last) then
          return scanners'Last;
@@ -1648,7 +1648,6 @@ package body PortScan is
       end;
 
       TIO.Put_Line ("Regenerating flavor index: this may take a while ...");
-      TIO.Flush;
       prescan_ports_tree (portsdir);
 
       case software_framework is
