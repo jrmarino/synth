@@ -1230,8 +1230,20 @@ package body PortScan is
    --------------------------
    function get_max_lots return scanners
    is
-      first_try : constant Positive := Positive (number_cores) * 3;
+      first_try : Positive;
    begin
+      case number_cores is
+         when 1 => first_try := 1;
+         when 2 => first_try := 3;
+         when 3 => first_try := 4;
+         when others =>
+            first_try := Positive (number_cores);
+            if number_cores mod 2 = 0 then
+               first_try := first_try + Positive (first_try / 2);
+            else
+               first_try := first_try + Positive ((first_try - 1) / 2);
+            end if;
+      end case;
       if first_try > Positive (scanners'Last) then
          return scanners'Last;
       else
