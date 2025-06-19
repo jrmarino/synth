@@ -392,12 +392,11 @@ package body PortScan is
       scan_63 : scan (lot => 63);
       scan_64 : scan (lot => 64);
    begin
-      TIO.Put_Line ("Scanning entire ports tree.");
+      TIO.Put_Line (TIO.Standard_Output, "Scanning entire ports tree.");
       while combined_wait loop
          delay 1.0;
          if show_progress then
-            TIO.Put (scan_progress);
-            TIO.Flush;
+            TIO.Put (TIO.Standard_Output, scan_progress);
          end if;
          combined_wait := False;
          for j in scanners'Range loop
@@ -412,7 +411,7 @@ package body PortScan is
       end loop;
       success := not aborted;
       if show_progress then
-         TIO.Put (scan_progress);
+         TIO.Put (TIO.Standard_Output, scan_progress);
       end if;
    end parallel_deep_scan;
 
