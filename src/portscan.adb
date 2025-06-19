@@ -162,6 +162,11 @@ package body PortScan is
          TIO.Put_Line ("... backtrace " & catport);
          fatal := True;
       end if;
+      begin
+         Ada.Directories.Delete_File (filename);
+      exception
+         when others => null;
+      end;
       return not aborted;
 
    end scan_single_port;
@@ -274,7 +279,7 @@ package body PortScan is
          procedure abort_now (culprit, issue_msg, exmsg : String);
 
          temporary_output : constant String :=
-           "/tmp/synth.scanner." & JT.zeropad (2, Natural (lot)) & ".out";
+           "/tmp/synth.scanner." & JT.zeropad (Natural (lot), 2) & ".out";
 
          procedure populate (cursor : subqueue.Cursor)
          is
@@ -392,6 +397,7 @@ package body PortScan is
          delay 1.0;
          if show_progress then
             TIO.Put (scan_progress);
+            TIO.Flush;
          end if;
          combined_wait := False;
          for j in scanners'Range loop
@@ -1643,6 +1649,7 @@ package body PortScan is
       end;
 
       TIO.Put_Line ("Regenerating flavor index: this may take a while ...");
+      TIO.Flush;
       prescan_ports_tree (portsdir);
 
       case software_framework is
