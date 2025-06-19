@@ -796,8 +796,10 @@ package body PortScan is
       end get_fullport;
 
       fullport : constant String := get_fullport;
-      command  : constant String := JT.trim (chroot);
-      cmd_args : constant String := JT.USS (PM.configuration.dir_buildbase) & ss_base &
+      command  : constant String := "/usr/bin/env";
+      scanenv  : constant String := JT.part_2 (scan_environment, " -i ");
+      cmd_args : constant String := "-i " & scanenv & chroot &
+                 JT.USS (PM.configuration.dir_buildbase) & ss_base &
                  " " & chroot_make_program & " -C " & fullport &
                  " " & cached_var &
                  " -VPKGVERSION -VPKGFILE:T -VMAKE_JOBS_NUMBER -VIGNORE" &
@@ -878,8 +880,10 @@ package body PortScan is
    is
       catport  : String := get_catport (all_ports (target));
       fullport : constant String := dir_ports & "/" & catport;
-      command  : constant String := JT.trim (chroot);
-      cmd_args  : constant String := JT.USS (PM.configuration.dir_buildbase) & ss_base &
+      command  : constant String := "/usr/bin/env";
+      scanenv  : constant String := JT.part_2 (scan_environment, " -i ");
+      cmd_args : constant String := "-i " & scanenv & chroot &
+                 JT.USS (PM.configuration.dir_buildbase) & ss_base &
                  " " & chroot_make_program & " -C " & fullport &
                  " " & cached_var &
                  " .MAKE.EXPAND_VARIABLES=yes" &
