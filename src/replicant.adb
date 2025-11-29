@@ -812,6 +812,21 @@ package body Replicant is
    end copy_resolv_conf;
 
 
+   ------------------------
+   --  copy_hosts  --
+   ------------------------
+   procedure copy_hosts (path_to_etc : String)
+   is
+      original : constant String := "/etc/hosts";
+   begin
+      if not AD.Exists (original) then
+         return;
+      end if;
+      AD.Copy_File (Source_Name => original,
+                    Target_Name => path_to_etc & "/hosts");
+   end copy_hosts;
+
+
    -----------------------
    --  copy_rc_default  --
    -----------------------
@@ -1272,6 +1287,7 @@ package body Replicant is
       copy_mtree_files    (location (slave_base, etc_mtree));
       copy_rc_default     (location (slave_base, etc));
       copy_resolv_conf    (location (slave_base, etc));
+      copy_hosts          (location (slave_base, etc));
       create_make_conf    (location (slave_base, etc), opts.skip_cwrappers);
       create_passwd       (location (slave_base, etc));
       create_group        (location (slave_base, etc));

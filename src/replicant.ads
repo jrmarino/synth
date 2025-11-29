@@ -202,6 +202,9 @@ private
    --  copy host's /etc/resolv.conf to slave
    procedure copy_resolv_conf (path_to_etc : String);
 
+   --  copy host's /etc/hosts to slave
+   procedure copy_hosts (path_to_etc : String);
+
    --  copy host's /etc/mtree files to slave
    procedure copy_mtree_files (path_to_mtree : String);
 
