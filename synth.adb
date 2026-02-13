@@ -21,6 +21,12 @@ is
    package ACT renames Actions;
    package PIL renames PortScan.Pilot;
 
+   procedure mark_dirty_return;
+   procedure mark_dirty_return is
+   begin
+      CLI.Set_Exit_Status (CLI.Failure);
+   end mark_dirty_return;
+
 begin
 
    if CLI.Argument_Count = 0 then
@@ -78,11 +84,13 @@ begin
             when unset =>
                ACT.print_version;
                TIO.Put_Line (comerr & "'" & first & "' is not a valid keyword.");
+               mark_dirty_return;
                return;
             when help | configure | version | prep_system | up_system | purge |
                  everything | status_everything =>
                ACT.print_version;
                TIO.Put_Line (comerr & "'" & first & "' keyword uses no arguments.");
+               mark_dirty_return;
                return;
             when others => null;
          end case;
@@ -92,39 +100,47 @@ begin
             PIL.set_replicant_platform;
          else
             TIO.Put_Line (badcfg);
+            mark_dirty_return;
             return;
          end if;
 
          if not Parameters.all_paths_valid then
+            mark_dirty_return;
             return;
          end if;
 
          if not PIL.valid_system_root then
+            mark_dirty_return;
             return;
          end if;
 
          if not PIL.TERM_defined_in_environment then
+            mark_dirty_return;
             return;
          end if;
 
          if PIL.synth_launch_clash then
             TIO.Put_Line (badcwd);
+            mark_dirty_return;
             return;
          end if;
 
          if PIL.insufficient_privileges then
             TIO.Put_Line (regjoe);
+            mark_dirty_return;
             return;
          end if;
 
          if PIL.already_running then
             TIO.Put_Line (holdon);
+            mark_dirty_return;
             return;
          end if;
 
          if PIL.previous_run_mounts_detected then
             TIO.Put_Line (badmnt);
             if not PIL.old_mounts_successfully_removed then
+               mark_dirty_return;
                return;
             end if;
          end if;
@@ -132,21 +148,25 @@ begin
          if PIL.previous_realfs_work_detected then
             TIO.Put_Line (badwrk);
             if not PIL.old_realfs_work_successfully_removed then
+               mark_dirty_return;
                return;
             end if;
          end if;
 
          if PIL.synthexec_missing then
+            mark_dirty_return;
             return;
          end if;
 
          if not PIL.ensure_port_index then
             --  error messages emitted by ensure_port_index
+            mark_dirty_return;
             return;
          end if;
 
          if not PIL.store_origins then
             --  error messages emitted by store_origins, just exit now
+            mark_dirty_return;
             return;
          end if;
 
@@ -239,6 +259,7 @@ begin
                ACT.print_version;
                TIO.Put_Line (comerr & "'" & first &
                                "' requires at least one argument.");
+               mark_dirty_return;
                return;
             when version =>
                ACT.print_version;
@@ -250,17 +271,20 @@ begin
                ACT.print_version;
                TIO.Put_Line (comerr & "'" & first &
                                "' is not a valid keyword.");
+               mark_dirty_return;
                return;
             when others => null;
          end case;
 
          if PIL.insufficient_privileges then
             TIO.Put_Line (regjoe);
+            mark_dirty_return;
             return;
          end if;
 
          if PIL.already_running then
             TIO.Put_Line (holdon);
+            mark_dirty_return;
             return;
          end if;
 
@@ -269,23 +293,28 @@ begin
             PIL.set_replicant_platform;
          else
             TIO.Put_Line (badcfg);
+            mark_dirty_return;
             return;
          end if;
 
          if not PIL.TERM_defined_in_environment then
+            mark_dirty_return;
             return;
          end if;
 
          if PIL.synth_launch_clash then
             TIO.Put_Line (badcwd);
+            mark_dirty_return;
             return;
          end if;
 
          if not (mandate = configure) then
             if not Parameters.all_paths_valid then
+               mark_dirty_return;
                return;
             end if;
             if not PIL.valid_system_root then
+               mark_dirty_return;
                return;
             end if;
          end if;
@@ -293,6 +322,7 @@ begin
          if PIL.previous_run_mounts_detected then
             TIO.Put_Line (badmnt);
             if not PIL.old_mounts_successfully_removed then
+               mark_dirty_return;
                return;
             end if;
          end if;
@@ -300,17 +330,20 @@ begin
          if PIL.previous_realfs_work_detected then
             TIO.Put_Line (badwrk);
             if not PIL.old_realfs_work_successfully_removed then
+               mark_dirty_return;
                return;
             end if;
          end if;
 
          if PIL.synthexec_missing then
+            mark_dirty_return;
             return;
          end if;
 
          if mandate /= configure then
             if not PIL.ensure_port_index then
                --  error messages emitted by ensure_port_index
+               mark_dirty_return;
                return;
             end if;
          end if;
@@ -335,6 +368,8 @@ begin
             when up_system =>
                if PIL.write_pkg_repos_configuration_file then
                   PIL.upgrade_system_everything;
+               else
+                  mark_dirty_return;
                end if;
             when prep_system =>
                PIL.upgrade_system_everything (skip_installation => True);
@@ -348,6 +383,8 @@ begin
                      TIO.Put_Line ("      You may wish to toggle that " &
                                      "setting if this is a local repository.");
                   end if;
+               else
+                  mark_dirty_return;
                end if;
             when purge =>
                PIL.purge_distfiles;
@@ -360,6 +397,8 @@ begin
                   if PIL.rebuild_local_respository (remove_invalid_packages => True) then
                      null;
                   end if;
+               else
+                  mark_dirty_return;
                end if;
             when status_everything =>
                if PIL.prerequisites_available and then
@@ -367,6 +406,8 @@ begin
                  PIL.sanity_check_then_prefail (delete_first => False, dry_run => True)
                then
                   PIL.display_results_of_dry_run;
+               else
+                  mark_dirty_return;
                end if;
          end case;
       end if;
