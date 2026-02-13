@@ -906,6 +906,22 @@ package body Replicant is
    end create_etc_fstab;
 
 
+   ------------------------
+   --  create_etc_hosts  --
+   ------------------------
+   procedure create_etc_hosts (path_to_etc : String)
+   is
+      hosts : TIO.File_Type;
+   begin
+      TIO.Create (File => hosts,
+                  Mode => TIO.Out_File,
+                  Name => path_to_etc & "/hosts");
+      TIO.Put_Line (hosts, "::1                     localhost localhost.my.domain");
+      TIO.Put_Line (hosts, "127.0.0.1               localhost localhost.my.domain");
+      TIO.Close (hosts);
+   end create_etc_hosts;
+
+
    -------------------------
    --  create_etc_shells  --
    -------------------------
@@ -1278,6 +1294,7 @@ package body Replicant is
       create_etc_services (location (slave_base, etc));
       create_etc_shells   (location (slave_base, etc));
       create_etc_fstab    (location (slave_base, etc));
+      create_etc_hosts    (location (slave_base, etc));
       create_cert_store   (location (slave_base, etc));
       copy_etc_rcsubr     (location (slave_base, etc));
       copy_ldconfig       (location (slave_base, etc));

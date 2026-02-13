@@ -221,6 +221,9 @@ private
    --  create /etc/shells, required by install scripts of some packages
    procedure create_etc_shells (path_to_etc : String);
 
+   --  create /etc/hosts to estable the localhost definition
+   procedure create_etc_hosts (path_to_etc : String);
+
    --  create certificate store in /etc/ssl (FreeBSD only)
    procedure create_cert_store (path_to_etc : String);
 
