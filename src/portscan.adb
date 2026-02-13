@@ -278,6 +278,7 @@ package body PortScan is
          procedure populate (cursor : subqueue.Cursor);
          procedure abort_now (culprit, issue_msg, exmsg : String);
 
+         triggered_here   : Boolean := False;
          temporary_output : constant String :=
            "/tmp/synth.scanner." & JT.zeropad (Natural (lot), 2) & ".out";
 
@@ -311,6 +312,7 @@ package body PortScan is
          procedure abort_now (culprit, issue_msg, exmsg : String) is
          begin
             aborted := True;
+            triggered_here := True;
             TIO.Put_Line (LAT.LF & "culprit: " & culprit);
             TIO.Put_Line ("  Scan aborted " & issue_msg & ".");
             TIO.Put_Line ("  " & exmsg);
@@ -318,7 +320,7 @@ package body PortScan is
       begin
          make_queue (lot).Iterate (populate'Access);
          begin
-            if not aborted then
+            if not triggered_here then
                Ada.Directories.Delete_File (temporary_output);
             end if;
          exception
