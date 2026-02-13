@@ -318,7 +318,9 @@ package body PortScan is
       begin
          make_queue (lot).Iterate (populate'Access);
          begin
-            Ada.Directories.Delete_File (temporary_output);
+            if not aborted then
+               Ada.Directories.Delete_File (temporary_output);
+            end if;
          exception
             when others => null;
          end;
