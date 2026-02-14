@@ -312,6 +312,7 @@ package body PortScan.Packages is
                   null;
                end if;
             end;
+            relocate_downloaded_hashed_packages;
             fetch_list.Iterate (check'Access);
          end if;
       end if;
@@ -1415,5 +1416,50 @@ package body PortScan.Packages is
          TIO.Put_Line (message);
       end if;
    end obsolete_notice;
+
+
+   -------------------------------------------
+   --  relocate_downloaded_hashed_packages  --
+   -------------------------------------------
+   procedure relocate_downloaded_hashed_packages
+   is
+      function standard_name (hashed_name : String) return String;
+
+      dir_all    : constant String := JT.USS (PM.configuration.dir_repository);
+      dir_hashed : constant String := dir_all & "/Hashed";
+      pkg_search : AD.Search_Type;
+      dirent     : AD.Directory_Entry_Type;
+
+      function standard_name (hashed_name : String) return String
+      is
+         base_name : constant String := JT.part_1 (hashed_name, "~");
+      begin
+         return base_name & ".pkg";
+      end standard_name;
+   begin
+      AD.Start_Search (Search    => pkg_search,
+                       Directory => dir_hashed,
+                       Filter    => (AD.Ordinary_File => True, others => False),
+                       Pattern   => "*~*.pkg");
+      while AD.More_Entries (Search => pkg_search) loop
+         AD.Get_Next_Entry (Search => pkg_search, Directory_Entry => dirent);
+         declare
+            filename : constant String := AD.Simple_Name (dirent);
+            destino  : constant String := dir_all & "/" & standard_name (filename);
+            origin   : constant String := dir_hashed & "/" & filename;
+         begin
+            begin
+               if AD.Exists (destino) then
+                  AD.Delete_File (destino);
+               end if;
+               AD.Rename (origin, destino);
+            exception
+               when others =>
+                  TIO.Put_Line ("Failed to relocate " & origin);
+            end;
+         end;
+      end loop;
+
+   end relocate_downloaded_hashed_packages;
 
 end PortScan.Packages;

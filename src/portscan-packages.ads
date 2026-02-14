@@ -158,4 +158,7 @@ private
    --  Write to log if open and optionally output a copy to screen.
    procedure obsolete_notice (message : String; write_to_screen : Boolean);
 
+   --  Rename files in <repo>/All/Hashed directory to <repo>/All
+   procedure relocate_downloaded_hashed_packages;
+
 end PortScan.Packages;
