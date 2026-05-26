@@ -73,40 +73,6 @@ package body Replicant.Platform is
 
 
    --------------------------
-   --  ARM_version_7  --
-   --------------------------
-   function ARM_version_7 return Boolean
-   is
-      --  Don't worry about other platforms, consider synth *BSD now
-      command : constant String := "/usr/bin/readelf -A " &
-                                   JT.USS (PM.configuration.dir_system) & "/bin/sh";
-      comres  : JT.Text;
-   begin
-      comres := internal_system_command (command);
-      declare
-         contents : constant String := JT.USS (comres);
-         markers  : JT.Line_Markers;
-      begin
-         JT.initialize_markers (contents, markers);
-         if JT.next_line_with_content_present (contents, "  Tag_CPU_arch:", markers) then
-            declare
-               line : constant String := JT.extract_line (contents, markers);
-            begin
-               return JT.trim (JT.part_2 (line, ":")) = "ARM v7";
-            end;
-         else
-            TIO.Put_Line ("ARM_version_7 error: expected Tag_CPU_arch not found");
-            return False;
-         end if;
-      end;
-   exception
-      when others =>
-         TIO.Put_Line ("Handled exception (ARM_version_7 failed: defaulted to FALSE)");
-         return False;
-   end ARM_version_7;
-
-
-   --------------------------
    --  dynamically_linked  --
    --------------------------
    function dynamically_linked (base, filename : String) return Boolean
@@ -182,11 +148,7 @@ package body Replicant.Platform is
          elsif arch = "ARM aarch64" then
             return "aarch64";
          elsif arch = "ARM        " then
-            if ARM_version_7 then
-               return "armv7";
-            else
-               return "armv6";
-            end if;
+            return "armv7";
          elsif arch = "Intel 80386" then
             return "i386";
          else
@@ -229,11 +191,7 @@ package body Replicant.Platform is
          elsif arch = "ARM aarch64" then
             return "aarch64:64";
          elsif arch = "ARM        " then
-            if ARM_version_7 then
-               return "armv7:32:el:eabi:softfp";
-            else
-               return "armv6:32:el:eabi:softfp";
-            end if;
+            return "armv7:32:el:eabi:softfp";
          else
             return "unknown:" & arch;
          end if;
@@ -250,11 +208,7 @@ package body Replicant.Platform is
          elsif arch = "ARM aarch64" then
             return "aarch64";
          elsif arch = "ARM        " then
-            if ARM_version_7 then
-               return "armv7";
-            else
-               return "armv6";
-            end if;
+            return "armv7";
          else
             return "unknown:" & arch;
          end if;
