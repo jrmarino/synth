@@ -879,7 +879,8 @@ package body PortScan.Pilot is
 
       procedure scan (plcursor : portkey_crate.Cursor)
       is
-         origin   : JT.Text := portkey_crate.Key (plcursor);
+         flavor   : constant String := JT.USS (portkey_crate.Key (plcursor));
+         origin   : constant JT.Text := JT.SUS (JT.part_1 (flavor, "@"));
          tracker  : constant port_id := portkey_crate.Element (plcursor);
          pndx     : constant port_index := ports_keys.Element (origin);
          distinfo : constant String := JT.USS (PM.configuration.dir_portsdir) &
