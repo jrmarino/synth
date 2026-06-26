@@ -886,7 +886,7 @@ package body PortScan.Pilot is
       begin
          AD.Start_Search
            (Search    => dsearch,
-            Directory => JT.USS (PM.configuration.dir_portsdir),
+            Directory => JT.USS (PM.configuration.dir_portsdir) & "/" & origin,
             Pattern   => "distinfo*",
             Filter    => (AD.Ordinary_File => True, others => False));
 
