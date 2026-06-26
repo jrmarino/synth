@@ -882,38 +882,54 @@ package body PortScan.Pilot is
          tracker  : constant port_id := portkey_crate.Element (plcursor);
          flavor   : constant JT.Text := portkey_crate.Key (plcursor);
          origin   : constant String := JT.part_1 (JT.USS (flavor), "@");
-         distinfo : constant String := JT.USS (PM.configuration.dir_portsdir) &
-                     "/" & origin & "/distinfo";
-         handle   : TIO.File_Type;
-         bookend  : Natural;
+         dsearch  : AD.Search_Type;
       begin
-         TIO.Open (File => handle, Mode => TIO.In_File, Name => distinfo);
-         while not TIO.End_Of_File (handle) loop
+         AD.Start_Search
+           (Search    => dsearch,
+            Directory => JT.USS (PM.configuration.dir_portsdir),
+            Pattern   => "distinfo*",
+            Filter    => (AD.Ordinary_File => True, others => False));
+
+         while AD.More_Entries (dsearch) loop
             declare
-               Line : String := TIO.Get_Line (handle);
+               dentry  : AD.Directory_Entry_Type;
+               handle  : TIO.File_Type;
+               bookend : Natural;
             begin
-               if Line (1 .. 4) = "SIZE" then
-                  bookend := ASF.Index (Line, ")");
-                  declare
-                     S : JT.Text := JT.SUS (Line (7 .. bookend - 1));
-                  begin
-                     if not distfiles.Contains (S) then
-                        distfiles.Insert (S, tracker);
+               AD.Get_Next_Entry (dsearch, dentry);
+               begin
+                  TIO.Open (File => handle, Mode => TIO.In_File, Name => AD.Full_Name (dentry));
+                  while not TIO.End_Of_File (handle) loop
+                     declare
+                        Line : String := TIO.Get_Line (handle);
+                     begin
+                        if Line'Length > 7 and then Line (1 .. 4) = "SIZE" then
+                           bookend := ASF.Index (Line, ")");
+                           if bookend > 7 then
+                              declare
+                                 S : JT.Text := JT.SUS (Line (7 .. bookend - 1));
+                              begin
+                                 if not distfiles.Contains (S) then
+                                    distfiles.Insert (S, tracker);
+                                 end if;
+                              exception
+                                 when failed : others =>
+                                    TIO.Put_Line ("purge_distfiles::scan: " & JT.USS (S));
+                                    TIO.Put_Line (EX.Exception_Information (failed));
+                              end;
+                           end if;
+                        end if;
+                     end;
+                  end loop;
+                  TIO.Close (handle);
+               exception
+                  when others =>
+                     if TIO.Is_Open (handle) then
+                        TIO.Close (handle);
                      end if;
-                  exception
-                     when failed : others =>
-                        TIO.Put_Line ("purge_distfiles::scan: " & JT.USS (S));
-                        TIO.Put_Line (EX.Exception_Information (failed));
-                  end;
-               end if;
+               end;
             end;
          end loop;
-         TIO.Close (handle);
-      exception
-         when others =>
-            if TIO.Is_Open (handle) then
-               TIO.Close (handle);
-            end if;
       end scan;
 
       procedure walk (name : String)
